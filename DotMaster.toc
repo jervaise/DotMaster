@@ -1,0 +1,39 @@
+## Interface: 100200
+## Title: DotMaster
+## Notes: Enhanced tracking of damage-over-time effects on enemy targets
+## Author: YourName
+## Version: 0.1.0
+## SavedVariables: DotMasterDB
+## OptionalDeps: Ace3, LibSharedMedia-3.0
+## X-Embeds: Ace3
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\AceAddon-3.0\AceAddon-3.0.lua
+Libs\AceConsole-3.0\AceConsole-3.0.lua
+Libs\AceDB-3.0\AceDB-3.0.lua
+Libs\AceDBOptions-3.0\AceDBOptions-3.0.lua
+Libs\AceEvent-3.0\AceEvent-3.0.lua
+Libs\AceTimer-3.0\AceTimer-3.0.lua
+Libs\AceHook-3.0\AceHook-3.0.lua
+Libs\AceGUI-3.0\AceGUI-3.0.lua
+Libs\AceConfig-3.0\AceConfig-3.0.lua
+
+# Core Files
+Core\Constants.lua
+Core\Init.lua
+Core\Debug.lua
+
+# Database
+Database\SpellDB.lua
+
+# Features
+Features\NameplateTracker.lua
+Features\FindMyDots.lua
+
+# UI
+UI\ConfigUI.lua
+
+# Main file
+DotMaster.lua 
