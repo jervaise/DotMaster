@@ -170,6 +170,161 @@ function DotMaster:InitializeDB()
   self:Debug("CORE", "Database initialized")
 end
 
+-- Handle debug commands
+function DotMaster:HandleDebugCommand(...)
+  local args = { ... }
+  local subCommand = args[1]
+
+  if not subCommand or subCommand == "" or subCommand == "toggle" then
+    -- Toggle debug mode
+    self.db.profile.debug.enabled = not self.db.profile.debug.enabled
+    self:Print("Debug mode " .. (self.db.profile.debug.enabled and "enabled" or "disabled"))
+    return
+  end
+
+  if subCommand == "level" then
+    local level = args[2]
+    if level and self.DEBUG_LEVELS[string.upper(level)] then
+      self:SetDebugLevel(string.upper(level))
+      self:Print("Debug level set to " .. string.upper(level))
+    else
+      self:Print("Valid debug levels: ERROR, WARNING, INFO, DEBUG, TRACE")
+    end
+    return
+  end
+
+  if subCommand == "category" then
+    local category = string.upper(args[2] or "")
+    local enabled = args[3] == "true" or args[3] == "1" or args[3] == "on"
+
+    if category and self.DEBUG_CATEGORIES[category] then
+      self:ToggleDebugCategory(category, enabled)
+      self:Print("Debug category " .. category .. " " .. (enabled and "enabled" or "disabled"))
+    else
+      self:Print("Available debug categories:")
+      for cat in pairs(self.DEBUG_CATEGORIES) do
+        local status = self.db.profile.debug.categories[cat] and "enabled" or "disabled"
+        self:Print("  " .. cat .. ": " .. status)
+      end
+    end
+    return
+  end
+
+  if subCommand == "performance" then
+    self:ToggleDebugCategory("PERFORMANCE")
+    self:Print("Performance monitoring " ..
+      (self.db.profile.debug.categories.PERFORMANCE and "enabled" or "disabled"))
+    return
+  end
+
+  if subCommand == "export" then
+    self:ExportDebugLog()
+    return
+  end
+
+  -- Display debug help if no valid subcommand
+  self:Print("Debug commands:")
+  self:Print("/dm debug toggle - Toggle debug mode")
+  self:Print("/dm debug level [ERROR|WARNING|INFO|DEBUG|TRACE] - Set debug level")
+  self:Print("/dm debug category [CATEGORY] [true|false] - Toggle debug category")
+  self:Print("/dm debug performance - Toggle performance monitoring")
+  self:Print("/dm debug export - Export debug log")
+end
+
+-- Export debug log to a file
+function DotMaster:ExportDebugLog()
+  -- Ensure debug frame exists
+  if not DotMasterDebugFrame then
+    local f = CreateFrame("Frame", "DotMasterDebugFrame", UIParent, "BackdropTemplate")
+    f:SetPoint("CENTER")
+    f:SetSize(600, 400)
+    f:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 16,
+      insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    f:SetBackdropColor(0, 0, 0, 0.8)
+
+    -- Add title
+    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -10)
+    title:SetText("DotMaster Debug Log")
+
+    -- Add close button
+    local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
+
+    -- Add scrollable edit box
+    local scrollFrame = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 12, -30)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 12)
+
+    local editBox = CreateFrame("EditBox", nil, scrollFrame)
+    editBox:SetMultiLine(true)
+    editBox:SetFontObject(ChatFontNormal)
+    editBox:SetWidth(scrollFrame:GetWidth())
+    editBox:SetScript("OnEscapePressed", function() f:Hide() end)
+
+    scrollFrame:SetScrollChild(editBox)
+    f.editBox = editBox
+
+    -- Add export button
+    local export = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    export:SetSize(100, 25)
+    export:SetPoint("BOTTOM", 0, 10)
+    export:SetText("Copy to Clipboard")
+    export:SetScript("OnClick", function()
+      editBox:SetFocus()
+      editBox:HighlightText()
+    end)
+
+    f:Hide()
+  end
+
+  -- Format debug log
+  local logText = "DotMaster Debug Log - " .. date("%Y-%m-%d %H:%M:%S") .. "\n\n"
+  for _, entry in ipairs(self.debugLog) do
+    logText = logText .. entry.formattedMessage .. "\n"
+  end
+
+  -- Add performance metrics if available
+  if self.db.profile.debug.categories.PERFORMANCE then
+    logText = logText .. "\n\nPerformance Metrics:\n"
+    logText = logText .. "Current Memory Usage: " .. collectgarbage("count") .. " KB\n"
+
+    if #self.performanceMetrics.memoryUsage > 0 then
+      logText = logText .. "Memory Usage History:\n"
+      for i, data in ipairs(self.performanceMetrics.memoryUsage) do
+        logText = logText .. string.format("  %.1f seconds ago: %.2f KB\n",
+          GetTime() - data.time, data.usage)
+      end
+    end
+
+    if #self.performanceMetrics.frameRate > 0 then
+      -- Calculate average FPS
+      local sum = 0
+      for i, data in ipairs(self.performanceMetrics.frameRate) do
+        sum = sum + data.fps
+      end
+      local avgFPS = sum / #self.performanceMetrics.frameRate
+
+      logText = logText .. string.format("Average FPS: %.1f\n", avgFPS)
+    end
+  end
+
+  -- Add system info
+  logText = logText .. "\n\nSystem Info:\n"
+  logText = logText .. "WoW Version: " .. GetBuildInfo() .. "\n"
+  logText = logText .. "DotMaster Version: " .. self.version .. "\n"
+
+  -- Display in frame
+  DotMasterDebugFrame.editBox:SetText(logText)
+  DotMasterDebugFrame:Show()
+
+  self:Print("Debug log exported to frame")
+end
+
 -- Reset all settings to defaults
 function DotMaster:ResetAllSettings()
   self.db:ResetProfile()
@@ -185,5 +340,78 @@ function DotMaster:ResetAllSettings()
     self:OnEnable()
   else
     self:OnDisable()
+  end
+end
+
+-- Open main configuration UI
+function DotMaster:OpenConfigUI()
+  if not self.configFrame then
+    -- Create the configuration UI if it doesn't exist yet
+    self:InitializeConfig()
+
+    -- Register main options table
+    local options = self:GetConfigOptions()
+    LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
+
+    -- Create the config frame using AceConfigDialog
+    self.configFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
+
+    -- Add profile panel
+    self.profileFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME .. "Profiles",
+      "Profiles", ADDON_NAME)
+  end
+
+  -- Open Blizzard interface options to our panel
+  InterfaceOptionsFrame_OpenToCategory(self.configFrame)
+  -- Call twice to ensure it actually opens (known Blizzard UI issue)
+  InterfaceOptionsFrame_OpenToCategory(self.configFrame)
+
+  self:Debug("GUI", "Opened config UI")
+end
+
+-- Open DoT tracking config UI
+function DotMaster:OpenTrackingUI()
+  -- First ensure the main config exists
+  if not self.configFrame then
+    self:OpenConfigUI()
+  end
+
+  -- Open to the tracking section
+  LibStub("AceConfigDialog-3.0"):SelectGroup(ADDON_NAME, "tracking")
+  InterfaceOptionsFrame_OpenToCategory(self.configFrame)
+
+  self:Debug("GUI", "Opened tracking UI")
+end
+
+-- Open database browser UI
+function DotMaster:OpenDatabaseUI()
+  -- First ensure the main config exists
+  if not self.configFrame then
+    self:OpenConfigUI()
+  end
+
+  -- Open to the database section
+  LibStub("AceConfigDialog-3.0"):SelectGroup(ADDON_NAME, "database")
+  InterfaceOptionsFrame_OpenToCategory(self.configFrame)
+
+  self:Debug("GUI", "Opened database UI")
+end
+
+-- Get configuration options table
+function DotMaster:GetConfigOptions()
+  -- This should return the options table that was created in the UI/ConfigUI.lua file
+  if not self.fullOptionsTable then
+    -- Config hasn't been initialized yet
+    self:InitializeConfig()
+  end
+
+  return self.fullOptionsTable or {}
+end
+
+-- Refresh configuration UI
+function DotMaster:RefreshConfig()
+  if self.configFrame then
+    LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+    self:Debug("CONFIG", "Configuration UI refreshed")
   end
 end

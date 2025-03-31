@@ -483,6 +483,9 @@ function DotMaster:InitializeConfig()
     index = index + 1
   end
 
+  -- Store the options table for reference in other parts of the addon
+  self.fullOptionsTable = options
+
   -- Register options table
   LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
 
@@ -508,7 +511,7 @@ function DotMaster:OpenConfigUI()
 
   -- Open to the config panel
   InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
-  InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)   -- Call twice to workaround a Blizzard bug
+  InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) -- Call twice to workaround a Blizzard bug
 
   self:Debug("GUI", "Configuration UI opened")
 end

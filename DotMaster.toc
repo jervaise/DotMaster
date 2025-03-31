@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Enhanced tracking of damage-over-time effects on enemy targets
 ## Author: YourName
-## Version: 0.1.0
+## Version: 0.1.1
 ## SavedVariables: DotMasterDB
 ## OptionalDeps: Ace3, LibSharedMedia-3.0
 ## X-Embeds: Ace3
