@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.4.1] - 2024-07-01 (Beta Release)
+
+### Fixed
+- Resolved critical "attempt to call field 'GetAuraDataByUnit' (a nil value)" error in Find My Dots feature
+- Updated aura detection methods to use AuraUtil.ForEachAura instead of C_UnitAuras.GetAuraDataByUnit for compatibility
+- Fixed aura scanning in nameplate detection module
+- Ensured consistent API usage across all aura detection points in the addon
+- Improved code organization in restructured modules
+
+### Changed
+- Standardized aura detection methods across all modules
+- Added better error handling and robustness for API calls
+
 ## [0.4.0] - 2024-06-19 (Stable Release)
 
 ### Changed

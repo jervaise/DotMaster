@@ -4,10 +4,10 @@ This document outlines the current development status of the DotMaster addon. It
 
 ## Current Version Information
 
-- **Current Version**: 0.4.0
+- **Current Version**: 0.4.1
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.4.0)
-  - **develop**: Active development branch (v0.4.0)
+  - **main**: Contains the latest stable release (v0.4.1)
+  - **develop**: Active development branch (v0.4.1+)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -20,6 +20,7 @@ This document outlines the current development status of the DotMaster addon. It
 | Spell Database | ✅ COMPLETED | Pre-defined database of DoT spells for all classes |
 | Configuration UI | ✅ COMPLETED | Options panel with profile support |
 | Minimap Button | ✅ COMPLETED | Integration with LibDBIcon |
+| API Compatibility | ✅ FIXED | Updated aura detection methods to use proper API |
 | In-game Testing | 🔄 IN PROGRESS | Ongoing testing of all features |
 | Performance Optimization | 🔄 PLANNED | Profiling and optimizing critical functions |
 | Documentation | 🔄 IN PROGRESS | Creating comprehensive docs for users and devs |
@@ -54,8 +55,14 @@ This document outlines the current development status of the DotMaster addon. It
 
 ## Recent Changes
 
-The most significant recent change has been the complete architectural rebuild in version 0.3.0, which includes:
+The most significant recent changes include:
 
+- ✅ **Fixed Find My Dots functionality**: Resolved critical "attempt to call field 'GetAuraDataByUnit'" error
+- ✅ **API Compatibility**: Updated aura detection to use AuraUtil.ForEachAura instead of C_UnitAuras.GetAuraDataByUnit
+- ✅ **Standardized API Usage**: Ensured consistent API usage across all modules for better stability
+- ✅ **Improved Error Handling**: Added better error handling and robustness for API calls
+
+Prior to that, the complete architectural rebuild in version 0.3.0 included:
 - Full integration with the Ace3 framework
 - Complete modular file organization
 - Enhanced debug system

@@ -1,7 +1,24 @@
--- DotMaster nameplate_detection.lua
--- Handles debuff detection on nameplates
+--[[
+  DotMaster - Nameplate Detection Module
+
+  File: np_detection.lua
+  Purpose: Functions for detecting and scanning nameplates
+
+  Functions:
+  - CheckForTrackedDebuffs(): Check for tracked debuffs on a unit
+
+  Dependencies:
+  - dm_core.lua
+  - sp_database.lua
+  - sp_utils.lua
+
+  Author: Jervaise
+  Last Updated: 2024-06-19
+]]
 
 local DM = DotMaster
+local NPDetection = {}       -- Local table for module functions
+DM.NPDetection = NPDetection -- Expose to addon namespace
 
 -- Check for tracked debuffs on a unit - supports multiple comma-separated IDs
 function DM:CheckForTrackedDebuffs(unitToken)
@@ -39,7 +56,7 @@ function DM:CheckForTrackedDebuffs(unitToken)
     -- Check if the debuff is present
     local debuffPresent = false
 
-    -- Use AuraUtil.ForEachAura instead of deprecated C_UnitAuras API
+    -- Use AuraUtil.ForEachAura instead of C_UnitAuras API
     AuraUtil.ForEachAura(unitToken, "HARMFUL", nil,
       function(name, icon, count, debuffType, duration, expirationTime, source, isStealable, nameplateShowPersonal,
                auraSpellId)
@@ -64,3 +81,31 @@ function DM:CheckForTrackedDebuffs(unitToken)
   DM:SpellDebug("No tracked debuffs found")
   return nil, nil
 end
+
+-- Update nameplate auras using event data
+function NPDetection:UpdateNameplateAuras(unitToken)
+  if not unitToken or not DM.enabled then return end
+
+  -- Check if this is a nameplate unit and if we're tracking it
+  if not unitToken:match("nameplate%d+") or not DM.activePlates[unitToken] then
+    return
+  end
+
+  -- Update the nameplate
+  DM:UpdateNameplate(unitToken)
+end
+
+-- Debug message function with module name
+function NPDetection:DebugMsg(message)
+  if DM.DebugMsg then
+    DM:DebugMsg("[NPDetection] " .. message)
+  end
+end
+
+-- Initialize the nameplate detection module
+function NPDetection:Initialize()
+  NPDetection:DebugMsg("Nameplate detection module initialized")
+end
+
+-- Return the module
+return NPDetection

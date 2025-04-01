@@ -28,7 +28,7 @@ DM.recordingDots = false
 DM.detectedDots = {}
 DM.defaults = {
   enabled = true,
-  version = "0.4.0",
+  version = "0.4.1",
   lastSortOrder = 1, -- Added for sorting functionality
   spellConfig = {
     -- Default spells disabled, users will add their own
