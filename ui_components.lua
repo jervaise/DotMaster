@@ -17,7 +17,7 @@
     DotMaster core
 
   Author: Jervaise
-  Last Updated: 2024-06-19
+  Last Updated: 2024-07-01
 ]]
 
 local DM = DotMaster
@@ -169,6 +169,16 @@ end
 
 -- Create a color picker button
 function UIComponents:CreateColorPicker(parent, width, height, initialColor, callback)
+  -- If we have the dedicated color picker module, use that
+  if DM.UIColorPicker and DM.UIColorPicker.CreateColorSwatch then
+    local initialR = initialColor and initialColor[1] or 1
+    local initialG = initialColor and initialColor[2] or 0
+    local initialB = initialColor and initialColor[3] or 0
+
+    return DM.UIColorPicker:CreateColorSwatch(parent, initialR, initialG, initialB, callback)
+  end
+
+  -- Fallback implementation if UIColorPicker module is not available
   local colorButton = CreateFrame("Button", nil, parent)
   colorButton:SetSize(width or 20, height or 20)
 
