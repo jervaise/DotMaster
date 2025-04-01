@@ -5,30 +5,32 @@
 ## Version: 0.4.0
 ## SavedVariables: DotMasterDB
 
-# Core files
-init.lua
-utils.lua
-settings.lua
+# Core systems
+dm_core.lua
+dm_debug.lua
+dm_utils.lua
+dm_settings.lua
 
 # Spell functionality
-spell_database.lua
-spell_utils.lua
+sp_database.lua
+sp_utils.lua
 
 # Nameplate functionality
-nameplate_core.lua
-nameplate_coloring.lua
-nameplate_detection.lua
+np_core.lua
+np_detection.lua
+np_coloring.lua
 
-# GUI Components - reordered for dependencies
-gui_colorpicker.lua
-gui_common.lua
-gui_general_tab.lua
-gui_spell_row.lua
-gui_spell_selection.lua
-gui_spells_tab.lua
+# UI Components
+ui_core.lua
+ui_colorpicker.lua
+ui_common.lua
+ui_general.lua
+ui_spells.lua
+ui_spell_selection.lua
+ui_spell_row.lua
 
-# Find My Dots functionality
-find_my_dots.lua
+# Features
+fmd_core.lua
 
-# Core initialization
-core.lua
+# Final loader
+dm_loader.lua

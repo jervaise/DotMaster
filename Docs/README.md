@@ -14,6 +14,7 @@ Welcome to the DotMaster documentation repository. This folder contains all the 
 - [Current Status](CURRENT_STATUS.md) - Current development status, progress, and known issues
 - [Changelog](CHANGELOG.md) - Comprehensive changelog of all versions
 - [Missing Libraries](MISSING_LIBRARIES.md) - Instructions for installing required libraries
+- [Code Structure](CODE_STRUCTURE.md) - Explanation of the modular code organization with prefix-based file structure
 
 ### Patch Notes
 Detailed patch notes for each released version:
@@ -28,9 +29,10 @@ If you're new to the DotMaster development project, we recommend reading the doc
 1. [**CRITICAL API NOTES**](CRITICAL_API_NOTES.md) - Read this FIRST - contains essential API requirements
 2. [Project Scope](PROJECT_SCOPE.md) to understand what the addon does
 3. [Current Status](CURRENT_STATUS.md) to see where we are in development
-4. [Development Process](DEVELOPMENT_PROCESS.md) to learn how we work
-5. [Changelog](CHANGELOG.md) to see the history of changes
-6. [Missing Libraries](MISSING_LIBRARIES.md) if you need to set up the development environment
+4. [Code Structure](CODE_STRUCTURE.md) to understand the modular organization
+5. [Development Process](DEVELOPMENT_PROCESS.md) to learn how we work
+6. [Changelog](CHANGELOG.md) to see the history of changes
+7. [Missing Libraries](MISSING_LIBRARIES.md) if you need to set up the development environment
 
 ## Contributing
 

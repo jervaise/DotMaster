@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.4.1] - 2024-06-19 (Development Build)
+
+### Changed
+- Complete code restructuring with prefix-based file organization:
+  - Core files (dm_*): Core functionality, debug, utils, settings
+  - Nameplate files (np_*): Nameplate detection and coloring
+  - Spell files (sp_*): Spell database and utilities
+  - UI files (ui_*): User interface components
+  - Find My Dots (fmd_*): Find My Dots feature
+- Improved module pattern with better encapsulation
+- Enhanced debugging with module-specific messages
+- More consistent function naming and organization
+- Added comprehensive CODE_STRUCTURE.md documentation
+
+### Fixed
+- Improved error handling throughout the codebase
+- Better module initialization sequence
+- More robust dependency management
+
 ## [0.4.0] - 2024-06-19 (Stable Release)
 
 ### Changed
