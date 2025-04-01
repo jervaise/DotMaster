@@ -6,7 +6,7 @@ This document outlines the current development status of the DotMaster addon. It
 
 - **Current Version**: 0.5.0
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.4.0)
+  - **main**: Contains the latest stable release (v0.5.0)
   - **develop**: Active development branch (v0.5.0)
     - This branch is always used for in-game testing
 
@@ -53,6 +53,7 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Version 0.5.0 Update**: Documentation update to maintain version consistency
 - ✅ **Version 0.5.0 Restoration**: Restored the stable v0.4.0 codebase while preserving critical tools and documentation
 - ✅ **Maintained dmcheck Tool**: Preserved validation tools to catch common errors before in-game testing
 - ✅ **Enhanced Documentation**: Maintained the comprehensive documentation of the addon
