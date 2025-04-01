@@ -2,33 +2,39 @@
 ## Title: |cFFCC00FFDotMaster|r
 ## Notes: Colors nameplates based on player debuffs
 ## Author: Jervaise
-## Version: 0.4.1
+## Version: 0.4.2
 ## SavedVariables: DotMasterDB
 
-# Core files
-init.lua
-utils.lua
-settings.lua
+# Libraries
+embeds.xml
+
+# Core systems
+dm_core.lua
+dm_debug.lua
+dm_utils.lua
+dm_settings.lua
 
 # Spell functionality
-spell_database.lua
-spell_utils.lua
+sp_database.lua
+sp_utils.lua
 
 # Nameplate functionality
-nameplate_core.lua
-nameplate_coloring.lua
-nameplate_detection.lua
+np_core.lua
+np_detection.lua
+np_coloring.lua
 
-# GUI Components - reordered for dependencies
+# UI Components
+ui_main.lua
+ui_tabs.lua
+ui_components.lua
 gui_colorpicker.lua
-gui_common.lua
-gui_general_tab.lua
-gui_spell_row.lua
-gui_spell_selection.lua
-gui_spells_tab.lua
+ui_general_tab.lua
+ui_spells_tab.lua
+ui_minimap.lua
 
-# Find My Dots functionality
-find_my_dots.lua
+# Features
+fmd_core.lua
+fmd_ui.lua
 
-# Core initialization
-core.lua
+# Final loader
+dm_loader.lua

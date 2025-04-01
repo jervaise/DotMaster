@@ -10,20 +10,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
-## [0.4.1] - 2024-07-01 (Beta Release)
+## [0.4.2] - 2024-07-15
+
+### Added
+- New `dmcheck` validation tool for pre-game testing
+- Automated verification of critical API usage
 
 ### Fixed
-- Resolved critical "attempt to call field 'GetAuraDataByUnit' (a nil value)" error in Find My Dots feature
-- Updated aura detection methods to use AuraUtil.ForEachAura instead of C_UnitAuras.GetAuraDataByUnit for compatibility
-- Fixed aura scanning in nameplate detection module
-- Ensured consistent API usage across all aura detection points in the addon
-- Improved code organization in restructured modules
+- ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
+- Enhanced development workflow with better error detection
+- Improved code validation process to prevent common errors
+
+## [0.4.1] - 2024-06-19
 
 ### Changed
-- Standardized aura detection methods across all modules
-- Added better error handling and robustness for API calls
+- Complete code restructuring with prefix-based file organization:
+  - Core files (dm_*): Core functionality, debug, utils, settings
+  - Nameplate files (np_*): Nameplate detection and coloring
+  - Spell files (sp_*): Spell database and utilities
+  - UI files (ui_*): User interface components
+  - Find My Dots (fmd_*): Find My Dots feature
+- Improved module pattern with better encapsulation
+- Enhanced debugging with module-specific messages
+- More consistent function naming and organization
+- Added comprehensive CODE_STRUCTURE.md documentation
 
-## [0.4.0] - 2024-06-19 (Stable Release)
+### Fixed
+- Improved error handling throughout the codebase
+- Better module initialization sequence
+- More robust dependency management
+
+## [0.4.0] - 2024-06-19
 
 ### Changed
 - Restored a previously working version of the addon 
@@ -35,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed nameplate detection and coloring functionality
 - Ensured stable "Find My Dots" feature operation
 
-## [0.3.0] - 2024-03-31 (Development Build)
+## [0.3.0] - 2024-03-31
 
 ### Added
 - Complete architectural rebuild with Ace3 framework
