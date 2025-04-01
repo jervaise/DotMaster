@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.4.2] - 2024-07-15 (Development Build)
+
+### Added
+- New `dmcheck` validation tool for pre-game testing
+- Automated verification of critical API usage
+
+### Fixed
+- ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
+- Enhanced development workflow with better error detection
+- Improved code validation process to prevent common errors
+
 ## [0.4.1] - 2024-06-19 (Development Build)
 
 ### Changed

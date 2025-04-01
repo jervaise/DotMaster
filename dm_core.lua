@@ -24,7 +24,7 @@ local DM = DotMaster
 DM.VIRULENT_PLAGUE_ID = 191587
 DM.DEFAULT_PURPLE_COLOR = { 0.6, 0.2, 1.0 }
 DM.MAX_CUSTOM_SPELLS = 20
-DM.VERSION = "0.4.1"
+DM.VERSION = "0.4.2"
 
 -- Setup basic variables
 DM.activePlates = {}
@@ -37,7 +37,7 @@ DM.recordingDots = false
 DM.detectedDots = {}
 DM.defaults = {
   enabled = true,
-  version = "0.4.1",
+  version = "0.4.2",
   lastSortOrder = 1, -- Added for sorting functionality
   spellConfig = {
     -- Default spells disabled, users will add their own
