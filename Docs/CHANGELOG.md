@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.5.1] - 2024-08-15 (Documentation Update)
+
+### Changed
+- Consolidated README files into a clearer structure
+- Enhanced main README.md with user-focused information
+- Added Docs/README.md as a guide to all documentation
+- Updated CURRENT_STATUS.md to reflect current state
+- Improved navigation between documentation files
+- Ensured all links between files work correctly
+
 ## [0.5.0] - 2024-08-01 (Stability Release)
 
 ### Changed

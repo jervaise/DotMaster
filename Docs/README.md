@@ -1,55 +1,58 @@
 # DotMaster Documentation
 
-Welcome to the DotMaster documentation repository. This folder contains all the documentation for the DotMaster addon project.
+This directory contains comprehensive documentation for the DotMaster addon. It serves as a central resource for developers and users alike.
 
-## ⚠️ Critical Development Notes
+## Documentation Guide
 
-- [**CRITICAL API NOTES**](CRITICAL_API_NOTES.md) - Essential API requirements that MUST be followed (critically important)
-- **Pre-Testing Verification** - Always check for potential errors and file structure inconsistencies before asking users to test in-game:
-  - Verify TOC file references match actual files
-  - Track file structure with every new version
-  - Document file renames and maintain structure documentation
-  - Verify initialization of renamed modules
+### Essential Documents
+- [**CRITICAL_API_NOTES.md**](CRITICAL_API_NOTES.md) - **READ FIRST**: Essential API requirements
+- [**CURRENT_STATUS.md**](CURRENT_STATUS.md) - Current development status and roadmap
+- [**CHANGELOG.md**](CHANGELOG.md) - Complete version history
 
-## Documentation Structure
+### For New Developers
+If you're new to DotMaster development, read these documents in this order:
+1. [CRITICAL_API_NOTES.md](CRITICAL_API_NOTES.md) - Essential API requirements
+2. [PROJECT_SCOPE.md](PROJECT_SCOPE.md) - Overview of what DotMaster does
+3. [CODE_STRUCTURE.md](CODE_STRUCTURE.md) - How the code is organized
+4. [CURRENT_FILES.md](CURRENT_FILES.md) - Complete file structure
+5. [DEVELOPMENT_PROCESS.md](DEVELOPMENT_PROCESS.md) - Development workflow
 
-### Core Documents
-- [Project Scope](PROJECT_SCOPE.md) - Overview of the project, core features, and technical requirements
-- [Development Process](DEVELOPMENT_PROCESS.md) - Guidelines for development, versioning, and Git workflow
-- [Current Status](CURRENT_STATUS.md) - Current development status, progress, and known issues
-- [Changelog](CHANGELOG.md) - Comprehensive changelog of all versions
-- [Missing Libraries](MISSING_LIBRARIES.md) - Instructions for installing required libraries
-- [Code Structure](CODE_STRUCTURE.md) - Explanation of the modular code organization with prefix-based file structure
-- [Current Files](CURRENT_FILES.md) - Current file structure tracked with each version update
+### Technical Documentation
+- [CODE_STRUCTURE.md](CODE_STRUCTURE.md) - Explanation of the modular code organization
+- [CURRENT_FILES.md](CURRENT_FILES.md) - Current file structure tracked with each version
+- [MISSING_LIBRARIES.md](MISSING_LIBRARIES.md) - Library dependencies and installation
+- [GUI_TROUBLESHOOTING.md](GUI_TROUBLESHOOTING.md) - Solutions for UI issues
 
-### Patch Notes
-Detailed patch notes for each released version:
-- [v0.4.0 - Stable Restoration Release](PatchNotes/v0.4.0.md)
-- [v0.3.0 - Complete Architectural Rebuild](PatchNotes/v0.3.0.md)
-- [v0.1.1 - Initial Hotfix](PatchNotes/v0.1.1.md)
+### Development Resources
+- [DEVELOPMENT_PROCESS.md](DEVELOPMENT_PROCESS.md) - Guidelines for development
+- [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - Future development plans
+- [RESTRUCTURING_SUMMARY.md](RESTRUCTURING_SUMMARY.md) - Notes on code restructuring
+- [rename_plan.md](rename_plan.md) - File renaming documentation
 
-## For Developers
+### Version History
+- [CHANGELOG.md](CHANGELOG.md) - Complete version history in one file
+- **PatchNotes/** - Detailed notes for each version:
+  - [v0.5.0 - Stability Release](PatchNotes/v0.5.0.md)
+  - [v0.4.1 - Development Build](PatchNotes/v0.4.1.md)
+  - [v0.4.0 - Stable Release](PatchNotes/v0.4.0.md)
+  - [v0.3.0 - Architecture Rebuild](PatchNotes/v0.3.0.md)
+  - [v0.1.1 - Initial Hotfix](PatchNotes/v0.1.1.md)
 
-If you're new to the DotMaster development project, we recommend reading the documents in this order:
+## Document Structure
 
-1. [**CRITICAL API NOTES**](CRITICAL_API_NOTES.md) - Read this FIRST - contains essential API requirements
-2. [Project Scope](PROJECT_SCOPE.md) to understand what the addon does
-3. [Current Status](CURRENT_STATUS.md) to see where we are in development
-4. [Code Structure](CODE_STRUCTURE.md) to understand the modular organization
-5. [Current Files](CURRENT_FILES.md) to understand the actual file structure
-6. [Development Process](DEVELOPMENT_PROCESS.md) to learn how we work
-7. [Changelog](CHANGELOG.md) to see the history of changes
-8. [Missing Libraries](MISSING_LIBRARIES.md) if you need to set up the development environment
+The documentation follows a consistent structure:
+- Core documents in the root Docs directory
+- Version-specific patch notes in the PatchNotes subdirectory
+- Technical guides have clear section headers and examples
 
-## Contributing
+## How to Update Documentation
 
-Please review the [Development Process](DEVELOPMENT_PROCESS.md) document before making any contributions to the project. It contains important information about our Git workflow, versioning policy, and coding standards.
+When updating documentation:
+1. Always update CURRENT_STATUS.md with the latest status
+2. Ensure CURRENT_FILES.md is updated when files are added/renamed/removed
+3. Add detailed patch notes for each release version
+4. Document all API changes, especially those affecting users
 
-## Branch Information
+## Contributing to Documentation
 
-- **main**: Contains the latest stable release
-- **develop**: Active development branch, always used for in-game testing
-
-## Getting Help
-
-If you have any questions about the project documentation or need clarification, please reach out to the project maintainer or open an issue on GitHub. 
+Improvements to documentation are always welcome. Please follow the existing format and style when adding or updating documents. 

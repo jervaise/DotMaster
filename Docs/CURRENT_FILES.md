@@ -1,8 +1,8 @@
-# Current File Structure - DotMaster v0.5.0
+# Current File Structure - DotMaster v0.5.1
 
 This document tracks the current file structure of the DotMaster addon. It is updated with each version to serve as a reference for developers.
 
-## Active Files (v0.5.0)
+## Active Files (v0.5.1)
 
 ### Core Files
 - **init.lua** - Main initialization
@@ -35,6 +35,13 @@ This document tracks the current file structure of the DotMaster addon. It is up
 - **embeds.xml** - Library embedding file
 - **DotMaster.toc** - Table of Contents file for WoW
 - **dmcheck.bat** - Validation utility launcher
+- **README.md** - Main addon documentation
+
+## Changed in v0.5.1
+- Restructured documentation to be more user-friendly
+- Added a new Docs/README.md file to guide developers through documentation
+- Enhanced and consolidated information in the main README.md
+- Updated version references in all documentation files
 
 ## Changed in v0.5.0
 The file structure has been reverted to the v0.4.0 structure for stability, while preserving the Scripts directory and all documentation from later versions.
@@ -53,7 +60,6 @@ The file structure has been reverted to the v0.4.0 structure for stability, whil
 
 #### Documentation
 All documentation files in the Docs directory have been preserved, including:
-- README.md
 - CHANGELOG.md
 - CODE_STRUCTURE.md
 - CURRENT_FILES.md
@@ -63,6 +69,7 @@ All documentation files in the Docs directory have been preserved, including:
 - GUI_TROUBLESHOOTING.md
 - MISSING_LIBRARIES.md
 - PROJECT_SCOPE.md
+- README.md (new in v0.5.1)
 - All patch notes
 
 ## Removed Files from v0.4.1/v0.4.2
@@ -103,7 +110,6 @@ DotMaster/
 │   ├── GUI_TROUBLESHOOTING.md
 │   ├── MISSING_LIBRARIES.md
 │   ├── PROJECT_SCOPE.md
-│   ├── README.md
 │   ├── RESTRUCTURING_SUMMARY.md
 │   ├── rename_plan.md
 │   └── PatchNotes/

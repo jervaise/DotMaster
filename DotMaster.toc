@@ -2,7 +2,7 @@
 ## Title: |cFFCC00FFDotMaster|r
 ## Notes: Colors nameplates based on player debuffs
 ## Author: Jervaise
-## Version: 0.5.0
+## Version: 0.5.1
 ## SavedVariables: DotMasterDB
 
 # Libraries
