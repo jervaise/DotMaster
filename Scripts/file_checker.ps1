@@ -36,7 +36,8 @@ $tocReferences = [regex]::Matches($tocContent, "(?m)^(?!##|#\s)[^#\s][^\n]+$") |
 
 # Get actual files
 Write-Host "Scanning addon directory..." -ForegroundColor Yellow
-$allFiles = Get-ChildItem -Recurse -File | Where-Object {
+$allFiles = @()
+Get-ChildItem -Recurse -File | ForEach-Object {
   $include = $true
   foreach ($folder in $excludeFolders) {
     if ($_.FullName -like "*\$folder\*") {
@@ -52,12 +53,13 @@ $allFiles = Get-ChildItem -Recurse -File | Where-Object {
       }
     }
   }
-  return $include
-} | ForEach-Object { 
-  $relativePath = $_.FullName.Substring((Get-Location).Path.Length + 1).Replace("\", "/")
-  # Filter to only include Lua files and embeds.xml
-  if ($relativePath -match "\.lua$" -or $relativePath -eq "embeds.xml") {
-    return $relativePath
+  
+  if ($include) {
+    $relativePath = $_.FullName.Substring((Get-Location).Path.Length + 1).Replace("\", "/")
+    # Filter to only include Lua files and embeds.xml
+    if ($relativePath -match "\.lua$" -or $relativePath -eq "embeds.xml") {
+      $allFiles += $relativePath
+    }
   }
 }
 
@@ -81,25 +83,25 @@ foreach ($file in $allFiles) {
 # Report results
 Write-Host "`n=== Results ===" -ForegroundColor Green
 
+$luaFilesCount = ($allFiles | Where-Object { $_ -match '\.lua$' }).Count
 Write-Host "Files referenced in TOC: $($tocReferences.Count)" -ForegroundColor Cyan
-$luaCount = @($allFiles | Where-Object { $_ -match '\.lua$' }).Count
-Write-Host "Actual Lua files in addon: $luaCount" -ForegroundColor Cyan
+Write-Host "Actual Lua files in addon: $luaFilesCount" -ForegroundColor Cyan
 
 if ($missingFiles.Count -eq 0) {
-  Write-Host "`n✓ All files referenced in TOC exist!" -ForegroundColor Green
+  Write-Host "`nAll files referenced in TOC exist!" -ForegroundColor Green
 }
 else {
-  Write-Host "`n✗ Missing files referenced in TOC:" -ForegroundColor Red
+  Write-Host "`nMissing files referenced in TOC:" -ForegroundColor Red
   foreach ($file in $missingFiles) {
     Write-Host "   - $file" -ForegroundColor Red
   }
 }
 
 if ($unreferencedFiles.Count -eq 0) {
-  Write-Host "`n✓ All Lua files are referenced in TOC!" -ForegroundColor Green
+  Write-Host "`nAll Lua files are referenced in TOC!" -ForegroundColor Green
 }
 else {
-  Write-Host "`n⚠ Lua files not referenced in TOC:" -ForegroundColor Yellow
+  Write-Host "`nLua files not referenced in TOC:" -ForegroundColor Yellow
   foreach ($file in $unreferencedFiles) {
     Write-Host "   - $file" -ForegroundColor Yellow
   }
