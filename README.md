@@ -2,7 +2,7 @@
 
 DotMaster is a World of Warcraft addon that colors nameplates based on player debuffs, making it easier to track your DoTs (Damage over Time spells) on multiple targets.
 
-**Current Version: 0.5.1**
+**Current Version: 0.5.2**
 
 ## Features
 
@@ -11,6 +11,7 @@ DotMaster is a World of Warcraft addon that colors nameplates based on player de
 - **Spell Database**: Pre-defined database of DoT spells for all classes
 - **Configuration UI**: Customize colors and tracking settings
 - **Profile Support**: Save different configurations for different characters
+- **Debug Console**: Comprehensive debug system with filtering options
 
 ## Installation
 
@@ -22,6 +23,7 @@ DotMaster is a World of Warcraft addon that colors nameplates based on player de
 ## Usage
 
 - Type `/dm` or `/dotmaster` to open the configuration panel
+- Type `/dmdebug` to open the debug console or access debug options
 - Click the minimap button to quickly toggle the "Find My Dots" window
 - Configure which spells to track in the Spells tab
 - Customize colors and visual options in the General tab

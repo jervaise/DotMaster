@@ -53,6 +53,24 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings() -- Save settings immediately
   end)
 
+  -- Debug Console Button
+  local debugConsoleButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  debugConsoleButton:SetSize(120, 22)
+  debugConsoleButton:SetPoint("LEFT", debugCheckBoxText, "RIGHT", 20, 0)
+  debugConsoleButton:SetText("Debug Console")
+  debugConsoleButton:SetScript("OnClick", function()
+    -- Toggle debug window visibility
+    DM.Debug:ToggleWindow()
+  end)
+
+  -- Add help text for debug command
+  local debugHelpText = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+  debugHelpText:SetPoint("TOPLEFT", debugCheckBox, "BOTTOMLEFT", 0, -5)
+  debugHelpText:SetWidth(350)
+  debugHelpText:SetJustifyH("LEFT")
+  debugHelpText:SetText("Type |cFFFFD100/dmdebug|r for quick access to debug options")
+  debugHelpText:SetTextColor(0.7, 0.7, 0.7)
+
   -- Reset All Settings button
   local resetButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
   resetButton:SetSize(150, 30)

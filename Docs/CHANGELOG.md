@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.5.2] - 2024-08-22 (Debug System Update)
+
+### Added
+- Comprehensive debug console with category-based filtering
+- Dedicated `/dmdebug` command for all debugging options
+- Color-coded debug messages by category (general, spell, nameplate, gui, performance)
+- Debug message export and copy functionality
+- Console output toggle for debug messages
+- Debug category filtering through UI and slash commands
+
+### Changed
+- Improved error handling in all debug functions
+- Better WoW API compatibility with fallbacks for different client versions
+- Enhanced debug message formatting with timestamps and categories
+- More user-friendly debug options in the General tab
+
+### Fixed
+- Improved stability with defensive coding patterns for error handling
+- Added backward compatibility for existing debug functions
+- Better scrolling behavior in the debug console
+- Consolidated all debug-related settings in one place
+
 ## [0.5.1] - 2024-08-15 (Documentation Update)
 
 ### Changed

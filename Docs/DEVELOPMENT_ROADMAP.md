@@ -89,7 +89,7 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
    - Update CHANGELOG.md with each release
    - Create/update patch notes for each version
    - Maintain current development status in CURRENT_STATUS.md
-   - Document all API changes in API_NOTES.md
+   - Document all API changes in CRITICAL_API_NOTES.md
 
 ## Immediate Next Steps
 

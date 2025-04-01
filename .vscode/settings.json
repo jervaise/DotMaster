@@ -44,7 +44,8 @@
     "Minimap",
     "ScrollingEdit_OnTextChanged",
     "ScrollingEdit_OnCursorChanged",
-    "ScrollingEdit_OnUpdate"
+    "ScrollingEdit_OnUpdate",
+    "GameTooltip_Hide"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {

@@ -4,10 +4,10 @@ This document outlines the current development status of the DotMaster addon. It
 
 ## Current Version Information
 
-- **Current Version**: 0.5.1
+- **Current Version**: 0.5.2
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.5.1)
-  - **develop**: Active development branch (v0.5.1)
+  - **main**: Contains the latest stable release (v0.5.2)
+  - **develop**: Active development branch (v0.5.2)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -20,6 +20,7 @@ This document outlines the current development status of the DotMaster addon. It
 | Spell Database | ✅ STABLE | Pre-defined database of DoT spells for all classes |
 | Configuration UI | ✅ STABLE | Options panel with profile support |
 | Minimap Button | ✅ STABLE | Integration with LibDBIcon |
+| Debug System | ✅ STABLE | Comprehensive logging with category-based filtering |
 | API Compatibility | ⚠️ NEEDS REVIEW | Critical API changes still need implementation |
 | Pre-Game Validation | ✅ MAINTAINED | Preserved dmcheck tool for validation |
 | Documentation | ✅ UPDATED | Consolidated documentation structure |
@@ -30,6 +31,7 @@ This document outlines the current development status of the DotMaster addon. It
 - Testing the restoration in various combat scenarios
 - Planning for careful re-implementation of critical API updates
 - Maintaining documentation accuracy
+- Enhancing debug capabilities for improved troubleshooting
 
 ## Known Issues
 
@@ -50,6 +52,8 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Debug System Enhancement**: Added comprehensive debug console with category-based filtering
+- ✅ **Simplified Debugging**: Implemented dedicated `/dmdebug` command for all debugging options
 - ✅ **Documentation Restructuring**: Consolidated README files and improved documentation structure
 - ✅ **Version 0.5.0 Update**: Documentation update to maintain version consistency
 - ✅ **Version 0.5.0 Restoration**: Restored the stable v0.4.0 codebase while preserving critical tools and documentation

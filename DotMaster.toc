@@ -2,7 +2,7 @@
 ## Title: |cFFCC00FFDotMaster|r
 ## Notes: Colors nameplates based on player debuffs
 ## Author: Jervaise
-## Version: 0.5.1
+## Version: 0.5.2
 ## SavedVariables: DotMasterDB
 
 # Libraries
@@ -11,6 +11,7 @@ embeds.xml
 # Core files
 init.lua
 utils.lua
+gui_debug.lua
 settings.lua
 
 # Spell functionality
