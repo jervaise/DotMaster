@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
 
+## [0.5.3] - 2024-08-30 (GUI Fix)
+
+### Fixed
+- Removed duplicate GUI creation code to prevent conflicts
+- Ensured the proper resizable frame implementation is used
+- Improved GUI initialization reliability
+- Enhanced window resizing functionality
+
 ## [0.5.2] - 2024-08-22 (Debug System Update)
 
 ### Added
@@ -37,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Consolidated README files into a clearer structure
 - Enhanced main README.md with user-focused information
-- Added Docs/README.md as a guide to all documentation
+- Added Docs/DOCUMENTATION_GUIDE.md as a guide to all documentation
 - Updated CURRENT_STATUS.md to reflect current state
 - Improved navigation between documentation files
 - Ensured all links between files work correctly
