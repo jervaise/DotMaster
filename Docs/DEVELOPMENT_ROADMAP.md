@@ -69,21 +69,21 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
 
 ## Development Process
 
-1. **Feature Implementation**
-   - Each feature should be developed in its own feature branch
-   - Branches should be named `feature/[feature-name]`
-   - Pull requests should include comprehensive testing
+1. **Development Workflow**
+   - `main` branch contains only stable releases
+   - `develop` branch for active development
+   - All development work is done directly in the develop branch
+   - Each stable version is tagged and merged to main
 
 2. **Testing Requirements**
-   - All new features must be tested in-game before merging
+   - All new code must be tested in-game before merging to main
    - Changes to core functionality require testing across multiple classes
    - UI changes should be verified on different UI scales
 
 3. **Version Control**
-   - `main` branch contains only stable releases
-   - `develop` branch for active development
-   - Feature branches for individual features
    - Tagged releases follow semantic versioning
+   - Main branch always contains the latest stable version
+   - Develop branch is the active working branch
 
 4. **Documentation**
    - Update CHANGELOG.md with each release
@@ -93,7 +93,7 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
 
 ## Immediate Next Steps
 
-1. Create a `feature/spell-info-api-update` branch to update all `GetSpellInfo()` calls
+1. Update all instances of `GetSpellInfo()` to use `C_Spell.GetSpellInfo()`
 2. Begin profiling code performance in raid scenarios
 3. Set up comprehensive testing for all class specializations
 4. Document the current architecture for future contributors 
