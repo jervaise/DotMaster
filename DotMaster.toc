@@ -30,12 +30,11 @@ ui_components.lua
 gui_colorpicker.lua
 ui_general_tab.lua
 ui_spells_tab.lua
-gui_spell_selection.lua
-gui_spell_row.lua
 ui_minimap.lua
 
 # Features
 fmd_core.lua
+fmd_ui.lua
 
 # Final loader
 dm_loader.lua
