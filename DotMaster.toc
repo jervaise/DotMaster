@@ -5,6 +5,9 @@
 ## Version: 0.4.1
 ## SavedVariables: DotMasterDB
 
+# Libraries
+embeds.xml
+
 # Core systems
 dm_core.lua
 dm_debug.lua
@@ -21,13 +24,15 @@ np_detection.lua
 np_coloring.lua
 
 # UI Components
-ui_core.lua
-ui_colorpicker.lua
-ui_common.lua
-ui_general.lua
-ui_spells.lua
-ui_spell_selection.lua
-ui_spell_row.lua
+ui_main.lua
+ui_tabs.lua
+ui_components.lua
+gui_colorpicker.lua
+ui_general_tab.lua
+ui_spells_tab.lua
+gui_spell_selection.lua
+gui_spell_row.lua
+ui_minimap.lua
 
 # Features
 fmd_core.lua

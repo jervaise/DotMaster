@@ -26,6 +26,10 @@ function DM:SaveSettings()
   DotMasterDB.spellConfig = DM.spellConfig
   DotMasterDB.debug = DM.DEBUG_MODE
 
+  -- Save minimap settings
+  DotMasterDB.minimapEnabled = DM.minimapEnabled
+  DotMasterDB.minimapDB = DM.minimapDB
+
   DM:DebugMsg("Settings saved")
 end
 
@@ -34,6 +38,10 @@ function DM:LoadSettings()
   DotMasterDB = DotMasterDB or {}
   DM.enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or DM.defaults.enabled
   DM.DEBUG_MODE = (DotMasterDB.debug ~= nil) and DotMasterDB.debug or true
+
+  -- Load minimap settings
+  DM.minimapEnabled = (DotMasterDB.minimapEnabled ~= nil) and DotMasterDB.minimapEnabled or true
+  DM.minimapDB = DotMasterDB.minimapDB or {}
 
   -- Load spell configuration or use defaults
   if DotMasterDB.spellConfig and next(DotMasterDB.spellConfig) then
@@ -54,6 +62,10 @@ function DM:ResetSettings()
   DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig)
   DM.enabled = DM.defaults.enabled
   DM.DEBUG_MODE = true
+
+  -- Reset minimap settings
+  DM.minimapEnabled = true
+  DM.minimapDB = {}
 
   DM:ResetAllNameplates()
   DM:UpdateAllNameplates()

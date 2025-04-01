@@ -38,6 +38,9 @@
     "UIDropDownMenu_GetSelectedValue",
     "UIFrameFade",
     "ReloadUI",
-    "UIDropDownMenu_JustifyText"
+    "UIDropDownMenu_JustifyText",
+    "UIDropDownMenu_EnableDropDown",
+    "UIDropDownMenu_DisableDropDown",
+    "Minimap"
   ]
 }

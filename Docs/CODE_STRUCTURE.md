@@ -9,7 +9,8 @@ Files are named using a prefix that indicates their functional area:
 - `dm_` - Core addon functionality
 - `np_` - Nameplate-related functionality
 - `sp_` - Spell-related functionality
-- `ui_` - User interface components
+- `ui_` - User interface framework components
+- `gui_` - User interface specialized components
 - `fmd_` - Find My Dots feature
 
 ## Module Organization
@@ -33,15 +34,20 @@ Files are named using a prefix that indicates their functional area:
 - **sp_database.lua** - Spell database and management
 - **sp_utils.lua** - Spell-specific utility functions
 
-### User Interface (`ui_` prefix)
+### User Interface Framework (`ui_` prefix)
 
-- **ui_core.lua** - Main UI framework
-- **ui_colorpicker.lua** - Color picker component
-- **ui_common.lua** - Common UI elements and functions
-- **ui_general.lua** - General settings panel
-- **ui_spells.lua** - Spells configuration panel
-- **ui_spell_selection.lua** - Spell selection dialog
-- **ui_spell_row.lua** - Spell row UI component
+- **ui_main.lua** - Main UI framework and initialization
+- **ui_components.lua** - Common UI elements and functions
+- **ui_tabs.lua** - Tab system for the configuration UI
+- **ui_general_tab.lua** - General settings panel
+- **ui_spells_tab.lua** - Spells configuration panel
+- **ui_minimap.lua** - Minimap button and functionality
+
+### User Interface Components (`gui_` prefix)
+
+- **gui_colorpicker.lua** - Color picker component
+- **gui_spell_selection.lua** - Spell selection dialog
+- **gui_spell_row.lua** - Spell row UI component
 
 ### Find My Dots Feature (`fmd_` prefix)
 
@@ -109,7 +115,7 @@ Files are loaded in the order specified in the DotMaster.toc file, with dependen
 1. Core systems first
 2. Spell functionality 
 3. Nameplate functionality
-4. UI Components
+4. UI Components (both ui_ and gui_ prefixed files)
 5. Features
 6. Final loader (dm_loader.lua)
 
@@ -133,4 +139,12 @@ When developing or fixing issues:
 3. Each file contains clear documentation on its purpose and dependencies
 4. Module initialization is handled in a consistent way
 
-This structure makes it easy to understand, maintain, and extend the addon while keeping the code organized and focused. 
+This structure makes it easy to understand, maintain, and extend the addon while keeping the code organized and focused.
+
+## Prefix Note
+
+The dual prefix system for UI components (ui_ and gui_) is intentional:
+- `ui_` files handle core UI framework and tab panels
+- `gui_` files handle specialized reusable UI components
+
+All new UI components should follow this convention based on their purpose. 

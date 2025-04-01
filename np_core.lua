@@ -142,6 +142,24 @@ function DM:ResetNameplate(unitToken)
   self.coloredPlates[unitToken] = nil
 end
 
+-- Reset all nameplates to their original appearance
+function DM:ResetAllNameplates()
+  if not self.coloredPlates then return end
+
+  for unitToken, _ in pairs(self.coloredPlates) do
+    self:ResetNameplate(unitToken)
+  end
+end
+
+-- Update all active nameplates
+function DM:UpdateAllNameplates()
+  if not self.activePlates then return end
+
+  for unitToken, _ in pairs(self.activePlates) do
+    self:UpdateNameplate(unitToken)
+  end
+end
+
 -- Handle aura changes on a unit
 function DM:UnitAuraChanged(unitToken)
   if not unitToken or not self.enabled then return end
@@ -158,6 +176,16 @@ function NP:DebugMsg(message)
   if DM.DebugMsg then
     DM:DebugMsg("[Nameplate] " .. message)
   end
+end
+
+-- Reset all nameplates (module method)
+function NP:ResetAll()
+  DM:ResetAllNameplates()
+end
+
+-- Update all nameplates (module method)
+function NP:UpdateAll()
+  DM:UpdateAllNameplates()
 end
 
 -- Initialize the nameplate module

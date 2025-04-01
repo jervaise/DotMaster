@@ -1,0 +1,9 @@
+-- This is a placeholder. The file should be replaced with an actual TGA image file.
+-- Since we can't create a binary TGA file directly here, you'll need to create a small
+-- colored square image and convert it to TGA format, then place it in this location.
+
+-- Example dimensions: 32x32 pixels
+-- Color: Purple to match the addon's theme (#CC00FF)
+
+-- If you don't replace this file, the minimap button will use a default texture
+-- To create an icon, you can use an image editor like GIMP or Photoshop and save as TGA 

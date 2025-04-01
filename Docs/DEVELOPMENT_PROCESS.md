@@ -10,6 +10,22 @@
   - GitHub Desktop should be configured to show the `develop` branch as the active branch
   - Any commits and changes will be continuously tested in-game from this directory
 
+### Pre-Testing Verification
+
+- **ALWAYS verify the following before asking users to test in-game:**
+  - Check TOC file references match actual files in the directory
+  - Verify all renamed files have been properly updated and old files removed
+  - Check initialization code in core files to ensure all modules are properly initialized
+  - Run a comprehensive error check for references to old/renamed files
+  - Document all file structure changes in CURRENT_FILES.md
+  - Update CODE_STRUCTURE.md when file organization changes
+
+- **File Structure Management:**
+  - After each version update, document the current file structure in CURRENT_FILES.md
+  - When planning file renames, create a detailed rename plan document
+  - Thoroughly check all file references after completing renames
+  - Test module initialization for all renamed components
+
 ### Versioning Policy
 
 - **ONLY create a new version when the addon is fully working without any known problems**
@@ -146,63 +162,3 @@ If a problem occurs, we can revert to a previous stable version:
 
 1. **View available tags**:
    ```
-   git tag
-   ```
-
-2. **Checkout the desired version**:
-   ```
-   git checkout vx.y.z
-   ```
-
-3. **Create a new branch if needed**:
-   ```
-   git checkout -b recovery-branch
-   ```
-
-4. **Important**: After examining, always return to develop for continued work
-
-## Code Style and Standards
-
-- Use camelCase for variable and function names
-- Keep functions small and focused on a single task
-- Comment complex logic and document public API functions
-- Follow Lua best practices for WoW addons
-
-## Documentation Guidelines
-
-- Maintain accurate and up-to-date documentation in the Docs folder
-- Update CHANGELOG.md for all significant changes
-- Create clear release notes for each version
-- Document any design decisions or architectural changes
-- Maintain separate PATCH_NOTES files for significant releases
-
-## Testing Guidelines
-
-- Test all changes in-game before submitting pull requests
-- Verify compatibility with the current WoW patch
-- Test across different character classes when relevant
-- Test in different scenarios (solo, group, raid, PvP)
-
-## Instructions for AI Assistants
-
-AI assistants working on this project should follow these guidelines:
-
-1. **Version Management**:
-   - Do NOT create new release versions unless explicitly instructed
-   - Only create beta versions when asked to save progress
-   - Always ensure version consistency across all relevant files
-
-2. **Code Commits**:
-   - Commit and push changes to GitHub as needed
-   - Use clear, descriptive commit messages
-   - Group related changes into single commits when appropriate
-
-3. **Documentation**:
-   - Keep documentation files updated with all significant changes
-   - Document any design decisions or architectural changes
-   - Maintain clear explanations of complex systems
-
-4. **Branch Management**:
-   - Always ensure the local repository is on the `develop` branch
-   - After any branch switching operations, return to `develop` for continued development
-   - Remember that the local directory is directly used for in-game testing 

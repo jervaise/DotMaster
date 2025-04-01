@@ -31,6 +31,7 @@ local positionDropdown = nil
 local paddingSlider = nil
 local nameplateTestButton = nil
 local resetButton = nil
+local minimapCheckbox = nil
 
 -- Create and populate the general tab
 function UIGeneralTab:CreateGeneralTab(parent)
@@ -64,9 +65,26 @@ function UIGeneralTab:CreateGeneralTab(parent)
     UIGeneralTab:UpdateEnableState()
   end)
 
+  -- Minimap button checkbox
+  minimapCheckbox = Components:CreateCheckbox(parent, "Show Minimap Button", DM.minimapEnabled)
+  minimapCheckbox:SetPoint("TOPLEFT", enableCheckbox, "BOTTOMLEFT", 0, -10)
+  Components:SetTooltip(minimapCheckbox, "Show Minimap Button",
+    "Show a button on the minimap to quickly access DotMaster")
+
+  minimapCheckbox:SetScript("OnClick", function(self)
+    local checked = self:GetChecked()
+    DM.minimapEnabled = checked
+
+    if DM.MinimapButton and DM.MinimapButton.ToggleMinimapButton then
+      DM.MinimapButton:ToggleMinimapButton(checked)
+    end
+
+    DM:SaveSettings()
+  end)
+
   -- Dot size slider
   local sizeLabel = Components:CreateLabel(parent, "Dot Size:")
-  sizeLabel:SetPoint("TOPLEFT", enableCheckbox, "BOTTOMLEFT", 0, -30)
+  sizeLabel:SetPoint("TOPLEFT", minimapCheckbox, "BOTTOMLEFT", 0, -20)
 
   sizeSlider = Components:CreateSlider(parent, 6, 24, 180, 1, DM.dotSize)
   sizeSlider:SetPoint("TOPLEFT", sizeLabel, "BOTTOMLEFT", 0, -5)
@@ -190,6 +208,7 @@ function UIGeneralTab:CreateGeneralTab(parent)
 
         -- Update UI elements to reflect new values
         enableCheckbox:SetChecked(DM.enabled)
+        minimapCheckbox:SetChecked(DM.minimapEnabled)
         sizeSlider:SetValue(DM.dotSize)
         alphaSlider:SetValue(DM.dotAlpha)
         UIDropDownMenu_SetText(positionDropdown,
