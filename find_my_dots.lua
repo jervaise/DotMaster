@@ -87,54 +87,58 @@ function DM:RecordDots(unitToken)
   if not self.recordingDots then return end
   if not unitToken or not unitToken:match("^nameplate") then return end
 
-  AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, source, _, _, id)
-    -- Only record player's own debuffs and if not already detected
-    if source == "player" and not self.detectedDots[id] then
-      -- Record detailed info
-      self.detectedDots[id] = {
-        name = name,
-        id = id,
-        timestamp = GetTime()
-      }
-
-      -- Update spell database with class and spec info
-      local className, specName = self:GetPlayerClassAndSpec()
-
-      -- Save to spell database
-      self:AddSpellToDatabase(id, name, className, specName)
-
-      -- Also add to spell config automatically if not exists
-      if not self:SpellExists(id) then
-        self.spellConfig[tostring(id)] = {
-          enabled = true,
-          color = { 1, 0, 0 }, -- Default red color
+  -- Use AuraUtil.ForEachAura instead of C_UnitAuras API which might not be available
+  AuraUtil.ForEachAura(unitToken, "HARMFUL", nil,
+    function(name, icon, count, debuffType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId)
+      -- Only record player's own debuffs and if not already detected
+      if source == "player" and not self.detectedDots[spellId] then
+        -- Record detailed info
+        self.detectedDots[spellId] = {
           name = name,
-          priority = self:GetNextPriority(),
-          saved = true
+          id = spellId,
+          timestamp = GetTime()
         }
 
-        -- Refresh GUI if open
-        if self.GUI and self.GUI.RefreshSpellList then
-          self.GUI:RefreshSpellList()
+        -- Update spell database with class and spec info
+        local className, specName = self:GetPlayerClassAndSpec()
+
+        -- Save to spell database
+        self:AddSpellToDatabase(spellId, name, className, specName)
+
+        -- Also add to spell config automatically if not exists
+        if not self:SpellExists(spellId) then
+          self.spellConfig[tostring(spellId)] = {
+            enabled = true,
+            color = { 1, 0, 0 }, -- Default red color
+            name = name,
+            priority = self:GetNextPriority(),
+            saved = true
+          }
+
+          -- Refresh GUI if open
+          if self.GUI and self.GUI.RefreshSpellList then
+            self.GUI:RefreshSpellList()
+          end
+
+          -- Save settings immediately
+          self:SaveSettings()
         end
 
-        -- Save settings immediately
-        self:SaveSettings()
+        -- Update dot counter
+        self.totalDotsFound = (self.totalDotsFound or 0) + 1
+        if self.dotsFoundText then
+          self.dotsFoundText:SetText(self.totalDotsFound .. " DOT BULUNDU")
+        end
+
+        -- Inform user
+        self:PrintMessage(string.format("Dot detected: %s (ID: %d)", name, spellId))
+
+        -- Show visual feedback
+        self:ShowDetectedDotNotification(name, spellId)
       end
 
-      -- Update dot counter
-      self.totalDotsFound = (self.totalDotsFound or 0) + 1
-      if self.dotsFoundText then
-        self.dotsFoundText:SetText(self.totalDotsFound .. " DOT BULUNDU")
-      end
-
-      -- Inform user
-      self:PrintMessage(string.format("Dot detected: %s (ID: %d)", name, id))
-
-      -- Show visual feedback
-      self:ShowDetectedDotNotification(name, id)
-    end
-  end)
+      return false -- Continue iterating
+    end)
 end
 
 -- Get player class and specialization
