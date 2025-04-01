@@ -11,12 +11,15 @@
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
+# Fix for encoding issues in console output
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "`n=== DotMaster File Checker ===" -ForegroundColor Cyan
 
 # Define paths
 $tocFile = "DotMaster.toc"
 $tocPath = Join-Path (Get-Location) $tocFile
-$excludeFolders = @("Scripts", "Docs", ".vscode", ".git")
+$excludeFolders = @("Scripts", "Docs", ".vscode", ".git", "Libs")
 $excludeFiles = @("embeds.xml", "README.md", ".gitignore")
 
 # Check if TOC file exists
@@ -79,23 +82,24 @@ foreach ($file in $allFiles) {
 Write-Host "`n=== Results ===" -ForegroundColor Green
 
 Write-Host "Files referenced in TOC: $($tocReferences.Count)" -ForegroundColor Cyan
-Write-Host "Actual Lua files in addon: $(($allFiles | Where-Object { $_ -match '\.lua$' }).Count)" -ForegroundColor Cyan
+$luaCount = @($allFiles | Where-Object { $_ -match '\.lua$' }).Count
+Write-Host "Actual Lua files in addon: $luaCount" -ForegroundColor Cyan
 
 if ($missingFiles.Count -eq 0) {
-  Write-Host "`n✅ All files referenced in TOC exist!" -ForegroundColor Green
+  Write-Host "`n✓ All files referenced in TOC exist!" -ForegroundColor Green
 }
 else {
-  Write-Host "`n❌ Missing files referenced in TOC:" -ForegroundColor Red
+  Write-Host "`n✗ Missing files referenced in TOC:" -ForegroundColor Red
   foreach ($file in $missingFiles) {
     Write-Host "   - $file" -ForegroundColor Red
   }
 }
 
 if ($unreferencedFiles.Count -eq 0) {
-  Write-Host "`n✅ All Lua files are referenced in TOC!" -ForegroundColor Green
+  Write-Host "`n✓ All Lua files are referenced in TOC!" -ForegroundColor Green
 }
 else {
-  Write-Host "`n⚠️ Lua files not referenced in TOC:" -ForegroundColor Yellow
+  Write-Host "`n⚠ Lua files not referenced in TOC:" -ForegroundColor Yellow
   foreach ($file in $unreferencedFiles) {
     Write-Host "   - $file" -ForegroundColor Yellow
   }
