@@ -1,20 +1,5 @@
---[[
-  DotMaster - Core Module
-
-  File: dm_core.lua
-  Purpose: Main initialization and core functionality for the addon
-
-  Functions:
-  - Initialize(): Main initialization function
-  - OnEvent(): Event handler for the addon
-  - PrintMessage(): Print a message with the addon prefix
-  - SimplePrint(): Simple print function that doesn't require DebugMsg
-
-  Dependencies: None (This is the first file loaded)
-
-  Author: Jervaise
-  Last Updated: 2024-06-19
-]]
+-- DotMaster by Jervaise
+-- Main initialization file (init.lua)
 
 -- Create addon frame and namespace
 DotMaster = CreateFrame("Frame")
@@ -24,8 +9,14 @@ local DM = DotMaster
 DM.VIRULENT_PLAGUE_ID = 191587
 DM.DEFAULT_PURPLE_COLOR = { 0.6, 0.2, 1.0 }
 DM.MAX_CUSTOM_SPELLS = 20
-DM.VERSION = "0.4.2"
 
+-- Setup basic variables
+DM.activePlates = {}
+DM.coloredPlates = {}
+DM.originalColors = {}
+DM.enabled = true
+DM.spellConfig = {}
+DM.GUI = {}
 -- Setup basic variables
 DM.activePlates = {}
 DM.coloredPlates = {}
@@ -37,7 +28,7 @@ DM.recordingDots = false
 DM.detectedDots = {}
 DM.defaults = {
   enabled = true,
-  version = "0.4.2",
+  version = "0.4.0",
   lastSortOrder = 1, -- Added for sorting functionality
   spellConfig = {
     -- Default spells disabled, users will add their own
@@ -144,7 +135,7 @@ end
 -- Set up event handling
 DM:SetScript("OnEvent", function(self, ...) self:OnEvent(...) end)
 
--- Basic print message function in case dm_utils.lua isn't loaded yet
+-- Basic print message function in case utils.lua isn't loaded yet
 function DM:PrintMessage(message, ...)
   local prefix = "|cFFCC00FFDotMaster:|r "
   if select('#', ...) > 0 then
@@ -154,5 +145,4 @@ function DM:PrintMessage(message, ...)
   end
 end
 
--- Return the module
-return DM
+-- We'll call Initialize() at the end of core.lua after all modules are loaded

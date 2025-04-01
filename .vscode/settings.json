@@ -41,7 +41,10 @@
     "UIDropDownMenu_JustifyText",
     "UIDropDownMenu_EnableDropDown",
     "UIDropDownMenu_DisableDropDown",
-    "Minimap"
+    "Minimap",
+    "ScrollingEdit_OnTextChanged",
+    "ScrollingEdit_OnCursorChanged",
+    "ScrollingEdit_OnUpdate"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {

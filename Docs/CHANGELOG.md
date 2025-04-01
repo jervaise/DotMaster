@@ -1,4 +1,4 @@
-# DotMaster Changelog
+0# DotMaster Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance optimizations for combat situations
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
+
+## [0.5.0] - 2024-08-01 (Stability Release)
+
+### Changed
+- Restored codebase to version 0.4.0 for improved stability
+- Returned to pre-restructuring file naming for better compatibility
+- Preserved all validation scripts and documentation from later versions
+- Updated TOC file to reference the restored file structure
+
+### Added
+- Preserved the `dmcheck` validation tools for pre-game testing
+- Maintained full documentation from 0.4.2
+- Proper version tracking in CHANGELOG and TOC
+
+### Fixed
+- Addressed stability issues in the 0.4.x development branch
+- Simplified codebase while maintaining core functionality
 
 ## [0.4.2] - 2024-07-15 (Development Build)
 

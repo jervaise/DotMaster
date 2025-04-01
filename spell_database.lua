@@ -1,25 +1,7 @@
---[[
-  DotMaster - Spell Database Module
-
-  File: sp_database.lua
-  Purpose: Dynamic spell database with automatic detection and classification
-
-  Functions:
-  - AddSpellToDatabase(): Add a spell to the database
-  - GetSpellsForClass(): Get all spells for a class
-  - GetSpellsForSpec(): Get all spells for a spec
-  - SearchSpellsByName(): Search for spells by name
-  - SaveSpellDatabase(): Save database to SavedVariables
-  - LoadSpellDatabase(): Load database from SavedVariables
-  - CleanupSpellDatabase(): Clean up database (remove old entries)
-
-  Author: Jervaise
-  Last Updated: 2024-06-19
-]]
+-- DotMaster spell_database.lua
+-- Dynamic spell database with automatic detection and classification
 
 local DM = DotMaster
-local SpellDB = {}   -- Local table for module functions
-DM.SpellDB = SpellDB -- Expose to addon namespace
 
 -- Initialize database
 DM.spellDatabase = {}
@@ -47,7 +29,7 @@ DM.classColors = {
 DM.SpellNames = {}
 
 -- Function to add a spell to the database
-function SpellDB:AddSpellToDatabase(spellID, spellName, className, specName)
+function DM:AddSpellToDatabase(spellID, spellName, className, specName)
   -- Check parameters
   if not spellID or not spellName then return end
 
@@ -56,20 +38,20 @@ function SpellDB:AddSpellToDatabase(spellID, spellName, className, specName)
   if not spellID then return end
 
   -- Initialize database if needed
-  if not DM.spellDatabase then DM.spellDatabase = {} end
+  if not self.spellDatabase then self.spellDatabase = {} end
 
   -- Update or add entry
-  if not DM.spellDatabase[spellID] then
+  if not self.spellDatabase[spellID] then
     -- Check if we're at capacity
-    local databaseSize = DM:TableCount(DM.spellDatabase)
-    if databaseSize >= DM.MAX_DATABASE_SIZE then
+    local databaseSize = self:TableCount(self.spellDatabase)
+    if databaseSize >= self.MAX_DATABASE_SIZE then
       -- We're at capacity, might need to clean up
       -- For now, just don't add any more
       return
     end
 
     -- Add new entry
-    DM.spellDatabase[spellID] = {
+    self.spellDatabase[spellID] = {
       name = spellName,
       class = className or "UNKNOWN",
       spec = specName or "General",
@@ -79,34 +61,34 @@ function SpellDB:AddSpellToDatabase(spellID, spellName, className, specName)
     }
   else
     -- Update existing entry
-    DM.spellDatabase[spellID].lastUsed = GetServerTime()
-    DM.spellDatabase[spellID].useCount = (DM.spellDatabase[spellID].useCount or 0) + 1
+    self.spellDatabase[spellID].lastUsed = GetServerTime()
+    self.spellDatabase[spellID].useCount = (self.spellDatabase[spellID].useCount or 0) + 1
 
     -- Update name if provided
     if spellName and spellName ~= "" and spellName ~= "Unknown" then
-      DM.spellDatabase[spellID].name = spellName
+      self.spellDatabase[spellID].name = spellName
     end
 
     -- Update class/spec if provided
     if className and className ~= "" and className ~= "UNKNOWN" then
-      DM.spellDatabase[spellID].class = className
+      self.spellDatabase[spellID].class = className
     end
 
     if specName and specName ~= "" and specName ~= "General" then
-      DM.spellDatabase[spellID].spec = specName
+      self.spellDatabase[spellID].spec = specName
     end
   end
 
   -- Update legacy SpellNames table
-  DM.SpellNames[spellID] = spellName
+  self.SpellNames[spellID] = spellName
 end
 
 -- Function to get all spells for a class
-function SpellDB:GetSpellsForClass(className)
-  if not DM.spellDatabase then return {} end
+function DM:GetSpellsForClass(className)
+  if not self.spellDatabase then return {} end
 
   local spells = {}
-  for id, spellData in pairs(DM.spellDatabase) do
+  for id, spellData in pairs(self.spellDatabase) do
     if not className or className == "ALL" or spellData.class == className then
       spells[id] = spellData
     end
@@ -116,11 +98,11 @@ function SpellDB:GetSpellsForClass(className)
 end
 
 -- Function to get all spells for a spec
-function SpellDB:GetSpellsForSpec(className, specName)
-  if not DM.spellDatabase then return {} end
+function DM:GetSpellsForSpec(className, specName)
+  if not self.spellDatabase then return {} end
 
   local spells = {}
-  for id, spellData in pairs(DM.spellDatabase) do
+  for id, spellData in pairs(self.spellDatabase) do
     if (not className or className == "ALL" or spellData.class == className) and
         (not specName or specName == "ALL" or spellData.spec == specName) then
       spells[id] = spellData
@@ -131,14 +113,14 @@ function SpellDB:GetSpellsForSpec(className, specName)
 end
 
 -- Function to search for spells by name
-function SpellDB:SearchSpellsByName(searchText)
-  if not DM.spellDatabase then return {} end
-  if not searchText or searchText == "" or searchText == "Search..." then return DM.spellDatabase end
+function DM:SearchSpellsByName(searchText)
+  if not self.spellDatabase then return {} end
+  if not searchText or searchText == "" or searchText == "Search..." then return self.spellDatabase end
 
   local results = {}
   searchText = searchText:lower()
 
-  for id, spellData in pairs(DM.spellDatabase) do
+  for id, spellData in pairs(self.spellDatabase) do
     if spellData.name and spellData.name:lower():find(searchText) then
       results[id] = spellData
     end
@@ -148,45 +130,45 @@ function SpellDB:SearchSpellsByName(searchText)
 end
 
 -- Function to save database
-function SpellDB:SaveSpellDatabase()
+function DM:SaveSpellDatabase()
   -- Save to SavedVariables
   if not DotMasterDB then DotMasterDB = {} end
-  DotMasterDB.spellDatabase = DM.spellDatabase
+  DotMasterDB.spellDatabase = self.spellDatabase
 
   -- Also update legacy SpellNames
-  DotMasterDB.SpellNames = DM.SpellNames
+  DotMasterDB.SpellNames = self.SpellNames
 end
 
 -- Function to load database
-function SpellDB:LoadSpellDatabase()
+function DM:LoadSpellDatabase()
   -- Load from SavedVariables
   if DotMasterDB and DotMasterDB.spellDatabase then
-    DM.spellDatabase = DotMasterDB.spellDatabase
+    self.spellDatabase = DotMasterDB.spellDatabase
   end
 
   -- Also load legacy SpellNames for compatibility
   if DotMasterDB and DotMasterDB.SpellNames then
-    DM.SpellNames = DotMasterDB.SpellNames
+    self.SpellNames = DotMasterDB.SpellNames
   end
 
   -- Update legacy SpellNames from database for consistency
-  if DM.spellDatabase then
-    for id, spellData in pairs(DM.spellDatabase) do
-      DM.SpellNames[id] = spellData.name
+  if self.spellDatabase then
+    for id, spellData in pairs(self.spellDatabase) do
+      self.SpellNames[id] = spellData.name
     end
   end
 end
 
 -- Function to clean up database (remove old entries)
-function SpellDB:CleanupSpellDatabase()
-  if not DM.spellDatabase then return end
+function DM:CleanupSpellDatabase()
+  if not self.spellDatabase then return end
 
-  local databaseSize = DM:TableCount(DM.spellDatabase)
-  if databaseSize <= DM.MAX_DATABASE_SIZE then return end
+  local databaseSize = self:TableCount(self.spellDatabase)
+  if databaseSize <= self.MAX_DATABASE_SIZE then return end
 
   -- Sort by last used time
   local spellsToSort = {}
-  for id, data in pairs(DM.spellDatabase) do
+  for id, data in pairs(self.spellDatabase) do
     table.insert(spellsToSort, {
       id = id,
       lastUsed = data.lastUsed or 0,
@@ -206,38 +188,13 @@ function SpellDB:CleanupSpellDatabase()
   end)
 
   -- Remove oldest entries to get back to max size
-  local toRemove = databaseSize - DM.MAX_DATABASE_SIZE
+  local toRemove = databaseSize - self.MAX_DATABASE_SIZE
   for i = 1, toRemove do
     if i <= #spellsToSort then
       local id = spellsToSort[i].id
-      DM.spellDatabase[id] = nil
+      self.spellDatabase[id] = nil
       -- Also update legacy SpellNames
-      DM.SpellNames[id] = nil
+      self.SpellNames[id] = nil
     end
   end
 end
-
--- Debug message function with module name
-function SpellDB:DebugMsg(message)
-  if DM.DebugMsg then
-    DM:DebugMsg("[SpellDB] " .. message)
-  end
-end
-
--- Initialize the spell database module
-function SpellDB:Initialize()
-  -- Connect to the DM namespace for backward compatibility
-  DM.AddSpellToDatabase = function(self, ...) SpellDB:AddSpellToDatabase(...) end
-  DM.GetSpellsForClass = function(self, ...) return SpellDB:GetSpellsForClass(...) end
-  DM.GetSpellsForSpec = function(self, ...) return SpellDB:GetSpellsForSpec(...) end
-  DM.SearchSpellsByName = function(self, ...) return SpellDB:SearchSpellsByName(...) end
-  DM.SaveSpellDatabase = function(self) SpellDB:SaveSpellDatabase() end
-  DM.LoadSpellDatabase = function(self) SpellDB:LoadSpellDatabase() end
-  DM.CleanupSpellDatabase = function(self) SpellDB:CleanupSpellDatabase() end
-
-  SpellDB:DebugMsg("Spell database module initialized")
-  SpellDB:LoadSpellDatabase()
-end
-
--- Return the module
-return SpellDB

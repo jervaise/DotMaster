@@ -1,24 +1,7 @@
---[[
-  DotMaster - Nameplate Coloring Module
-
-  File: np_coloring.lua
-  Purpose: Handle nameplate coloring functionality
-
-  Functions:
-  - ApplyColorToNameplate(): Apply color to a nameplate
-  - RestoreDefaultColor(): Restore a nameplate's original color
-
-  Dependencies:
-  - dm_core.lua
-  - np_core.lua
-
-  Author: Jervaise
-  Last Updated: 2024-06-19
-]]
+-- DotMaster nameplate_coloring.lua
+-- Handles nameplate coloring functionality
 
 local DM = DotMaster
-local NPColoring = {}      -- Local table for module functions
-DM.NPColoring = NPColoring -- Expose to addon namespace
 
 -- Apply color to a nameplate
 function DM:ApplyColorToNameplate(nameplate, unitToken, color)
@@ -66,7 +49,7 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
   local unitFrame
 
   if _G["Plater"] then
-    local Plater = _G["Plater"] -- Local variable
+    local Plater = _G["Plater"] -- Yerel değişken olarak tanımla
     unitFrame = nameplate.unitFrame
     if not unitFrame or not unitFrame.healthBar then return end
     healthBar = unitFrame.healthBar
@@ -98,18 +81,3 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
 
   self.coloredPlates[unitToken] = nil
 end
-
--- Debug message function with module name
-function NPColoring:DebugMsg(message)
-  if DM.DebugMsg then
-    DM:DebugMsg("[NPColoring] " .. message)
-  end
-end
-
--- Initialize the nameplate coloring module
-function NPColoring:Initialize()
-  NPColoring:DebugMsg("Nameplate coloring module initialized")
-end
-
--- Return the module
-return NPColoring

@@ -1,71 +1,91 @@
-# Current File Structure - DotMaster v0.4.1
+# Current File Structure - DotMaster v0.5.0
 
 This document tracks the current file structure of the DotMaster addon. It is updated with each version to serve as a reference for developers.
 
-## Active Files (v0.4.1)
+## Active Files (v0.5.0)
 
-### Core System (`dm_` prefix)
-- **dm_core.lua** - Main initialization and core addon functionality
-- **dm_debug.lua** - Debug and logging system
-- **dm_utils.lua** - Utility functions used throughout the addon
-- **dm_settings.lua** - Settings management and database operations
-- **dm_loader.lua** - Final initialization sequence (loaded last)
+### Core Files
+- **init.lua** - Main initialization
+- **utils.lua** - Utility functions
+- **settings.lua** - Settings management
+- **core.lua** - Final initialization sequence
 
-### Nameplate System (`np_` prefix)
-- **np_core.lua** - Core nameplate functionality
-- **np_detection.lua** - Nameplate detection and tracking
-- **np_coloring.lua** - Nameplate coloring and visual effects
+### Spell System
+- **spell_database.lua** - Spell database and management
+- **spell_utils.lua** - Spell-specific utility functions
 
-### Spell System (`sp_` prefix)
-- **sp_database.lua** - Spell database and management
-- **sp_utils.lua** - Spell-specific utility functions
+### Nameplate System
+- **nameplate_core.lua** - Core nameplate functionality
+- **nameplate_detection.lua** - Nameplate detection and tracking
+- **nameplate_coloring.lua** - Nameplate coloring and visual effects
 
-### User Interface (`ui_` prefix and `gui_` prefix)
-- **ui_main.lua** - Main UI framework (replaced ui_core.lua)
-- **ui_tabs.lua** - Tab handling for the UI
-- **ui_components.lua** - Common UI components (replaced ui_common.lua)
-- **ui_general_tab.lua** - General settings panel
-- **ui_spells_tab.lua** - Spells configuration panel
+### User Interface
+- **gui.lua** - Main UI framework
+- **gui_common.lua** - Common UI components
 - **gui_colorpicker.lua** - Color picker component
-- **gui_spell_selection.lua** - Spell selection dialog
+- **gui_general_tab.lua** - General settings panel
+- **gui_spells_tab.lua** - Spells configuration panel
 - **gui_spell_row.lua** - Spell row UI component
-- **ui_minimap.lua** - Minimap button and related functionality
+- **gui_spell_selection.lua** - Spell selection dialog
 
-### Find My Dots Feature (`fmd_` prefix)
-- **fmd_core.lua** - Find My Dots feature implementation
+### Find My Dots Feature
+- **find_my_dots.lua** - Find My Dots feature implementation
 
 ### Support Files
 - **embeds.xml** - Library embedding file
 - **DotMaster.toc** - Table of Contents file for WoW
+- **dmcheck.bat** - Validation utility launcher
 
-## Old Files Pending Removal
-The following files from previous versions have been replaced but may still be in the repository:
+## Changed in v0.5.0
+The file structure has been reverted to the v0.4.0 structure for stability, while preserving the Scripts directory and all documentation from later versions.
 
-- **init.lua** - Replaced by dm_core.lua
-- **core.lua** - Replaced by dm_loader.lua
-- **utils.lua** - Replaced by dm_utils.lua
-- **settings.lua** - Replaced by dm_settings.lua
-- **nameplate_core.lua** - Replaced by np_core.lua
-- **nameplate_detection.lua** - Replaced by np_detection.lua 
-- **nameplate_coloring.lua** - Replaced by np_coloring.lua
-- **spell_database.lua** - Replaced by sp_database.lua
-- **spell_utils.lua** - Replaced by sp_utils.lua
-- **find_my_dots.lua** - Replaced by fmd_core.lua
-- **gui.lua** - Replaced by ui_main.lua
-- **gui_colorpicker.lua** - Replaced by gui_colorpicker.lua
-- **gui_common.lua** - Replaced by ui_components.lua
-- **gui_general_tab.lua** - Replaced by ui_general_tab.lua
-- **gui_spells_tab.lua** - Replaced by ui_spells_tab.lua
-- **gui_spell_selection.lua** - Replaced by gui_spell_selection.lua
-- **gui_spell_row.lua** - Replaced by gui_spell_row.lua
-- **ui_spells.lua** - Replaced by ui_spells_tab.lua
+### Preserved from Later Versions
 
-## Restructuring Status
-The file renaming process based on rename_plan.md is partially complete. Issues remaining:
+#### Scripts Directory
+- **dmcheck.ps1** - Main validation command
+- **file_checker.ps1** - Checks file references in TOC against actual files
+- **syntax_validator.ps1** - Checks for syntax issues and GetSpellInfo API usage
+- **module_validator.ps1** - Validates module initialization in loader
+- **simple_check.ps1** - Simplified validation
+- **cleanup.ps1** - PowerShell script to remove old files after restructuring
+- **cleanup_script.txt** - Documentation on the cleanup process
+- **README.md** - Documentation for scripts
 
-1. Several old files are still present in the repository
-2. The TOC file has been updated to reference new files
-3. Some file renames deviated from the original plan (using gui_ prefix for some UI components)
+#### Documentation
+All documentation files in the Docs directory have been preserved, including:
+- README.md
+- CHANGELOG.md
+- CODE_STRUCTURE.md
+- CURRENT_FILES.md
+- CURRENT_STATUS.md
+- CRITICAL_API_NOTES.md
+- DEVELOPMENT_PROCESS.md
+- GUI_TROUBLESHOOTING.md
+- MISSING_LIBRARIES.md
+- PROJECT_SCOPE.md
+- All patch notes
+
+## Removed Files from v0.4.1/v0.4.2
+The following files from the prefix-based restructuring have been removed in favor of the original v0.4.0 structure:
+
+- **dm_core.lua** - Replaced by init.lua
+- **dm_debug.lua** - Functionality in core files
+- **dm_loader.lua** - Replaced by core.lua
+- **dm_settings.lua** - Replaced by settings.lua
+- **dm_utils.lua** - Replaced by utils.lua
+- **fmd_core.lua** - Replaced by find_my_dots.lua
+- **fmd_ui.lua** - UI functionality in find_my_dots.lua
+- **np_coloring.lua** - Replaced by nameplate_coloring.lua
+- **np_core.lua** - Replaced by nameplate_core.lua
+- **np_detection.lua** - Replaced by nameplate_detection.lua
+- **sp_database.lua** - Replaced by spell_database.lua
+- **sp_utils.lua** - Replaced by spell_utils.lua
+- **ui_components.lua** - Replaced by gui_common.lua
+- **ui_general_tab.lua** - Replaced by gui_general_tab.lua
+- **ui_main.lua** - Replaced by gui.lua
+- **ui_minimap.lua** - Minimap functionality in gui.lua
+- **ui_spells_tab.lua** - Replaced by gui_spells_tab.lua
+- **ui_tabs.lua** - Tab functionality in gui.lua
 
 ## File Structure Diagram
 ```
@@ -79,46 +99,59 @@ DotMaster/
 │   ├── CURRENT_FILES.md
 │   ├── CURRENT_STATUS.md
 │   ├── DEVELOPMENT_PROCESS.md
+│   ├── DEVELOPMENT_ROADMAP.md
+│   ├── GUI_TROUBLESHOOTING.md
 │   ├── MISSING_LIBRARIES.md
 │   ├── PROJECT_SCOPE.md
 │   ├── README.md
+│   ├── RESTRUCTURING_SUMMARY.md
+│   ├── rename_plan.md
 │   └── PatchNotes/
 │       ├── v0.1.1.md
 │       ├── v0.3.0.md
-│       └── v0.4.0.md
+│       ├── v0.4.0.md
+│       └── v0.5.0.md
 ├── Libs/
-│   └── (Library files)
+│   ├── CallbackHandler-1.0/
+│   ├── LibDBIcon-1.0/
+│   ├── LibDataBroker-1.1/
+│   └── LibStub/
 ├── Media/
-│   └── (Media files)
-├── dm_core.lua
-├── dm_debug.lua
-├── dm_loader.lua
-├── dm_settings.lua
-├── dm_utils.lua
+├── Scripts/
+│   ├── README.md
+│   ├── cleanup.ps1
+│   ├── cleanup_script.txt
+│   ├── dmcheck.ps1
+│   ├── file_checker.ps1
+│   ├── module_validator.ps1
+│   ├── simple_check.ps1
+│   └── syntax_validator.ps1
+├── core.lua
+├── dmcheck.bat
 ├── DotMaster.toc
 ├── embeds.xml
-├── fmd_core.lua
+├── find_my_dots.lua
+├── gui.lua
 ├── gui_colorpicker.lua
+├── gui_common.lua
+├── gui_general_tab.lua
 ├── gui_spell_row.lua
 ├── gui_spell_selection.lua
-├── np_coloring.lua
-├── np_core.lua
-├── np_detection.lua
-├── rename_plan.md
-├── sp_database.lua
-├── sp_utils.lua
-├── ui_components.lua
-├── ui_general_tab.lua
-├── ui_main.lua
-├── ui_minimap.lua
-├── ui_spells_tab.lua
-└── ui_tabs.lua
+├── gui_spells_tab.lua
+├── init.lua
+├── nameplate_coloring.lua
+├── nameplate_core.lua
+├── nameplate_detection.lua
+├── settings.lua
+├── spell_database.lua
+├── spell_utils.lua
+└── utils.lua
 ```
 
 ## Recommended Actions
 
-1. Remove all old files that have been replaced
-2. Ensure module initialization code properly references the new file names
-3. Update CODE_STRUCTURE.md to reflect the actual naming convention
-4. Verify all references to modules use the correct names
+1. Test the restored file structure in-game to verify functionality
+2. Review for any missing files from the v0.4.0 restore
+3. Plan for carefully reintroducing critical API updates from v0.4.2
+4. Ensure all scripts and validation tools work with the restored file structure
 ``` 

@@ -1,25 +1,12 @@
---[[
-  DotMaster - ColorPicker Module
-
-  File: gui_colorpicker.lua
-  Purpose: Provides color picker functionality
-
-  Functions:
-  - CreateColorSwatch(): Creates a color swatch button with a callback
-
-  Dependencies:
-  - dm_core.lua
-
-  Author: Jervaise
-  Last Updated: 2024-07-01
-]]
+-- DotMaster gui_colorpicker.lua
+-- Color picker functionality
 
 local DM = DotMaster
-local UIColorPicker = {}
-DM.UIColorPicker = UIColorPicker
+DotMaster_ColorPicker = {}
+local colorpicker = DotMaster_ColorPicker
 
 -- Helper function for color picker
-function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
+function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
   -- Use proper debug function instead of print
   if DM.DEBUG_MODE then
     DM:DebugMsg("Creating color swatch with RGB: " .. r .. ", " .. g .. ", " .. b)
@@ -60,11 +47,15 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
 
   -- Use standard WoW color picker with updated API
   swatch:SetScript("OnClick", function()
+    print("|cFFCC00FFDotMaster Debug:|r Color swatch clicked")
+
     -- Check if ColorPickerFrame exists
     if not ColorPickerFrame then
-      DM:DebugMsg("ERROR: ColorPickerFrame does not exist!")
+      print("|cFFCC00FFDotMaster Debug:|r ERROR: ColorPickerFrame does not exist!")
       return
     end
+
+    print("|cFFCC00FFDotMaster Debug:|r Setting up ColorPickerFrame functions")
 
     -- Store current color for cancelFunc
     local currentR, currentG, currentB = r, g, b
@@ -75,27 +66,34 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
 
       if restore then
         -- User canceled, restore original color
+        print("|cFFCC00FFDotMaster Debug:|r Color canceled, reverting to original")
         newR, newG, newB = currentR, currentG, currentB
       else
         -- Get selected color from color picker
+        print("|cFFCC00FFDotMaster Debug:|r Getting new color from color picker")
         -- Check available APIs for getting color
         if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
+          print("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker API")
           newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
         elseif ColorPickerFrame.GetColorRGB then
+          print("|cFFCC00FFDotMaster Debug:|r Using GetColorRGB API")
           newR, newG, newB = ColorPickerFrame:GetColorRGB()
         else
           -- Try to get color via individual RGB functions (fallback method)
+          print("|cFFCC00FFDotMaster Debug:|r Using fallback RGB methods")
           if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
             newR = ColorPickerFrame.Content.ColorPicker:GetColorValueTexture() or currentR
             newG = ColorPickerFrame.Content.ColorPicker:GetColorSaturationTexture() or currentG
             newB = ColorPickerFrame.Content.ColorPicker:GetColorBrightnessTexture() or currentB
           else
+            print("|cFFCC00FFDotMaster Debug:|r Couldn't get color - using defaults")
             newR, newG, newB = currentR, currentG, currentB
           end
         end
       end
 
       -- Apply color to swatch
+      print("|cFFCC00FFDotMaster Debug:|r Setting texture color to:", newR, newG, newB)
       texture:SetColorTexture(newR, newG, newB)
 
       -- Update color reference values
@@ -103,15 +101,20 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
 
       -- Call user callback if provided
       if callback then
+        print("|cFFCC00FFDotMaster Debug:|r Running callback function with", newR, newG, newB)
         callback(newR, newG, newB)
-        -- Save settings immediately
+        print("|cFFCC00FFDotMaster Debug:|r Callback completed, saving settings")
+        -- Renklerin kaydedildiğinden emin olmak için SaveSettings'i doğrudan çağır
         DM:SaveSettings()
       end
     end
 
     -- Set up color picker
+    print("|cFFCC00FFDotMaster Debug:|r Setting up color picker with color:", r, g, b)
+
     -- Modern API
     if ColorPickerFrame.SetupColorPickerAndShow then
+      print("|cFFCC00FFDotMaster Debug:|r Using SetupColorPickerAndShow API")
       local info = {}
       info.swatchFunc = colorPickerCallback
       info.cancelFunc = function() colorPickerCallback(true) end
@@ -125,8 +128,11 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame:SetupColorPickerAndShow(info)
     else
       -- Legacy API fallback
+      print("|cFFCC00FFDotMaster Debug:|r Using legacy color picker API")
+
       -- Set frame attributes directly
       if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
+        print("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker.SetColorRGB")
         ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
       end
 
@@ -138,7 +144,9 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame.previousValues = { r = r, g = g, b = b }
 
       -- Show the frame
+      print("|cFFCC00FFDotMaster Debug:|r About to show ColorPickerFrame")
       ColorPickerFrame:Show()
+      print("|cFFCC00FFDotMaster Debug:|r After Show() - IsShown:", ColorPickerFrame:IsShown())
     end
   end)
 
@@ -148,15 +156,9 @@ function UIColorPicker:CreateColorSwatch(parent, r, g, b, callback)
     texture:SetColorTexture(r, g, b, 1)
   end
 
+  print("|cFFCC00FFDotMaster Debug:|r Color swatch created successfully")
   return swatch
 end
 
--- Function to initialize the module
-function UIColorPicker:Initialize()
-  DM:DebugMsg("ColorPicker module initialized")
-  -- Make the CreateColorSwatch function available directly on DM
-  DM.CreateColorSwatch = function(self, ...) return UIColorPicker:CreateColorSwatch(...) end
-end
-
--- Return the module
-return UIColorPicker
+-- Export to global scope
+DotMaster_CreateColorSwatch = colorpicker.CreateColorSwatch
