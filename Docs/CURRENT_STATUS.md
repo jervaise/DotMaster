@@ -9,6 +9,7 @@ This document outlines the current development status of the DotMaster addon. It
 - **Current Version**: 0.6.8
 - **Status**: Active Development
 - **Last Updated**: April 2, 2024
+- **WoW Compatibility**: World of Warcraft: The War Within (11.0.5)
 
 ## Current Version Information
 
@@ -35,11 +36,12 @@ This document outlines the current development status of the DotMaster addon. It
 
 ## Current Development Focus
 
+- Ensuring compatibility with World of Warcraft 11.0.5 (The War Within)
+- Adapting to UI changes and new nameplate implementation in The War Within
 - Improving the addon initialization process and SavedVariables handling
 - Testing the new database system with various spell data
 - Ensuring proper loading sequence for saved data
 - Enhancing debug capabilities for better troubleshooting
-- Optimizing database operations for better performance
 
 ## Known Issues
 
@@ -59,12 +61,12 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **WoW 11.0.5 Update**: Started compatibility updates for The War Within expansion
+- ✅ **TOC Update**: Updated Interface version to 110005 for The War Within
 - ✅ **Initialization System Refactoring**: Implemented bootstrap.lua for proper SavedVariables loading sequence
 - ✅ **Database Handling Enhancement**: Fixed issues with saved database loading and persistence
 - ✅ **UI Improvements**: Fixed various UI issues in the database tab
 - ✅ **Debug Console Enhancements**: Added database-specific debug categories
-- ✅ **Documentation Updates**: Updated all documentation to reflect current version
-- ✅ **Version Structure**: Improved version tracking and maintenance
 
 Prior to that:
 - ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
@@ -75,7 +77,7 @@ Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 
 ## Test Environment
 
-- World of Warcraft Retail Version: 10.2.5
+- World of Warcraft Retail Version: 11.0.5
 - Development Path: `F:\World of Warcraft\_retail_\Interface\AddOns\DotMaster`
 - Testing Environments: Solo play, Dungeons, Raids, World content
 - Test Classes: Warlock, Shadow Priest, Affliction Warlock 

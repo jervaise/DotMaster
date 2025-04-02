@@ -8,7 +8,12 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
 
 ## Near-Term Priorities (v0.4.2)
 
-1. ⚠️ **[URGENT]** Update all instances of `GetSpellInfo()` to use `C_Spell.GetSpellInfo()`
+1. ⚠️ **[URGENT]** Update for World of Warcraft 11.0.5 (The War Within) compatibility
+   - Ensure all API calls are compatible with 11.x
+   - Test with new nameplate implementation in The War Within
+   - Verify compatibility with the UI overhaul
+
+2. ⚠️ **[URGENT]** Update all instances of `GetSpellInfo()` to use `C_Spell.GetSpellInfo()`
    - Files to update:
      - spell_utils.lua
      - gui_spell_selection.lua
@@ -16,13 +21,13 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
      - gui_spells_tab.lua
      - find_my_dots.lua
 
-2. **Performance Optimization**
+3. **Performance Optimization**
    - Profile code execution during raid scenarios
    - Optimize aura scanning in high-density combat
    - Reduce memory usage for dot indicators
    - Implement caching for frequently accessed data
 
-3. **Testing and Quality Assurance**
+4. **Testing and Quality Assurance**
    - Complete in-game testing across all class specs
    - Test in different combat scenarios (solo, dungeon, raid, PvP)
    - Verify compatibility with popular nameplate addons
