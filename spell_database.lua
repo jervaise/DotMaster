@@ -7,6 +7,9 @@ local DM = DotMaster
 DM.spellDatabase = {}
 DM.MAX_DATABASE_SIZE = 500
 
+-- Initialize new database structure
+DM.dmspellsdb = {}
+
 -- Class colors for UI
 DM.classColors = {
   ["DEATHKNIGHT"] = { r = 0.77, g = 0.12, b = 0.23 },
@@ -197,4 +200,32 @@ function DM:CleanupSpellDatabase()
       self.SpellNames[id] = nil
     end
   end
+end
+
+-- Function to add a spell to the new database
+function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specName)
+  if not spellID or not spellName then return end
+
+  -- Default values
+  local defaultColor = { 1, 0, 0 } -- Red
+  local defaultPriority = 999
+  local defaultTracked = 1
+  local defaultEnabled = 1
+
+  -- Add or update spell in the database
+  DM.dmspellsdb[spellID] = {
+    spellname = spellName,
+    spellicon = spellIcon,
+    wowclass = className or "UNKNOWN",
+    wowspec = specName or "General",
+    color = defaultColor,
+    priority = defaultPriority,
+    tracked = defaultTracked,
+    enabled = defaultEnabled
+  }
+end
+
+-- Function to reset the database
+function DM:ResetDMSpellsDB()
+  DM.dmspellsdb = {}
 end
