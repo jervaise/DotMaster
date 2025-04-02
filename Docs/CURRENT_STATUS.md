@@ -61,6 +61,7 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Tracked Spells UI Redesign**: Completely redesigned the tracked spells interface with improved usability, better layout, and immediate save functionality
 - ✅ **WoW 11.1.0 Update**: Started compatibility updates for The War Within expansion
 - ✅ **TOC Update**: Updated Interface version to 110100 for The War Within
 - ✅ **Initialization System Refactoring**: Implemented bootstrap.lua for proper SavedVariables loading sequence

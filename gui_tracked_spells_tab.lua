@@ -14,24 +14,23 @@ function DM:CreateTrackedSpellsTab(parent)
     COLUMN = 12 -- Space between columns
   }
 
-  -- Yüzde tabanlı kolon genişlikleri
+  -- Percentage-based column widths
   local COLUMN_WIDTH_PCT = {
-    ON = 0.06,    -- %6 Checkbox
-    ID = 0.13,    -- %13 ID alanı
-    NAME = 0.40,  -- %40 İsim alanı
-    COLOR = 0.09, -- %9 Renk
-    SAVE = 0.09,  -- %9 Kaydet
-    ORDER = 0.13, -- %13 Sıralama butonları
-    DEL = 0.10    -- %10 Silme butonu
+    ON = 0.06,    -- 6% Checkbox
+    ID = 0.18,    -- 18% ID/Icon area
+    NAME = 0.40,  -- 40% Name area
+    COLOR = 0.10, -- 10% Color
+    ORDER = 0.15, -- 15% Order buttons
+    DEL = 0.11    -- 11% Untrack button
   }
 
-  -- Default positioning
-  local frameWidth = parent:GetWidth() - (PADDING.OUTER * 2)
+  -- Default positioning - increase to 550px
+  local frameWidth = 550
 
   -- Create UpdateLayout function - frame resize olduğunda pozisyonları günceller
   local function UpdateColumnPositions(width)
     -- Fixed width for consistent layout
-    width = 480 -- Set to a fixed width (slightly less than frame width of 500)
+    width = 510 -- Set to a fixed width (slightly less than frame width of 550)
 
     local positions = {}
     local widths = {}
@@ -54,10 +53,6 @@ function DM:CreateTrackedSpellsTab(parent)
     widths.COLOR = width * COLUMN_WIDTH_PCT.COLOR
     xPos = xPos + widths.COLOR
 
-    positions.SAVE = xPos
-    widths.SAVE = width * COLUMN_WIDTH_PCT.SAVE
-    xPos = xPos + widths.SAVE
-
     positions.UP = xPos
     widths.UP = (width * COLUMN_WIDTH_PCT.ORDER) / 2
     xPos = xPos + widths.UP
@@ -73,7 +68,7 @@ function DM:CreateTrackedSpellsTab(parent)
     return positions, widths
   end
 
-  -- İlk pozisyonları hesapla
+  -- Calculate initial positions
   local COLUMN_POSITIONS, COLUMN_WIDTHS = UpdateColumnPositions(frameWidth)
 
   -- Spells Tab Header
@@ -84,7 +79,7 @@ function DM:CreateTrackedSpellsTab(parent)
   -- Instructions
   local instructions = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   instructions:SetPoint("TOP", spellTitle, "BOTTOM", 0, -10)
-  instructions:SetText("Enter spell ID, click checkmark to save")
+  instructions:SetText("Configure your spell tracking settings")
   instructions:SetTextColor(1, 0.82, 0)
 
   -- Spell list background for better visuals
@@ -93,10 +88,10 @@ function DM:CreateTrackedSpellsTab(parent)
   spellListBg:SetPoint("BOTTOMRIGHT", -PADDING.OUTER, 40)
   spellListBg:SetColorTexture(0, 0, 0, 0.5) -- Darker background with better transparency
 
-  -- Scrollframe for spell list
+  -- Scrollframe for spell list - adjust width to leave room for scrollbar
   local scrollFrame = CreateFrame("ScrollFrame", "DotMasterSpellScrollFrame", parent, "UIPanelScrollFrameTemplate")
   scrollFrame:SetPoint("TOPLEFT", PADDING.OUTER + PADDING.INNER, -80)
-  scrollFrame:SetPoint("BOTTOMRIGHT", -(PADDING.OUTER + 20), 45) -- 20px for scrollbar
+  scrollFrame:SetPoint("BOTTOMRIGHT", -(PADDING.OUTER + 25), 45) -- 25px for scrollbar to avoid overlap
 
   local scrollChild = CreateFrame("Frame")
   scrollFrame:SetScrollChild(scrollChild)
@@ -140,10 +135,8 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Create column headers with precise positioning
   headerTexts.ON = CreateHeaderText("On", COLUMN_POSITIONS.ON, COLUMN_WIDTHS.ON)
-  headerTexts.ID = CreateHeaderText("ID", COLUMN_POSITIONS.ID, COLUMN_WIDTHS.ID)
-  headerTexts.NAME = CreateHeaderText("Spell Name", COLUMN_POSITIONS.NAME, COLUMN_WIDTHS.NAME)
+  headerTexts.SPELL = CreateHeaderText("Spell", COLUMN_POSITIONS.ID, COLUMN_WIDTHS.ID + COLUMN_WIDTHS.NAME)
   headerTexts.COLOR = CreateHeaderText("Color", COLUMN_POSITIONS.COLOR, COLUMN_WIDTHS.COLOR)
-  headerTexts.SAVE = CreateHeaderText("Save", COLUMN_POSITIONS.SAVE, COLUMN_WIDTHS.SAVE)
 
   -- Order başlığını ortala
   local orderText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -153,7 +146,7 @@ function DM:CreateTrackedSpellsTab(parent)
   orderText:SetTextColor(1, 0.82, 0)
   headerTexts.ORDER = orderText
 
-  headerTexts.DEL = CreateHeaderText("Del", COLUMN_POSITIONS.DEL, COLUMN_WIDTHS.DEL)
+  headerTexts.UNTRACK = CreateHeaderText("Untrack", COLUMN_POSITIONS.DEL, COLUMN_WIDTHS.DEL)
 
   -- Update başlık pozisyonlarını güncelleme fonksiyonu
   local function UpdateHeaderPositions()
@@ -163,24 +156,18 @@ function DM:CreateTrackedSpellsTab(parent)
     headerTexts.ON:SetPoint("LEFT", positions.ON, 0)
     headerTexts.ON:SetWidth(widths.ON)
 
-    headerTexts.ID:SetPoint("LEFT", positions.ID, 0)
-    headerTexts.ID:SetWidth(widths.ID)
-
-    headerTexts.NAME:SetPoint("LEFT", positions.NAME, 0)
-    headerTexts.NAME:SetWidth(widths.NAME)
+    headerTexts.SPELL:SetPoint("LEFT", positions.ID, 0)
+    headerTexts.SPELL:SetWidth(widths.ID + widths.NAME)
 
     headerTexts.COLOR:SetPoint("LEFT", positions.COLOR, 0)
     headerTexts.COLOR:SetWidth(widths.COLOR)
-
-    headerTexts.SAVE:SetPoint("LEFT", positions.SAVE, 0)
-    headerTexts.SAVE:SetWidth(widths.SAVE)
 
     -- Order başlığını ortala
     local orderX = positions.UP + (widths.UP + widths.DOWN) / 2
     headerTexts.ORDER:SetPoint("CENTER", headerFrame, "LEFT", orderX - 8, 0)
 
-    headerTexts.DEL:SetPoint("LEFT", positions.DEL, 0)
-    headerTexts.DEL:SetWidth(widths.DEL)
+    headerTexts.UNTRACK:SetPoint("LEFT", positions.DEL, 0)
+    headerTexts.UNTRACK:SetWidth(widths.DEL)
 
     -- Update frame sizes
     headerFrame:SetWidth(width)
@@ -359,9 +346,10 @@ function DM.GUI:RefreshTrackedSpellList()
 
   -- Function to create and add rows for a given list of spells
   local function addSpellRows(spellList, class, spec)
-    for _, spellData in ipairs(spellList) do
+    local totalSpells = #spellList
+    for i, spellData in ipairs(spellList) do
       index = index + 1
-      -- Call the (currently basic) row creation function
+      -- Call the row creation function
       local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
       if row then
         row.spellID = spellData.id -- Store spellID (string) in the frame
@@ -369,6 +357,20 @@ function DM.GUI:RefreshTrackedSpellList()
         row.spec = spec
         table.insert(DM.GUI.spellFrames, row) -- Keep track of the created frame
         yOffset = yOffset + 38                -- Spacing for the next row (adjust as needed)
+
+        -- Disable up button for first spell in the group
+        if i == 1 and row.upButton then
+          row.upButton:Disable()
+          row.upButton:GetNormalTexture():SetDesaturated(true)
+          row.upButton:GetPushedTexture():SetDesaturated(true)
+        end
+
+        -- Disable down button for last spell in the group
+        if i == totalSpells and row.downButton then
+          row.downButton:Disable()
+          row.downButton:GetNormalTexture():SetDesaturated(true)
+          row.downButton:GetPushedTexture():SetDesaturated(true)
+        end
       end
     end
   end

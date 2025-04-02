@@ -81,7 +81,7 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   highlight:SetColorTexture(0.3, 0.3, 0.3, 0.3)
   highlight:SetBlendMode("ADD")
 
-  -- Enable/Disable Checkbox
+  -- ON: Enable/Disable Checkbox
   local enableCheckbox = CreateFrame("CheckButton", nil, spellRow, "UICheckButtonTemplate")
   enableCheckbox:SetSize(24, 24)
   enableCheckbox:SetPoint("LEFT", COLUMN_POSITIONS.ON, 0)
@@ -96,112 +96,85 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     DM:SaveDMSpellsDB()
   end)
 
+  -- SPELL: Combined spell icon, name and ID in a single section
+  local spellContainer = CreateFrame("Frame", nil, spellRow)
+  spellContainer:SetPoint("LEFT", COLUMN_POSITIONS.ID, 0)
+  spellContainer:SetSize(COLUMN_WIDTHS.ID + COLUMN_WIDTHS.NAME, rowHeight)
+
   -- Spell Icon
   local iconSize = 24
-  local iconFrame = CreateFrame("Frame", nil, spellRow)
-  iconFrame:SetSize(iconSize, iconSize)
-  iconFrame:SetPoint("LEFT", COLUMN_POSITIONS.ID, 0)
-
-  local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-  icon:SetAllPoints()
+  local icon = spellContainer:CreateTexture(nil, "ARTWORK")
+  icon:SetSize(iconSize, iconSize)
+  icon:SetPoint("LEFT", 0, 0)
   icon:SetTexture(config.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark")
   icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Crop out the border
 
-  -- Spell ID Text
-  local idText = spellRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  idText:SetPoint("LEFT", iconFrame, "RIGHT", 5, 0)
-  idText:SetWidth(40)
-  idText:SetJustifyH("LEFT")
-  idText:SetText(numericID)
+  -- Create a frame for the icon border
+  local iconBorder = CreateFrame("Frame", nil, spellContainer, "BackdropTemplate")
+  iconBorder:SetSize(iconSize + 2, iconSize + 2)
+  iconBorder:SetPoint("CENTER", icon, "CENTER", 0, 0)
+  iconBorder:SetBackdrop({
+    edgeFile = "Interface\\Buttons\\WHITE8x8",
+    edgeSize = 1,
+  })
+  iconBorder:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
 
-  -- Spell Name Text
-  local nameText = spellRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  nameText:SetPoint("LEFT", COLUMN_POSITIONS.NAME, 0)
-  nameText:SetWidth(COLUMN_WIDTHS.NAME)
+  -- Spell Name and ID Text
+  local nameText = spellContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+  nameText:SetWidth(COLUMN_WIDTHS.NAME - iconSize - 8)
   nameText:SetJustifyH("LEFT")
-  nameText:SetText(config.spellname or "Unknown Name")
+  local spellName = config.spellname or "Unknown Name"
+  nameText:SetText(string.format("%s (%d)", spellName, numericID))
 
   -- Add helper function to nameText
   nameText.UpdateText = DMFontStringHelper.UpdateText
-  nameText:UpdateText(config.spellname or "Unknown Name")
+  nameText:UpdateText(string.format("%s (%d)", spellName, numericID))
 
-  -- Color Button
-  local colorButton = CreateFrame("Button", nil, spellRow)
-  colorButton:SetSize(24, 24)
-  colorButton:SetPoint("LEFT", COLUMN_POSITIONS.COLOR, 0)
-
-  -- Color display texture
-  local colorTexture = colorButton:CreateTexture(nil, "ARTWORK")
-  colorTexture:SetAllPoints()
-
-  -- Set color from config
+  -- COLOR: Color Picker button using the colorpicker module
   local r, g, b = 1, 0, 0 -- Default red
   if config.color and config.color[1] and config.color[2] and config.color[3] then
     r, g, b = config.color[1], config.color[2], config.color[3]
   end
-  colorTexture:SetColorTexture(r, g, b)
 
-  -- Border around color
-  colorButton:SetNormalTexture("Interface\\ChatFrame\\ChatFrameColorSwatch")
+  -- Create color swatch using DotMaster_CreateColorSwatch
+  local colorSwatch = DotMaster_CreateColorSwatch(spellRow, r, g, b, function(newR, newG, newB)
+    -- Update color in database
+    DM.dmspellsdb[numericID].color = { newR, newG, newB }
 
-  -- Color picker functionality
-  colorButton:SetScript("OnClick", function()
-    -- Store current color for cancel
-    local oldR, oldG, oldB = r, g, b
-
-    -- Color picker callback
-    local function colorCallback(restore)
-      local newR, newG, newB
-
-      if restore then
-        -- User clicked Cancel
-        newR, newG, newB = oldR, oldG, oldB
-      else
-        -- Get selected colors
-        newR, newG, newB = ColorPickerFrame:GetColorRGB()
-      end
-
-      -- Update visual display
-      colorTexture:SetColorTexture(newR, newG, newB)
-
-      -- Update in database
-      DM.dmspellsdb[numericID].color = { newR, newG, newB }
-
-      -- Save changes
-      DM:SaveDMSpellsDB()
-
-      DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
-        numericID, newR, newG, newB))
-    end
-
-    -- Show the color picker
-    ColorPickerFrame.func = colorCallback
-    ColorPickerFrame.cancelFunc = colorCallback
-    ColorPickerFrame:SetColorRGB(r, g, b)
-    ColorPickerFrame.hasOpacity = false
-    ColorPickerFrame.previousValues = { oldR, oldG, oldB }
-    ColorPickerFrame:Hide() -- Hide first to trigger OnShow handler
-    ColorPickerFrame:Show()
-  end)
-
-  -- Create Save Button
-  local saveButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
-  saveButton:SetSize(COLUMN_WIDTHS.SAVE, 22)
-  saveButton:SetPoint("LEFT", COLUMN_POSITIONS.SAVE, 0)
-  saveButton:SetText("Save")
-
-  saveButton:SetScript("OnClick", function()
-    DM:DatabaseDebug(string.format("Saving spell config for %d", numericID))
+    -- Save changes immediately
     DM:SaveDMSpellsDB()
-  end)
 
-  -- Order Up Button
-  local upButton = CreateFrame("Button", nil, spellRow)
-  upButton:SetSize(16, 16)
-  upButton:SetPoint("LEFT", COLUMN_POSITIONS.UP, 0)
+    DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
+      numericID, newR, newG, newB))
+  end)
+  colorSwatch:SetPoint("LEFT", COLUMN_POSITIONS.COLOR, 0)
+
+  -- ORDER: Up/Down buttons for priority
+  local orderContainer = CreateFrame("Frame", nil, spellRow)
+  orderContainer:SetSize(COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN, rowHeight)
+  orderContainer:SetPoint("LEFT", COLUMN_POSITIONS.UP, 0)
+
+  -- Down Button (left) - Standard WoW arrow
+  local downButton = CreateFrame("Button", nil, orderContainer)
+  downButton:SetSize(24, 24)
+  downButton:SetPoint("LEFT", 0, 0)
+  downButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+  downButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+  downButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+  -- UP Button (right) - Standard WoW arrow
+  local upButton = CreateFrame("Button", nil, orderContainer)
+  upButton:SetSize(24, 24)
+  upButton:SetPoint("LEFT", downButton, "RIGHT", 8, 0)
   upButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
   upButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
   upButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+  -- Store reference to buttons in the row for later access
+  spellRow.upButton = upButton
+  spellRow.downButton = downButton
+  spellRow.index = index -- Store index for checking first/last position
 
   upButton:SetScript("OnClick", function()
     local currentPriority = DM.dmspellsdb[numericID].priority or 999
@@ -219,14 +192,6 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     end
   end)
 
-  -- Order Down Button
-  local downButton = CreateFrame("Button", nil, spellRow)
-  downButton:SetSize(16, 16)
-  downButton:SetPoint("LEFT", COLUMN_POSITIONS.DOWN, 0)
-  downButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
-  downButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
-  downButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-
   downButton:SetScript("OnClick", function()
     local currentPriority = DM.dmspellsdb[numericID].priority or 999
     local newPriority = currentPriority + 10
@@ -241,13 +206,30 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     DM.GUI:RefreshTrackedSpellList()
   end)
 
-  -- Delete Button
-  local deleteButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
-  deleteButton:SetSize(60, 22)
-  deleteButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL, 0)
-  deleteButton:SetText("Remove")
+  -- UNTRACK: Cross button to untrack spell - make it more visible
+  local untrackButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
+  untrackButton:SetSize(55, 24)
+  untrackButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL, 0)
+  untrackButton:SetText("Untrack")
 
-  deleteButton:SetScript("OnClick", function()
+  -- Make button red to stand out
+  untrackButton.Left:SetVertexColor(0.8, 0.2, 0.2)
+  untrackButton.Middle:SetVertexColor(0.8, 0.2, 0.2)
+  untrackButton.Right:SetVertexColor(0.8, 0.2, 0.2)
+
+  -- Add tooltip
+  untrackButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Untrack")
+    GameTooltip:AddLine("Remove this spell from tracked spells", 1, 0.82, 0, true)
+    GameTooltip:Show()
+  end)
+
+  untrackButton:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+
+  untrackButton:SetScript("OnClick", function()
     -- Update tracked flag to 0 to "remove" from tracking
     DM:DatabaseDebug(string.format("Removing %d from tracked spells", numericID))
 
@@ -264,20 +246,22 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   function spellRow.UpdatePositions(positions, widths)
     if not positions or not widths then return end
 
+    -- Update positioned elements
     enableCheckbox:SetPoint("LEFT", positions.ON, 0)
-    iconFrame:SetPoint("LEFT", positions.ID, 0)
-    nameText:SetPoint("LEFT", positions.NAME, 0)
-    nameText:SetWidth(widths.NAME)
-    colorButton:SetPoint("LEFT", positions.COLOR, 0)
-    saveButton:SetPoint("LEFT", positions.SAVE, 0)
-    saveButton:SetWidth(widths.SAVE)
-    upButton:SetPoint("LEFT", positions.UP, 0)
-    downButton:SetPoint("LEFT", positions.DOWN, 0)
-    deleteButton:SetPoint("LEFT", positions.DEL, 0)
+
+    spellContainer:SetPoint("LEFT", positions.ID, 0)
+    spellContainer:SetSize(widths.ID + widths.NAME, rowHeight)
+
+    colorSwatch:SetPoint("LEFT", positions.COLOR, 0)
+
+    orderContainer:SetPoint("LEFT", positions.UP, 0)
+    orderContainer:SetSize(widths.UP + widths.DOWN, rowHeight)
+
+    untrackButton:SetPoint("LEFT", positions.DEL, 0)
   end
 
-  DM:GUIDebug(string.format("Created full row %d for spell %d (%s)",
-    index, numericID, config.spellname or "?"))
+  -- Add to tracking table
+  table.insert(DM.GUI.spellFrames, spellRow)
 
-  return spellRow -- Return the created frame
+  return spellRow
 end

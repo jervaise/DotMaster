@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance optimizations for combat situations
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
+- Improved Tracked Spells interface:
+  - Redesigned spell row layout with combined spell icon, name, and ID
+  - Swapped order buttons (down on left, up on right) with visual indicators for first/last spells
+  - Added responsive untrack button with better visibility
+  - Fixed scrollbar overlap issues
+  - Increased window width for better usability
+  - Improved save behavior (all changes now trigger immediate database save)
 
 ## [0.5.3] - 2024-08-30 (GUI Fix)
 
