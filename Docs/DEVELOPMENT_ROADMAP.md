@@ -8,7 +8,7 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
 
 ## Near-Term Priorities (v0.4.2)
 
-1. ⚠️ **[URGENT]** Update for World of Warcraft 11.0.5 (The War Within) compatibility
+1. ⚠️ **[URGENT]** Update for World of Warcraft 11.1.0 (The War Within) compatibility
    - Ensure all API calls are compatible with 11.x
    - Test with new nameplate implementation in The War Within
    - Verify compatibility with the UI overhaul
