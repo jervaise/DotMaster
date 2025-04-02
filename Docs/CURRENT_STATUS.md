@@ -2,12 +2,20 @@
 
 This document outlines the current development status of the DotMaster addon. It's intended to be regularly updated as development progresses.
 
+## Project Status
+
+### Current Status
+- **Project**: DotMaster
+- **Current Version**: 0.6.8
+- **Status**: Active Development
+- **Last Updated**: April 2, 2024
+
 ## Current Version Information
 
-- **Current Version**: 0.5.2
+- **Current Version**: 0.6.8
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.5.2)
-  - **develop**: Active development branch (v0.5.2)
+  - **main**: Contains the latest stable release (v0.6.7)
+  - **develop**: Active development branch (v0.6.8)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -27,37 +35,36 @@ This document outlines the current development status of the DotMaster addon. It
 
 ## Current Development Focus
 
-- Validating the v0.5.0 restoration for stability and functionality
-- Testing the restoration in various combat scenarios
-- Planning for careful re-implementation of critical API updates
-- Maintaining documentation accuracy
-- Enhancing debug capabilities for improved troubleshooting
+- Improving the addon initialization process and SavedVariables handling
+- Testing the new database system with various spell data
+- Ensuring proper loading sequence for saved data
+- Enhancing debug capabilities for better troubleshooting
+- Optimizing database operations for better performance
 
 ## Known Issues
 
-1. **API Compatibility**: The restoration to v0.4.0 code means some critical API updates are pending re-implementation
+1. **API Compatibility**: Still need to ensure all parts of the addon use `C_Spell.GetSpellInfo()`
 2. **Performance**: May experience frame drops during combat with many targets
 3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
-4. **Visual Consistency**: DoT indicators may misalign when nameplate size changes dynamically
 
 ## Next Development Steps
 
-1. Complete in-game testing of the restored codebase
-2. Carefully re-implement critical API updates from v0.4.2
-3. Optimize performance through code profiling and enhancement
-4. Test profile functionality across multiple characters
-5. Verify compatibility with other popular addon UI frameworks
+1. Further refine the database structure for better performance
+2. Optimize nameplate processing for improved framerates
+3. Enhance UI responsiveness in high-stress scenarios
+4. Add more comprehensive error recovery mechanisms
+5. Implement more user-requested quality of life features
 
 ## Recent Changes
 
 The most significant recent changes include:
 
-- ✅ **Debug System Enhancement**: Added comprehensive debug console with category-based filtering
-- ✅ **Simplified Debugging**: Implemented dedicated `/dmdebug` command for all debugging options
-- ✅ **Documentation Restructuring**: Consolidated README files and improved documentation structure
-- ✅ **Version 0.5.0 Update**: Documentation update to maintain version consistency
-- ✅ **Version 0.5.0 Restoration**: Restored the stable v0.4.0 codebase while preserving critical tools and documentation
-- ✅ **Maintained dmcheck Tool**: Preserved validation tools to catch common errors before in-game testing
+- ✅ **Initialization System Refactoring**: Implemented bootstrap.lua for proper SavedVariables loading sequence
+- ✅ **Database Handling Enhancement**: Fixed issues with saved database loading and persistence
+- ✅ **UI Improvements**: Fixed various UI issues in the database tab
+- ✅ **Debug Console Enhancements**: Added database-specific debug categories
+- ✅ **Documentation Updates**: Updated all documentation to reflect current version
+- ✅ **Version Structure**: Improved version tracking and maintenance
 
 Prior to that:
 - ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
@@ -68,7 +75,7 @@ Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 
 ## Test Environment
 
-- World of Warcraft Retail Version: 10.2.0
+- World of Warcraft Retail Version: 10.2.5
 - Development Path: `F:\World of Warcraft\_retail_\Interface\AddOns\DotMaster`
 - Testing Environments: Solo play, Dungeons, Raids, World content
 - Test Classes: Warlock, Shadow Priest, Affliction Warlock 

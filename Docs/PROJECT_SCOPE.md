@@ -14,7 +14,8 @@ DotMaster is a World of Warcraft addon that enhances tracking of damage-over-tim
 
 ## Technical Requirements
 
-- Compatible with World of Warcraft Retail (Current version: 10.2.0)
+- **Platform**: World of Warcraft Retail
+- **Compatible with World of Warcraft Retail (Current version: 10.2.5)**
 - Minimal performance impact, especially during combat
 - Ace3 framework integration for stability and maintainability
 - Support for all character classes and their DoT spells

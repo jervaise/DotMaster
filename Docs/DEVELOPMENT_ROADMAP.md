@@ -1,8 +1,8 @@
 # DotMaster Development Roadmap
 
-This document outlines the planned development roadmap for DotMaster beyond version 0.4.1.
+This document outlines the planned development roadmap for DotMaster beyond version 0.6.8.
 
-## Current Version: 0.4.1
+## Current Version: 0.6.8
 
 Successfully fixed critical API issues with Find My Dots functionality and standardized aura detection methods across all modules.
 
