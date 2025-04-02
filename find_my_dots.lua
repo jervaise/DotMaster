@@ -100,8 +100,8 @@ function DM:RecordDots(unitToken)
       -- Update spell database with class and spec info
       local className, specName = self:GetPlayerClassAndSpec()
 
-      -- Save to spell database
-      self:AddSpellToDatabase(id, name, className, specName)
+      -- Do not save to database here
+      -- DM:AddSpellToDMSpellsDB(id, name, "Interface\\Icons\\Spell_Nature_HealingTouch", className, specName)
 
       -- Also add to spell config automatically if not exists
       if not self:SpellExists(id) then
@@ -118,8 +118,8 @@ function DM:RecordDots(unitToken)
           self.GUI:RefreshSpellList()
         end
 
-        -- Save settings immediately
-        self:SaveSettings()
+        -- Do not save settings here
+        -- self:SaveSettings()
       end
 
       -- Update dot counter
@@ -551,23 +551,11 @@ function DM:ShowDotsConfirmationDialog(dots)
     buttonContainer:SetSize(400, 25)
     buttonContainer:SetPoint("BOTTOM", 0, 15)
 
-    -- Select All button
-    local selectAllButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-    selectAllButton:SetSize(120, 25)
-    selectAllButton:SetPoint("LEFT", 20, 0)
-    selectAllButton:SetText("Select All")
-
-    -- Select None button
-    local selectNoneButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-    selectNoneButton:SetSize(120, 25)
-    selectNoneButton:SetPoint("CENTER", 0, 0)
-    selectNoneButton:SetText("Select None")
-
     -- Add Selected button
     local addButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
     addButton:SetSize(120, 25)
-    addButton:SetPoint("RIGHT", -20, 0)
-    addButton:SetText("Add Selected")
+    addButton:SetPoint("CENTER", 0, 0)
+    addButton:SetText("Save to Database")
 
     -- Close button at the top right
     local closeButton = CreateFrame("Button", nil, self.dotsConfirmFrame, "UIPanelCloseButton")
@@ -576,20 +564,6 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- Hide frame
     closeButton:SetScript("OnClick", function()
       self.dotsConfirmFrame:Hide()
-    end)
-
-    -- Select All functionality
-    selectAllButton:SetScript("OnClick", function()
-      for id, checkbox in pairs(self.dotCheckboxes) do
-        checkbox:SetChecked(true)
-      end
-    end)
-
-    -- Select None functionality
-    selectNoneButton:SetScript("OnClick", function()
-      for id, checkbox in pairs(self.dotCheckboxes) do
-        checkbox:SetChecked(false)
-      end
     end)
 
     -- Add selected dots
@@ -607,6 +581,13 @@ function DM:ShowDotsConfirmationDialog(dots)
               name = dotInfo.name,
               priority = self:GetNextPriority()
             }
+
+            -- Add to new database
+            local className, specName = self:GetPlayerClassAndSpec()
+            DM:AddSpellToDMSpellsDB(id, dotInfo.name, "Interface\\Icons\\Spell_Nature_HealingTouch", className, specName)
+            DM:SaveDMSpellsDB()
+            DM:DebugMsg("Spell added to dmspellsdb: " .. dotInfo.name)
+
             added = added + 1
           end
         end
@@ -620,6 +601,21 @@ function DM:ShowDotsConfirmationDialog(dots)
       self:SaveSettings()
       self:PrintMessage(string.format("%d dots successfully added!", added))
       self.dotsConfirmFrame:Hide()
+    end)
+
+    -- Make the window movable
+    self.dotsConfirmFrame:SetMovable(true)
+    self.dotsConfirmFrame:EnableMouse(true)
+    self.dotsConfirmFrame:RegisterForDrag("LeftButton")
+    self.dotsConfirmFrame:SetScript("OnDragStart", self.dotsConfirmFrame.StartMoving)
+    self.dotsConfirmFrame:SetScript("OnDragStop", self.dotsConfirmFrame.StopMovingOrSizing)
+
+    -- Fix the scrollbar
+    scrollFrame:SetScript("OnSizeChanged", function(self)
+      local height = scrollChild:GetHeight()
+      scrollFrame:SetVerticalScroll(0)
+      scrollFrame:UpdateScrollChildRect()
+      scrollFrame:SetVerticalScroll(height)
     end)
 
     -- Store references

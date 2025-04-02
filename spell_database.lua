@@ -229,3 +229,24 @@ end
 function DM:ResetDMSpellsDB()
   DM.dmspellsdb = {}
 end
+
+-- Function to save the database to saved variables
+function DM:SaveDMSpellsDB()
+  if not DotMasterDB then DotMasterDB = {} end
+  DotMasterDB.dmspellsdb = DM.dmspellsdb
+  DM:DebugMsg("dmspellsdb saved to saved variables.")
+end
+
+-- Function to load the database from saved variables
+function DM:LoadDMSpellsDB()
+  if DotMasterDB and DotMasterDB.dmspellsdb then
+    DM.dmspellsdb = DotMasterDB.dmspellsdb
+    DM:DebugMsg("dmspellsdb loaded from saved variables.")
+  else
+    DM.dmspellsdb = {}
+    DM:DebugMsg("No saved database found, initialized new dmspellsdb.")
+  end
+end
+
+-- Call LoadDMSpellsDB on addon load
+DM:LoadDMSpellsDB()

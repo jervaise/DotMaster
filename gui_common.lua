@@ -203,6 +203,9 @@ function DM:CreateGUI()
     -- Add spell to database
     DM:AddSpellToDMSpellsDB(exampleSpellID, exampleSpellName, exampleSpellIcon, exampleClassName, exampleSpecName)
 
+    -- Save changes to saved variables
+    DM:SaveDMSpellsDB()
+
     -- Debug message
     DM:DebugMsg("Spell added to dmspellsdb: " .. exampleSpellName)
   end
@@ -216,6 +219,7 @@ function DM:CreateGUI()
       button2 = "No",
       OnAccept = function()
         DM:ResetDMSpellsDB()
+        DM:SaveDMSpellsDB()
         DM:DebugMsg("dmspellsdb has been reset.")
       end,
       timeout = 0,
