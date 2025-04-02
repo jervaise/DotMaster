@@ -37,26 +37,10 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings() -- Save settings immediately
   end)
 
-  -- Debug mode switch checkbox
-  local debugCheckBox = CreateFrame("CheckButton", "DotMasterDebugCheckbox", parent, "UICheckButtonTemplate")
-  debugCheckBox:SetPoint("TOPLEFT", 20, -80) -- Below the enable checkbox
-  debugCheckBox:SetSize(26, 26)
-
-  local debugCheckBoxText = _G[debugCheckBox:GetName() .. "Text"]
-  debugCheckBoxText:SetText("Debug Mode")
-  debugCheckBoxText:SetPoint("LEFT", debugCheckBox, "RIGHT", 2, 0)
-
-  debugCheckBox:SetChecked(DM.DEBUG_MODE)
-  debugCheckBox:SetScript("OnClick", function(self)
-    DM.DEBUG_MODE = self:GetChecked()
-    DM:PrintMessage("Debug Mode " .. (DM.DEBUG_MODE and "Enabled" or "Disabled"))
-    DM:SaveSettings() -- Save settings immediately
-  end)
-
   -- Debug Console Button
   local debugConsoleButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
   debugConsoleButton:SetSize(120, 22)
-  debugConsoleButton:SetPoint("LEFT", debugCheckBoxText, "RIGHT", 20, 0)
+  debugConsoleButton:SetPoint("LEFT", checkBoxText, "RIGHT", 20, 0)
   debugConsoleButton:SetText("Debug Console")
   debugConsoleButton:SetScript("OnClick", function()
     -- Toggle debug window visibility
@@ -65,7 +49,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Add help text for debug command
   local debugHelpText = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-  debugHelpText:SetPoint("TOPLEFT", debugCheckBox, "BOTTOMLEFT", 0, -5)
+  debugHelpText:SetPoint("TOPLEFT", checkBox, "BOTTOMLEFT", 0, -5)
   debugHelpText:SetWidth(350)
   debugHelpText:SetJustifyH("LEFT")
   debugHelpText:SetText("Type |cFFFFD100/dmdebug|r for quick access to debug options")

@@ -8,7 +8,7 @@ local DM = DotMaster
 
 -- General debug message function
 function DM:DebugMsg(message, ...)
-  if not self.DEBUG_MODE then return end
+  if not DM.DEBUG_CATEGORIES.general then return end
 
   local prefix = "|cFFCC00FFDotMaster Debug:|r "
   if select('#', ...) > 0 then
@@ -20,7 +20,7 @@ end
 
 -- Spell-specific debug function
 function DM:SpellDebug(message, ...)
-  if not self.DEBUG_MODE then return end
+  if not DM.DEBUG_CATEGORIES.spell then return end
 
   local prefix = "|cFFFF00FFDM Debug:|r "
   if select('#', ...) > 0 then

@@ -2,7 +2,7 @@
 ## Title: |cFFCC00FFDotMaster|r
 ## Notes: Colors nameplates based on player debuffs
 ## Author: Jervaise
-## Version: 0.5.3
+## Version: 0.6.5
 ## SavedVariables: DotMasterDB
 
 # Libraries
@@ -29,6 +29,7 @@ gui_common.lua
 gui.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
+gui_database_tab.lua
 gui_spell_row.lua
 gui_spell_selection.lua
 

@@ -19,7 +19,6 @@ local debugCategories = {
 -- Initialize debug system
 function DM.Debug:Init()
   -- Set default debug state from saved variables
-  DM.DEBUG_MODE = (DotMasterDB and DotMasterDB.debug ~= nil) and DotMasterDB.debug or true
   DM.DEBUG_CATEGORIES = (DotMasterDB and DotMasterDB.debugCategories) or DM:DeepCopy(debugCategories)
 
   -- Migrate old debug messages if present
@@ -66,7 +65,7 @@ end
 -- Centralized log function
 function DM.Debug:Log(category, message, ...)
   -- Skip if debug mode is disabled or category is disabled
-  if not DM.DEBUG_MODE or (DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category]) then
+  if not DM.DEBUG_CATEGORIES.general or (DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category]) then
     return
   end
 
@@ -386,7 +385,6 @@ end
 -- Save debug settings
 function DM.Debug:SaveSettings()
   if DotMasterDB then
-    DotMasterDB.debug = DM.DEBUG_MODE
     DotMasterDB.debugCategories = DM.DEBUG_CATEGORIES
     DotMasterDB.debugConsoleOutput = DM.DEBUG_CONSOLE_OUTPUT
   end

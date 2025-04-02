@@ -96,6 +96,8 @@ function DM:RecordDots(unitToken)
         id = id,
         timestamp = GetTime()
       }
+      -- DEBUG: Print the exact spell ID detected by UNIT_AURA
+      DM:DebugMsg(string.format("RecordDots: Detected Spell ID: %d, Name: %s from UNIT_AURA", id, name))
 
       -- Update spell database with class and spec info
       local className, specName = self:GetPlayerClassAndSpec()
@@ -380,16 +382,16 @@ function DM:ShowDetectedDotNotification(name, id)
   end
 
   -- Spell ikonu için ikonların sınıf rengine göre hazırlanması
+  local spellIcon = DM:GetSpellIcon(id)
+
+  -- Debug message for spell icon
+  DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", name, id, spellIcon))
+
+  -- Spell ikonu olarak standart mor ikonu kullan (spell ID'ye göre)
   local icon = alertFrame:CreateTexture(nil, "ARTWORK")
   icon:SetSize(28, 28)
   icon:SetPoint("LEFT", 8, 0)
-
-  -- Sınıf renk ayarları
-  local className = select(2, UnitClass("player")) or "UNKNOWN"
-  local classColor = self.classColors[className] or { r = 0.5, g = 0, b = 0.7 }
-
-  -- Spell ikonu olarak standart mor ikonu kullan (spell ID'ye göre)
-  icon:SetTexture("Interface\\Icons\\Spell_Shadow_ShadowWordPain")
+  icon:SetTexture(spellIcon)
   icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Crop out the border
 
   -- İkon çerçevesi ekle
@@ -583,19 +585,26 @@ function DM:ShowDotsConfirmationDialog(dots)
           if dotInfo and not self:SpellExists(id) then
             DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
 
+            -- Retrieve the correct spell icon
+            local spellIcon = DM:GetSpellIcon(id)
+
+            -- Debug message for spell icon
+            DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", dotInfo.name, id, spellIcon))
+
             -- Add to new database with defaults
             local className, specName = self:GetPlayerClassAndSpec()
-            local defaultIcon = "Interface\\Icons\\Spell_Nature_HealingTouch"
             local defaultColor = { 1, 0, 0 } -- Red
             local defaultPriority = 999
             local defaultTracked = 1
             local defaultEnabled = 1
 
-            DM:AddSpellToDMSpellsDB(id, dotInfo.name, defaultIcon, className, specName)
-            DM.dmspellsdb[id].color = defaultColor
-            DM.dmspellsdb[id].priority = defaultPriority
-            DM.dmspellsdb[id].tracked = defaultTracked
-            DM.dmspellsdb[id].enabled = defaultEnabled
+            -- Convert ID to string for consistent storage
+            local idStr = tostring(id)
+            DM:AddSpellToDMSpellsDB(idStr, dotInfo.name, spellIcon, className, specName)
+            DM.dmspellsdb[idStr].color = defaultColor
+            DM.dmspellsdb[idStr].priority = defaultPriority
+            DM.dmspellsdb[idStr].tracked = defaultTracked
+            DM.dmspellsdb[idStr].enabled = defaultEnabled
 
             DM:SaveDMSpellsDB()
             DM:DebugMsg("Spell added to dmspellsdb: " .. dotInfo.name)
@@ -608,6 +617,11 @@ function DM:ShowDotsConfirmationDialog(dots)
       -- Update GUI and save settings
       if self.GUI and self.GUI.RefreshSpellList then
         self.GUI:RefreshSpellList()
+      end
+
+      -- Refresh Database tab UI to show newly added spells
+      if self.GUI and self.GUI.RefreshDatabaseTabList then
+        self.GUI:RefreshDatabaseTabList()
       end
 
       self:SaveSettings()
@@ -667,6 +681,12 @@ function DM:ShowDotsConfirmationDialog(dots)
     local id = dotData.id
     local dotInfo = dotData.info
 
+    -- Retrieve the correct spell icon
+    local spellIcon = DM:GetSpellIcon(id)
+
+    -- Debug message for spell icon
+    DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", dotInfo.name, id, spellIcon))
+
     -- Create row
     local row = CreateFrame("Frame", nil, self.dotsScrollChild)
     row:SetSize(370, 30)
@@ -690,9 +710,15 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- Store in checkboxes table
     self.dotCheckboxes[tostring(id)] = checkbox
 
+    -- Spell icon
+    local icon = row:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(24, 24)
+    icon:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
+    icon:SetTexture(spellIcon)
+
     -- Spell name and ID
     local text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    text:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
+    text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     text:SetText(string.format("%s (ID: %d)", dotInfo.name, id))
 
     yOffset = yOffset + 30
@@ -823,4 +849,39 @@ function DM:CreateNameplateDebuggerSection()
 
   -- Set default state to unchecked
   self.nameplateDebuggerCheckbox:SetChecked(false)
+end
+
+-- Helper function to get spell icon with fallback methods
+function DM:GetSpellIcon(spellID)
+  -- Default icon for fallback
+  local defaultIcon = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+  -- Method 1: C_Spell.GetSpellInfo (preferred modern method)
+  local spellInfo = C_Spell.GetSpellInfo(spellID)
+  if spellInfo then
+    -- Check for different possible icon fields
+    if spellInfo.iconID and spellInfo.iconID ~= 0 then
+      DM:DebugMsg(string.format("Icon for spell %d found via C_Spell.GetSpellInfo.iconID: %s", spellID, spellInfo.iconID))
+      return spellInfo.iconID
+    elseif spellInfo.originalIconID and spellInfo.originalIconID ~= 0 then
+      DM:DebugMsg(string.format("Icon for spell %d found via C_Spell.GetSpellInfo.originalIconID: %s", spellID,
+        spellInfo.originalIconID))
+      return spellInfo.originalIconID
+    elseif spellInfo.iconFileID and spellInfo.iconFileID ~= 0 then
+      DM:DebugMsg(string.format("Icon for spell %d found via C_Spell.GetSpellInfo.iconFileID: %s", spellID,
+        spellInfo.iconFileID))
+      return spellInfo.iconFileID
+    end
+  end
+
+  -- Method 2: Classic GetSpellInfo
+  local _, _, icon = GetSpellInfo(spellID)
+  if icon and icon ~= "" then
+    DM:DebugMsg(string.format("Icon for spell %d found via GetSpellInfo: %s", spellID, icon))
+    return icon
+  end
+
+  -- Fallback to default if all methods fail
+  DM:DebugMsg(string.format("No icon found for spell %d, using default", spellID))
+  return defaultIcon
 end

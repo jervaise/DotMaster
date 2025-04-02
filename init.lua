@@ -28,7 +28,7 @@ DM.recordingDots = false
 DM.detectedDots = {}
 DM.defaults = {
   enabled = true,
-  version = "0.5.2",
+  version = "0.6.6",
   lastSortOrder = 1, -- Added for sorting functionality
   spellConfig = {
     -- Default spells disabled, users will add their own
@@ -37,7 +37,10 @@ DM.defaults = {
 }
 
 -- Debug mode enabled by default
-DM.DEBUG_MODE = true
+DM.DEBUG_CATEGORIES = {
+  general = true,
+  -- Add any other categories you want to enable/disable
+}
 
 -- Simple print function that doesn't require DebugMsg
 function DM:SimplePrint(message)
@@ -131,9 +134,9 @@ end
 -- Set up event handling
 DM:SetScript("OnEvent", function(self, ...) self:OnEvent(...) end)
 
--- Modify PrintMessage to respect DEBUG_MODE
+-- Modify PrintMessage to respect DEBUG_CATEGORIES.general
 function DM:PrintMessage(message, ...)
-  if not self.DEBUG_MODE then return end
+  if not DM.DEBUG_CATEGORIES.general then return end
   local prefix = "|cFFCC00FFDotMaster:|r "
   if select('#', ...) > 0 then
     DM:DebugMsg(prefix .. message, ...)

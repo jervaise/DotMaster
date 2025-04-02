@@ -206,6 +206,9 @@ end
 function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specName)
   if not spellID or not spellName then return end
 
+  -- Always convert ID to string for consistency
+  local idStr = tostring(spellID)
+
   -- Default values
   local defaultColor = { 1, 0, 0 } -- Red
   local defaultPriority = 999
@@ -213,7 +216,7 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
   local defaultEnabled = 1
 
   -- Add or update spell in the database
-  DM.dmspellsdb[spellID] = {
+  DM.dmspellsdb[idStr] = {
     spellname = spellName,
     spellicon = spellIcon,
     wowclass = className or "UNKNOWN",
@@ -223,11 +226,17 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
     tracked = defaultTracked,
     enabled = defaultEnabled
   }
+
+  DM:DebugMsg(string.format("Added spell to dmspellsdb: ID=%s, Name=%s", idStr, spellName))
 end
 
 -- Function to reset the database
 function DM:ResetDMSpellsDB()
+  -- Clear the dmspellsdb table
   DM.dmspellsdb = {}
+
+  -- Removed obsolete spellConfig clearing
+  DM:DebugMsg("Database completely reset.")
 end
 
 -- Function to save the database to saved variables
@@ -237,11 +246,37 @@ function DM:SaveDMSpellsDB()
   DM:DebugMsg("dmspellsdb saved to saved variables.")
 end
 
+-- Function to normalize database IDs to ensure they're all strings
+function DM:NormalizeDatabaseIDs()
+  local normalized = {}
+  local fixed = 0
+
+  if not DM.dmspellsdb then
+    DM:DebugMsg("No spell database to normalize")
+    return
+  end
+
+  for id, data in pairs(DM.dmspellsdb) do
+    local idStr = tostring(id)
+    normalized[idStr] = data
+    if idStr ~= id then fixed = fixed + 1 end
+  end
+
+  DM.dmspellsdb = normalized
+
+  if fixed > 0 then
+    DM:DebugMsg(string.format("Normalized %d spell IDs in database to ensure string format", fixed))
+  end
+end
+
 -- Function to load the database from saved variables
 function DM:LoadDMSpellsDB()
   if DotMasterDB and DotMasterDB.dmspellsdb then
     DM.dmspellsdb = DotMasterDB.dmspellsdb
     DM:DebugMsg("dmspellsdb loaded from saved variables.")
+
+    -- Normalize IDs to ensure they're all strings
+    DM:NormalizeDatabaseIDs()
   else
     DM.dmspellsdb = {}
     DM:DebugMsg("No saved database found, initialized new dmspellsdb.")

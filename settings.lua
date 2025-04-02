@@ -7,9 +7,7 @@ local DM = DotMaster
 function DM:SaveSettings()
   DotMasterDB = DotMasterDB or {}
   DotMasterDB.enabled = DM.enabled
-  DotMasterDB.version = DM.defaults.version
-  DotMasterDB.spellConfig = DM.spellConfig
-  DotMasterDB.debug = DM.DEBUG_MODE
+  DotMasterDB.version = "0.6.5"
 
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then
@@ -27,7 +25,6 @@ end
 function DM:LoadSettings()
   DotMasterDB = DotMasterDB or {}
   DM.enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or DM.defaults.enabled
-  DM.DEBUG_MODE = (DotMasterDB.debug ~= nil) and DotMasterDB.debug or true
 
   -- Load debug settings
   if DotMasterDB.debugCategories then
@@ -70,15 +67,7 @@ function DM:InitializeDebugSlashCommands()
       local command, arg = strsplit(" ", msg, 2)
       command = strtrim(command:lower())
 
-      if command == "on" or command == "enable" then
-        DM.DEBUG_MODE = true
-        DM:PrintMessage("Debug Mode Enabled")
-        DM:SaveSettings()
-      elseif command == "off" or command == "disable" then
-        DM.DEBUG_MODE = false
-        DM:PrintMessage("Debug Mode Disabled")
-        DM:SaveSettings()
-      elseif command == "console" or command == "window" then
+      if command == "console" or command == "window" then
         if DM.Debug.ToggleWindow then
           DM.Debug:ToggleWindow()
         else
@@ -125,7 +114,6 @@ function DM:InitializeDebugSlashCommands()
           -- Fallback if help function is not available
           DM:PrintMessage("Debug commands:")
           DM:PrintMessage("  /dmdebug - Toggle debug console")
-          DM:PrintMessage("  /dmdebug on|off - Enable/disable debug mode")
           DM:PrintMessage("  /dmdebug console - Open debug console")
           DM:PrintMessage("  /dmdebug status - Show debug status")
           DM:PrintMessage("  /dmdebug category <name> [on|off] - Toggle category")
@@ -139,7 +127,6 @@ function DM:InitializeDebugSlashCommands()
           -- Fallback if help function is not available
           DM:PrintMessage("Debug commands:")
           DM:PrintMessage("  /dmdebug - Toggle debug console")
-          DM:PrintMessage("  /dmdebug on|off - Enable/disable debug mode")
           DM:PrintMessage("  /dmdebug console - Open debug console")
           DM:PrintMessage("  /dmdebug status - Show debug status")
           DM:PrintMessage("  /dmdebug category <name> [on|off] - Toggle category")

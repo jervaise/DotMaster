@@ -8,7 +8,7 @@ local colorpicker = DotMaster_ColorPicker
 -- Helper function for color picker
 function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
   -- Use proper debug function instead of print
-  if DM.DEBUG_MODE then
+  if DM.DEBUG_CATEGORIES.general then
     DM:DebugMsg("Creating color swatch with RGB: " .. r .. ", " .. g .. ", " .. b)
   end
 

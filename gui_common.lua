@@ -13,6 +13,11 @@ DotMaster_Components.CreateTrackedSpellsTab = function(parent)
   return DM:CreateTrackedSpellsTab(parent)
 end
 
+-- Add Database tab component function
+DotMaster_Components.CreateDatabaseTab = function(parent)
+  return Components.CreateDatabaseTab(parent)
+end
+
 -- Create the main GUI
 function DM:CreateGUI()
   DM:DebugMsg("Creating GUI...")
@@ -178,61 +183,13 @@ function DM:CreateGUI()
     DM:DebugMsg("ERROR: CreateTrackedSpellsTab function not found!")
   end
 
-  -- Add buttons to the Database Management tab
-  local dbTabFrame = tabFrames[3]
-
-  local saveButton = CreateFrame("Button", nil, dbTabFrame, "UIPanelButtonTemplate")
-  saveButton:SetSize(120, 30)
-  saveButton:SetPoint("TOPLEFT", 20, -20)
-  saveButton:SetText("Save to Database")
-
-  local resetButton = CreateFrame("Button", nil, dbTabFrame, "UIPanelButtonTemplate")
-  resetButton:SetSize(120, 30)
-  resetButton:SetPoint("TOPLEFT", 160, -20)
-  resetButton:SetText("Reset Database")
-
-  -- Function to handle Save to Database button click
-  local function OnSaveToDatabaseClick()
-    -- Example spell data (replace with actual data as needed)
-    local exampleSpellID = 12345
-    local exampleSpellName = "Example Spell"
-    local exampleSpellIcon = "Interface\\Icons\\Spell_Nature_HealingTouch"
-    local exampleClassName = "MAGE"
-    local exampleSpecName = "Arcane"
-
-    -- Add spell to database
-    DM:AddSpellToDMSpellsDB(exampleSpellID, exampleSpellName, exampleSpellIcon, exampleClassName, exampleSpecName)
-
-    -- Save changes to saved variables
-    DM:SaveDMSpellsDB()
-
-    -- Debug message
-    DM:DebugMsg("Spell added to dmspellsdb: " .. exampleSpellName)
+  -- Create Database tab content
+  if DotMaster_Components.CreateDatabaseTab then
+    DM:DebugMsg("Using DotMaster_Components.CreateDatabaseTab")
+    DotMaster_Components.CreateDatabaseTab(tabFrames[3])
+  else
+    DM:DebugMsg("ERROR: CreateDatabaseTab function not found!")
   end
-
-  -- Function to handle Reset Database button click
-  local function OnResetDatabaseClick()
-    -- Confirmation prompt
-    StaticPopupDialogs["RESET_DATABASE_CONFIRM"] = {
-      text = "Are you sure you want to reset the database? This action cannot be undone.",
-      button1 = "Yes",
-      button2 = "No",
-      OnAccept = function()
-        DM:ResetDMSpellsDB()
-        DM:SaveDMSpellsDB()
-        DM:DebugMsg("dmspellsdb has been reset.")
-      end,
-      timeout = 0,
-      whileDead = true,
-      hideOnEscape = true,
-      preferredIndex = 3,
-    }
-    StaticPopup_Show("RESET_DATABASE_CONFIRM")
-  end
-
-  -- Assign functions to buttons
-  saveButton:SetScript("OnClick", OnSaveToDatabaseClick)
-  resetButton:SetScript("OnClick", OnResetDatabaseClick)
 
   -- Initialize spell list
   DM.GUI.frame = frame
