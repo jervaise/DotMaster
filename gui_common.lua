@@ -24,7 +24,7 @@ function DM:CreateGUI()
 
   -- Main frame
   local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(480, 450) -- Wider frame for better content display
+  frame:SetSize(500, 650) -- Increased frame size for better content display
   frame:SetPoint("CENTER")
   frame:SetFrameStrata("HIGH")
   frame:SetMovable(true)
@@ -34,21 +34,7 @@ function DM:CreateGUI()
   frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 
   -- Make frame resizable if supported
-  if frame.SetResizable then
-    frame:SetResizable(true)
-
-    -- Set minimum size if supported
-    if frame.SetMinResize then
-      frame:SetMinResize(480, 300)
-    else
-      -- Alternative approach for versions that don't support SetMinResize
-      frame:SetScript("OnSizeChanged", function(self, width, height)
-        -- Enforce minimum size
-        if width < 480 then self:SetWidth(480) end
-        if height < 300 then self:SetHeight(300) end
-      end)
-    end
-  end
+  -- RESIZING FEATURE REMOVED
 
   frame:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -56,36 +42,22 @@ function DM:CreateGUI()
     edgeSize = 16,
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
   })
-  frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-  frame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8)
+  frame:SetBackdropColor(0, 0, 0, 0.8)             -- Darker background with better transparency
+  frame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Keep the purple border
   frame:Hide()
 
-  -- Add resize button at bottom right
-  local resizeBtn = CreateFrame("Button", nil, frame)
-  resizeBtn:SetSize(16, 16)
-  resizeBtn:SetPoint("BOTTOMRIGHT", -2, 2)
-  resizeBtn:EnableMouse(true)
+  -- Define size constraints as fixed values now (no resizing)
+  local minWidth, minHeight = 500, 650
+  local maxWidth, maxHeight = 500, 650
+  local isResizing = false
 
-  -- Create an arrow texture for the resize button
-  local resizeTexture = resizeBtn:CreateTexture(nil, "OVERLAY")
-  resizeTexture:SetAllPoints()
-  resizeTexture:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+  -- Resize button and functionality removed
 
-  -- Highlight texture on hover
-  local highlightTexture = resizeBtn:CreateTexture(nil, "HIGHLIGHT")
-  highlightTexture:SetAllPoints()
-  highlightTexture:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-
-  -- Add on drag functionality
-  resizeBtn:SetScript("OnMouseDown", function()
-    if frame.StartSizing then
-      frame:StartSizing("BOTTOMRIGHT")
-    end
-  end)
-
-  resizeBtn:SetScript("OnMouseUp", function()
-    if frame.StopMovingOrSizing then
-      frame:StopMovingOrSizing()
+  -- Simple OnSizeChanged handler just to enforce fixed size
+  frame:SetScript("OnSizeChanged", function(self, width, height)
+    -- Always enforce our fixed size if it somehow changes
+    if width ~= minWidth or height ~= minHeight then
+      self:SetSize(minWidth, minHeight)
     end
   end)
 
@@ -114,7 +86,7 @@ function DM:CreateGUI()
   tabBg:SetPoint("TOPLEFT", 8, -40)
   tabBg:SetPoint("TOPRIGHT", -8, -40)
   tabBg:SetHeight(tabHeight)
-  tabBg:SetColorTexture(0.15, 0.15, 0.15, 0.6)
+  tabBg:SetColorTexture(0, 0, 0, 0.6) -- Match debug window transparency
 
   for i = 1, 3 do
     -- Tab content frames
@@ -130,7 +102,7 @@ function DM:CreateGUI()
     -- Tab styling
     local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
     normalTexture:SetAllPoints()
-    normalTexture:SetColorTexture(0.1, 0.1, 0.1, 0.7)
+    normalTexture:SetColorTexture(0, 0, 0, 0.7) -- Darker background with better transparency
 
     -- Tab text
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -145,12 +117,12 @@ function DM:CreateGUI()
       for j, tabFrame in ipairs(tabFrames) do
         tabFrame:Hide()
         local tab = _G["DotMasterTab" .. j]
-        tab:GetRegions():SetColorTexture(0.1, 0.1, 0.1, 0.7)
+        tab:GetRegions():SetColorTexture(0, 0, 0, 0.7) -- Match debug window style
       end
 
       -- Show selected frame and highlight tab
       tabFrames[self.id]:Show()
-      self:GetRegions():SetColorTexture(0.3, 0.3, 0.3, 0.8)
+      self:GetRegions():SetColorTexture(0.2, 0.2, 0.2, 0.8) -- Slightly lighter for selected tab
       activeTab = self.id
 
       -- Refresh appropriate tab content when clicked
@@ -226,17 +198,6 @@ function DM:CreateGUI()
   else
     DM:GUIDebug("WARNING: Neither RefreshTrackedSpellList nor RefreshSpellList found!")
   end
-
-  -- Tooltip for resize button
-  resizeBtn:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
-    GameTooltip:SetText("Drag to resize", 1, 1, 1)
-    GameTooltip:Show()
-  end)
-
-  resizeBtn:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
 
   -- Check ColorPickerFrame
   C_Timer.After(1, function()

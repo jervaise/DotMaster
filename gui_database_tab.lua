@@ -11,7 +11,7 @@ function Components.CreateDatabaseTab(parentFrame)
 
   -- Search Box at the top
   local searchBox = CreateFrame("EditBox", "DotMasterDbSearchBox", parentFrame, "SearchBoxTemplate")
-  searchBox:SetSize(300, 24)
+  searchBox:SetSize(350, 24)
   searchBox:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 15, -15)
   searchBox:SetAutoFocus(false)
   searchBox:SetTextInsets(5, 5, 0, 0)
@@ -154,19 +154,13 @@ function Components.CreateDatabaseTab(parentFrame)
   scrollChild:SetPoint("TOP", scrollFrame, "TOP", 0, 0)
   scrollChild:SetWidth(scrollFrame:GetWidth() - 30) -- Adjust width to give more horizontal margins
 
-  -- Fix scrolling behavior on resize
+  -- Simplified handling for fixed-size window
   parentFrame:HookScript("OnSizeChanged", function(self, width, height)
-    -- Prevent excessive resizing
-    if width > 800 or height > 600 then
-      self:SetSize(math.min(width, 800), math.min(height, 600))
-      return
-    end
-
-    -- Update container sizes
+    -- Update container sizes with fixed width
     buttonContainer:SetWidth(width - 20)
     scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -23, 10)
 
-    -- Center the scrollchild in the new scrollframe size
+    -- Center the scrollchild in the scrollframe
     scrollChild:SetWidth(scrollFrame:GetWidth() - 30)
 
     -- Force layout update
@@ -331,12 +325,12 @@ function GUI:RefreshDatabaseTabList(filter)
     -- Class Header Background/Text
     local bg = classFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+    bg:SetColorTexture(0, 0, 0, 0.8) -- Darker background with better transparency
 
-    -- Use class color if available
+    -- Use class color if available but with better transparency
     if DM.classColors[className] then
       local color = DM.classColors[className]
-      bg:SetColorTexture(color.r * 0.3, color.g * 0.3, color.b * 0.3, 0.8)
+      bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8)
     end
 
     local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -380,7 +374,7 @@ function GUI:RefreshDatabaseTabList(filter)
       -- Spec Header Background/Text
       local specBg = specFrame:CreateTexture(nil, "BACKGROUND")
       specBg:SetAllPoints()
-      specBg:SetColorTexture(0.15, 0.15, 0.15, 0.7)
+      specBg:SetColorTexture(0, 0, 0, 0.7) -- Darker background with better transparency
       local specText = specFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
       specText:SetPoint("LEFT", 10, 0)
       specText:SetText(specName)
@@ -429,9 +423,9 @@ function GUI:RefreshDatabaseTabList(filter)
           local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
           rowBg:SetAllPoints()
           if (visibleSpellCount % 2 == 0) then
-            rowBg:SetColorTexture(0.1, 0.1, 0.1, 0.3)
+            rowBg:SetColorTexture(0, 0, 0, 0.3) -- Darker alternating row
           else
-            rowBg:SetColorTexture(0.05, 0.05, 0.05, 0.3)
+            rowBg:SetColorTexture(0, 0, 0, 0.2) -- Slightly lighter alternating row
           end
 
           table.insert(specFrame.spellFrames, spellFrame)

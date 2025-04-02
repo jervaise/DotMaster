@@ -30,6 +30,9 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Create UpdateLayout function - frame resize olduğunda pozisyonları günceller
   local function UpdateColumnPositions(width)
+    -- Fixed width for consistent layout
+    width = 480 -- Set to a fixed width (slightly less than frame width of 500)
+
     local positions = {}
     local widths = {}
     local xPos = PADDING.INNER
@@ -88,7 +91,7 @@ function DM:CreateTrackedSpellsTab(parent)
   local spellListBg = parent:CreateTexture(nil, "BACKGROUND")
   spellListBg:SetPoint("TOPLEFT", PADDING.OUTER, -70)
   spellListBg:SetPoint("BOTTOMRIGHT", -PADDING.OUTER, 40)
-  spellListBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+  spellListBg:SetColorTexture(0, 0, 0, 0.5) -- Darker background with better transparency
 
   -- Scrollframe for spell list
   local scrollFrame = CreateFrame("ScrollFrame", "DotMasterSpellScrollFrame", parent, "UIPanelScrollFrameTemplate")
@@ -119,7 +122,7 @@ function DM:CreateTrackedSpellsTab(parent)
   -- Header background
   local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
   headerBg:SetAllPoints()
-  headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  headerBg:SetColorTexture(0, 0, 0, 0.8) -- Darker header background with better transparency
 
   -- Kolon başlıkları
   local headerTexts = {}
@@ -276,6 +279,7 @@ function DM:CreateTrackedSpellsTab(parent)
   end)
 
   -- Parent frame'in boyutu değiştiğinde çağrılacak fonksiyon
+  -- Respond to any parent frame size changes (not needed for resize, but kept for compatibility)
   parent:HookScript("OnSizeChanged", function()
     scrollChild:SetWidth(scrollFrame:GetWidth())
     UpdateHeaderPositions()

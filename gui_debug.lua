@@ -23,15 +23,30 @@ function DM.Debug:Init()
   DM.DEBUG_CATEGORIES = (DotMasterDB and DotMasterDB.debugCategories) or DM:DeepCopy(debugCategories)
 
   -- Migrate old debug messages if present
-  if DM.oldDebugMessages then
+  if DM.oldDebugMessages and #DM.oldDebugMessages > 0 then
+    DM:DebugMsg("Debug system initialized - importing " .. #DM.oldDebugMessages .. " early initialization messages")
+
+    -- Clear existing messages to avoid duplication
+    wipe(debugMessages)
+
+    -- Import the early initialization messages
     for _, msg in ipairs(DM.oldDebugMessages) do
       table.insert(debugMessages, msg)
     end
-    DM.oldDebugMessages = nil
+
+    -- Clear the old messages to prevent duplication
+    DM.oldDebugMessages = {}
   end
 
   -- Hook original debug functions
   self:HookDebugFunctions()
+
+  -- Force a display update if the console window exists
+  C_Timer.After(0.5, function()
+    if DM.GUI.debugFrame and DM.GUI.debugEditBox then
+      self:UpdateDisplay()
+    end
+  end)
 end
 
 -- Hook and replace original debug functions
@@ -113,7 +128,7 @@ function DM.Debug:Log(category, message, ...)
   end
 
   -- Also output to console if console output is enabled
-  if DM.DEBUG_CONSOLE_OUTPUT then
+  if DM.DEBUG_CONSOLE_OUTPUT == true then
     -- Use a simpler format for console
     print(prefix .. formattedMessage)
   end
@@ -369,7 +384,43 @@ function DM.Debug:CreateDebugWindow()
       "Debug log exported to global variable DOTMASTER_DEBUG_EXPORT. Use /dump DOTMASTER_DEBUG_EXPORT to view.")
   end)
 
+  -- Initialization Messages Button
+  local initButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  initButton:SetSize(120, 22)
+  initButton:SetPoint("LEFT", 0, 0)
+  initButton:SetText("Init Messages")
+  initButton:SetScript("OnClick", function()
+    -- Collect all initialization-related messages
+    local initMsgs = {}
+    for _, msg in ipairs(debugMessages) do
+      if msg:match("triggered")
+          or msg:match("initialized")
+          or msg:match("initialization")
+          or msg:match("init ")
+          or msg:match("loaded")
+          or msg:match("created")
+          or msg:match("ADDON_LOADED")
+          or msg:match("PLAYER_") then
+        table.insert(initMsgs, msg)
+      end
+    end
+
+    -- Display the filtered messages
+    local content = table.concat(initMsgs, "\n")
+    editBox:SetText(content)
+    editBox:SetFocus()
+
+    -- Add a note at the top
+    editBox:Insert("===== INITIALIZATION MESSAGES =====\n\n" .. content)
+  end)
+
   DM:PrintMessage("Debug console created")
+
+  -- Ensure messages are displayed immediately
+  C_Timer.After(0.1, function()
+    self:UpdateDisplay()
+  end)
+
   return frame
 end
 
@@ -384,7 +435,9 @@ function DM.Debug:ToggleWindow()
   else
     DM.GUI.debugFrame:Show()
     -- Update display when showing
-    self:UpdateDisplay()
+    C_Timer.After(0.1, function()
+      self:UpdateDisplay()
+    end)
   end
 end
 

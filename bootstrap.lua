@@ -25,6 +25,9 @@ DM.DEBUG_CATEGORIES = {
   database = true
 }
 
+-- By default, don't output debug messages to chat console
+DM.DEBUG_CONSOLE_OUTPUT = false
+
 -- Setup basic event handling for initialization sequence
 DM:RegisterEvent("ADDON_LOADED")
 DM:RegisterEvent("PLAYER_LOGIN")
@@ -36,43 +39,51 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
   if event == "ADDON_LOADED" and arg1 == DM.addonName then
     -- This is the critical point where SavedVariables become available
     DM.initState = "addon_loaded"
-    DM:SimplePrint("ADDON_LOADED triggered - SavedVariables available")
+
+    -- First priority: Initialize the debug system if needed
+    if DM.Debug and DM.Debug.Init and not DM.debugInitialized then
+      DM.Debug:Init()
+      DM.debugInitialized = true
+    end
+
+    -- Now use DebugMsg instead of SimplePrint
+    DM:DebugMsg("ADDON_LOADED triggered - SavedVariables available")
 
     -- Load saved settings (will be implemented in LoadSettings)
     if DM.LoadSettings then
       DM:LoadSettings()
-      DM:SimplePrint("Settings loaded")
+      DM:DebugMsg("Settings loaded")
     else
-      DM:SimplePrint("WARNING: LoadSettings not available yet")
+      DM:DebugMsg("WARNING: LoadSettings not available yet")
     end
 
     -- Load spell database (will be implemented in LoadDMSpellsDB)
     if DM.LoadDMSpellsDB then
       DM:LoadDMSpellsDB()
-      DM:SimplePrint("Spell database loaded")
+      DM:DebugMsg("Spell database loaded")
     else
-      DM:SimplePrint("WARNING: LoadDMSpellsDB not available yet")
+      DM:DebugMsg("WARNING: LoadDMSpellsDB not available yet")
     end
 
     DM.pendingInitialization = false
   elseif event == "PLAYER_LOGIN" then
     DM.initState = "player_login"
-    DM:SimplePrint("PLAYER_LOGIN triggered")
+    DM:DebugMsg("PLAYER_LOGIN triggered")
 
     -- Register debug slash commands if available
     if DM.InitializeDebugSlashCommands then
       DM:InitializeDebugSlashCommands()
-      DM:SimplePrint("Debug slash commands initialized")
+      DM:DebugMsg("Debug slash commands initialized")
     end
 
     -- Register main slash commands if available
     if DM.InitializeMainSlashCommands then
       DM:InitializeMainSlashCommands()
-      DM:SimplePrint("Main slash commands initialized")
+      DM:DebugMsg("Main slash commands initialized")
     end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
-    DM:SimplePrint("PLAYER_ENTERING_WORLD triggered")
+    DM:DebugMsg("PLAYER_ENTERING_WORLD triggered")
 
     -- Call main initialization (moved from core.lua)
     if DM.CompleteInitialization then
@@ -82,7 +93,7 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     -- Create GUI if available
     if DM.CreateGUI then
       DM:CreateGUI()
-      DM:SimplePrint("GUI created")
+      DM:DebugMsg("GUI created")
     end
 
     -- Initialize nameplate systems (currently disabled)
@@ -91,7 +102,7 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     wipe(DM.originalColors or {})
 
     -- Print final initialization message
-    DM:SimplePrint("Initialization complete - v" .. (DM.defaults and DM.defaults.version or "unknown"))
+    DM:DebugMsg("Initialization complete - v" .. (DM.defaults and DM.defaults.version or "unknown"))
   elseif event == "PLAYER_LOGOUT" then
     -- Save settings and database on logout
     if DM.SaveSettings then
@@ -106,17 +117,41 @@ end)
 
 -- Implement a minimal debug message handler until the real one is loaded
 function DM:DebugMsg(message)
+  -- Store message for later display in debug console
+  DM.oldDebugMessages = DM.oldDebugMessages or {}
+
+  -- Format with timestamp for consistency
+  local timestamp = date("|cFF888888[%H:%M:%S]|r ", GetServerTime())
+  local prefix = "|cFFCC00FF[GENERAL]|r "
+  local fullMessage = timestamp .. prefix .. message
+
+  -- Save for debug console to display later
+  table.insert(DM.oldDebugMessages, fullMessage)
+
+  -- Also print to chat if needed during early initialization
   DM:SimplePrint(message)
 end
 
 -- Define a stub for database debug messages
 function DM:DatabaseDebug(message)
+  -- Store message for later display in debug console
+  DM.oldDebugMessages = DM.oldDebugMessages or {}
+
+  -- Format with timestamp for consistency
+  local timestamp = date("|cFF888888[%H:%M:%S]|r ", GetServerTime())
+  local prefix = "|cFFFFA500[DATABASE]|r "
+  local fullMessage = timestamp .. prefix .. message
+
+  -- Save for debug console to display later
+  table.insert(DM.oldDebugMessages, fullMessage)
+
+  -- Also print to chat during early initialization
   DM:SimplePrint("[DATABASE] " .. message)
 end
 
 -- CompleteInitialization will be called during PLAYER_ENTERING_WORLD
 function DM:CompleteInitialization()
-  DM:SimplePrint("Completing full initialization")
+  DM:DebugMsg("Completing full initialization")
 
   -- Check if we have database data loaded
   if DM.dmspellsdb then
@@ -124,11 +159,11 @@ function DM:CompleteInitialization()
     for _ in pairs(DM.dmspellsdb) do
       count = count + 1
     end
-    DM:SimplePrint("Database contains " .. count .. " spells")
+    DM:DebugMsg("Database contains " .. count .. " spells")
   else
-    DM:SimplePrint("WARNING: Database not loaded or empty")
+    DM:DebugMsg("WARNING: Database not loaded or empty")
   end
 
   -- At this point we would initialize everything else
-  DM:SimplePrint("Addon fully initialized")
+  DM:DebugMsg("Addon fully initialized")
 end
