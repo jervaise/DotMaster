@@ -1,0 +1,7 @@
+## Interface: 90005
+## Title: DotMaster Debugger
+## Notes: A lightweight debugger for DotMaster
+## Author: YourName
+## Version: 0.1.0
+
+Debugger.lua 

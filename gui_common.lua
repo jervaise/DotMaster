@@ -111,7 +111,7 @@ function DM:CreateGUI()
   tabBg:SetHeight(tabHeight)
   tabBg:SetColorTexture(0.15, 0.15, 0.15, 0.6)
 
-  for i = 1, 2 do
+  for i = 1, 3 do
     -- Tab content frames
     tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
     tabFrames[i]:SetPoint("TOPLEFT", 10, -(45 + tabHeight))
@@ -130,7 +130,7 @@ function DM:CreateGUI()
     -- Tab text
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER")
-    text:SetText(i == 1 and "General" or "Tracked Spells")
+    text:SetText(i == 1 and "General" or i == 2 and "Tracked Spells" or "Database")
     text:SetTextColor(1, 0.82, 0)
 
     -- Store ID and script
@@ -177,6 +177,19 @@ function DM:CreateGUI()
   else
     DM:DebugMsg("ERROR: CreateTrackedSpellsTab function not found!")
   end
+
+  -- Add buttons to the Database Management tab
+  local dbTabFrame = tabFrames[3]
+
+  local saveButton = CreateFrame("Button", nil, dbTabFrame, "UIPanelButtonTemplate")
+  saveButton:SetSize(120, 30)
+  saveButton:SetPoint("TOPLEFT", 20, -20)
+  saveButton:SetText("Save to Database")
+
+  local resetButton = CreateFrame("Button", nil, dbTabFrame, "UIPanelButtonTemplate")
+  resetButton:SetSize(120, 30)
+  resetButton:SetPoint("TOPLEFT", 160, -20)
+  resetButton:SetText("Reset Database")
 
   -- Initialize spell list
   DM.GUI.frame = frame
