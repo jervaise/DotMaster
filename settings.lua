@@ -5,7 +5,11 @@ local DM = DotMaster
 
 -- Save settings to saved variables
 function DM:SaveSettings()
-  DotMasterDB = DotMasterDB or {}
+  if not DotMasterDB then
+    DM:DatabaseDebug("Creating new SavedVariables table for DotMasterDB")
+    DotMasterDB = {}
+  end
+
   DotMasterDB.enabled = DM.enabled
   DotMasterDB.version = "0.6.7"
 
@@ -25,8 +29,17 @@ end
 
 -- Load settings from saved variables
 function DM:LoadSettings()
-  DotMasterDB = DotMasterDB or {}
+  -- First log if SavedVariables are available
+  if DotMasterDB then
+    DM:DatabaseDebug("SavedVariables (DotMasterDB) found - loading settings")
+  else
+    DM:DatabaseDebug("SavedVariables (DotMasterDB) not found - initializing with defaults")
+    DotMasterDB = {}
+  end
+
+  -- Set enabled state (from SavedVariables or defaults)
   DM.enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or DM.defaults.enabled
+  DM:DatabaseDebug("Addon enabled state: " .. (DM.enabled and "Enabled" or "Disabled"))
 
   -- Load debug settings
   if DotMasterDB.debugCategories then
@@ -181,6 +194,9 @@ function DM:InitializeMainSlashCommands()
 
       DM:DebugMsg("Total spells: " .. (DM.TableCount and DM:TableCount(DM.dmspellsdb) or "N/A") ..
         ", Tracked: " .. tracked)
+
+      -- Add initialization state info
+      DM:DebugMsg("Initialization state: " .. (DM.initState or "unknown"))
     elseif command == "console" or command == "debugconsole" or command == "log" then
       -- Open the debug console
       if DM.Debug and DM.Debug.ToggleWindow then
@@ -324,6 +340,10 @@ function DM:InitializeMainSlashCommands()
       if count > 10 and dbSize > 20 then
         DM:PrintMessage("... and " .. (count - 10) .. " more spells (showing only first 10)")
       end
+
+      -- Add initialization info
+      DM:PrintMessage("Initialization state: " .. (DM.initState or "unknown"))
+      DM:PrintMessage("Saved variables state: " .. (DotMasterDB and "exists" or "nil"))
     else
       -- Try to toggle main GUI if available, otherwise print help
       if DM.GUI and DM.GUI.frame then

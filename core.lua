@@ -1,19 +1,16 @@
 -- DotMaster core.lua
--- Final initialization and startup
+-- Final initialization steps and startup
 
 local DM = DotMaster
 
--- Phase 1: Early Initialization (Settings & Debug System)
-local earlyInitOK, earlyInitErr = pcall(function()
-  -- Load settings (essential for debug flags)
-  if DM.LoadSettings then
-    DM:LoadSettings()
-    DM:DatabaseDebug("Settings loaded successfully")
-  else
-    DM:SimplePrint("LoadSettings function not found!")
-  end
+-- Skip duplicate initialization if bootstrap has already handled it
+if DM.initState and DM.initState ~= "bootstrap" then
+  DM:DebugMsg("Core.lua: Skipping duplicated initialization (current state: " .. DM.initState .. ")")
+  return
+end
 
-  -- Initialize Debug System Core (Hooks, Logging)
+-- Initialize Debug System Core (Hooks, Logging)
+local debugOK, debugErr = pcall(function()
   if DM.Debug and DM.Debug.Init then
     DM.Debug:Init()
     DM:DebugMsg("Core debug system initialized (logging hooked).")
@@ -25,36 +22,23 @@ local earlyInitOK, earlyInitErr = pcall(function()
   if DM.Debug and DM.Debug.CreateDebugWindow then
     DM.Debug:CreateDebugWindow()
     DM:DebugMsg("Debug console GUI created.")
-  else
-    DM:SimplePrint("DM.Debug.CreateDebugWindow not found!")
-  end
-
-  -- Initialize Debug Slash Commands
-  if DM.InitializeDebugSlashCommands then
-    DM:InitializeDebugSlashCommands()
-    DM:DatabaseDebug("Debug slash commands initialized")
-  else
-    DM:SimplePrint("InitializeDebugSlashCommands not found!")
   end
 end)
 
-if not earlyInitOK then
-  DM:SimplePrint("CRITICAL ERROR during early initialization: " .. tostring(earlyInitErr))
-  DM:DatabaseDebug("Critical error during initialization: " .. tostring(earlyInitErr))
+if not debugOK then
+  DM:SimplePrint("Error initializing debug system: " .. tostring(debugErr))
 end
 
--- Phase 2: Main Addon Initialization (calls DM:Initialize() from init.lua)
--- This will now use pcall internally for fragile components
-local mainInitOK, mainInitErr = pcall(function()
-  DM:Initialize()
-  DM:DatabaseDebug("Main addon initialization completed successfully")
-end)
-
-if not mainInitOK then
-  DM:DebugMsg("ERROR during main initialization (DM:Initialize): " .. tostring(mainInitErr))
-  DM:DatabaseDebug("Error during main initialization: " .. tostring(mainInitErr))
-  DM:PrintMessage("Main addon initialization failed. Some features may be broken. Check /dmdebug console.")
+-- Check database state for diagnostic purposes
+if DM.dmspellsdb then
+  local count = 0
+  for _ in pairs(DM.dmspellsdb) do
+    count = count + 1
+  end
+  DM:DebugMsg("Database check from core.lua: " .. count .. " spells")
+else
+  DM:DebugMsg("Database check from core.lua: NOT LOADED")
 end
 
 -- Final debug note
-DM:DebugMsg("Core.lua execution finished.")
+DM:DebugMsg("Core.lua execution finished. Initialization will complete during PLAYER_ENTERING_WORLD event.")

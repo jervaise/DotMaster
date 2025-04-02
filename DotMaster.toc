@@ -8,11 +8,14 @@
 # Libraries
 embeds.xml
 
+# Bootstrap (First Load)
+bootstrap.lua
+
 # Core Initialization & Debugging (Load Early)
-init.lua
 utils.lua
 settings.lua
 gui_debug.lua
+init.lua
 
 # Spell functionality
 spell_database.lua

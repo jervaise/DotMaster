@@ -4,11 +4,10 @@
 local DM = DotMaster
 
 -- Initialize database
-DM.spellDatabase = {}
-DM.MAX_DATABASE_SIZE = 500
+DM.spellDatabase = DM.spellDatabase or {}
 
 -- Initialize new database structure
-DM.dmspellsdb = {}
+DM.dmspellsdb = DM.dmspellsdb or {}
 
 -- Class colors for UI
 DM.classColors = {
@@ -28,9 +27,6 @@ DM.classColors = {
   ["UNKNOWN"] = { r = 0.50, g = 0.50, b = 0.50 },
 }
 
--- Legacy SpellNames table for compatibility
-DM.SpellNames = {}
-
 -- Function to add a spell to the database
 function DM:AddSpellToDatabase(spellID, spellName, className, specName)
   -- Check parameters
@@ -45,14 +41,6 @@ function DM:AddSpellToDatabase(spellID, spellName, className, specName)
 
   -- Update or add entry
   if not self.spellDatabase[spellID] then
-    -- Check if we're at capacity
-    local databaseSize = self:TableCount(self.spellDatabase)
-    if databaseSize >= self.MAX_DATABASE_SIZE then
-      -- We're at capacity, might need to clean up
-      -- For now, just don't add any more
-      return
-    end
-
     -- Add new entry
     self.spellDatabase[spellID] = {
       name = spellName,
@@ -81,9 +69,6 @@ function DM:AddSpellToDatabase(spellID, spellName, className, specName)
       self.spellDatabase[spellID].spec = specName
     end
   end
-
-  -- Update legacy SpellNames table
-  self.SpellNames[spellID] = spellName
 end
 
 -- Function to get all spells for a class
@@ -135,11 +120,12 @@ end
 -- Function to save database
 function DM:SaveSpellDatabase()
   -- Save to SavedVariables
-  if not DotMasterDB then DotMasterDB = {} end
+  if not DotMasterDB then
+    DM:DatabaseDebug("Creating new SavedVariables table for DotMasterDB")
+    DotMasterDB = {}
+  end
   DotMasterDB.spellDatabase = self.spellDatabase
-
-  -- Also update legacy SpellNames
-  DotMasterDB.SpellNames = self.SpellNames
+  DM:DatabaseDebug("Saved spellDatabase with " .. DM:TableCount(self.spellDatabase) .. " entries")
 end
 
 -- Function to load database
@@ -147,58 +133,10 @@ function DM:LoadSpellDatabase()
   -- Load from SavedVariables
   if DotMasterDB and DotMasterDB.spellDatabase then
     self.spellDatabase = DotMasterDB.spellDatabase
-  end
-
-  -- Also load legacy SpellNames for compatibility
-  if DotMasterDB and DotMasterDB.SpellNames then
-    self.SpellNames = DotMasterDB.SpellNames
-  end
-
-  -- Update legacy SpellNames from database for consistency
-  if self.spellDatabase then
-    for id, spellData in pairs(self.spellDatabase) do
-      self.SpellNames[id] = spellData.name
-    end
-  end
-end
-
--- Function to clean up database (remove old entries)
-function DM:CleanupSpellDatabase()
-  if not self.spellDatabase then return end
-
-  local databaseSize = self:TableCount(self.spellDatabase)
-  if databaseSize <= self.MAX_DATABASE_SIZE then return end
-
-  -- Sort by last used time
-  local spellsToSort = {}
-  for id, data in pairs(self.spellDatabase) do
-    table.insert(spellsToSort, {
-      id = id,
-      lastUsed = data.lastUsed or 0,
-      useCount = data.useCount or 0
-    })
-  end
-
-  -- Sort by last used (oldest first)
-  table.sort(spellsToSort, function(a, b)
-    if a.useCount == 0 and b.useCount > 0 then
-      return true -- Unused spells first
-    elseif a.useCount > 0 and b.useCount == 0 then
-      return false
-    else
-      return a.lastUsed < b.lastUsed -- Then by last used time
-    end
-  end)
-
-  -- Remove oldest entries to get back to max size
-  local toRemove = databaseSize - self.MAX_DATABASE_SIZE
-  for i = 1, toRemove do
-    if i <= #spellsToSort then
-      local id = spellsToSort[i].id
-      self.spellDatabase[id] = nil
-      -- Also update legacy SpellNames
-      self.SpellNames[id] = nil
-    end
+    DM:DatabaseDebug("Loaded spellDatabase with " .. DM:TableCount(self.spellDatabase) .. " entries")
+  else
+    self.spellDatabase = {}
+    DM:DatabaseDebug("No saved spellDatabase found, initialized empty table")
   end
 end
 
@@ -206,8 +144,9 @@ end
 function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specName)
   if not spellID or not spellName then return end
 
-  -- Always convert ID to string for consistency
-  local idStr = tostring(spellID)
+  -- Convert ID to number for consistency
+  local numericID = tonumber(spellID)
+  if not numericID then return end
 
   -- Default values
   local defaultColor = { 1, 0, 0 } -- Red
@@ -216,7 +155,7 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
   local defaultEnabled = 1
 
   -- Add or update spell in the database
-  DM.dmspellsdb[idStr] = {
+  DM.dmspellsdb[numericID] = {
     spellname = spellName,
     spellicon = spellIcon,
     wowclass = className or "UNKNOWN",
@@ -227,7 +166,7 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
     enabled = defaultEnabled
   }
 
-  DM:DatabaseDebug(string.format("Added spell to dmspellsdb: ID=%s, Name=%s", idStr, spellName))
+  DM:DatabaseDebug(string.format("Added spell to dmspellsdb: ID=%d, Name=%s", numericID, spellName))
 end
 
 -- Function to reset the database
@@ -235,18 +174,28 @@ function DM:ResetDMSpellsDB()
   -- Clear the dmspellsdb table
   DM.dmspellsdb = {}
 
-  -- Removed obsolete spellConfig clearing
+  -- Also explicitly remove spellConfig from SavedVariables if it exists
+  if DotMasterDB then
+    DotMasterDB.spellConfig = nil
+  end
+
   DM:DatabaseDebug("Database completely reset.")
 end
 
 -- Function to save the database to saved variables
 function DM:SaveDMSpellsDB()
-  if not DotMasterDB then DotMasterDB = {} end
+  if not DotMasterDB then
+    DM:DatabaseDebug("Creating new SavedVariables table for DotMasterDB")
+    DotMasterDB = {}
+  end
+
   DotMasterDB.dmspellsdb = DM.dmspellsdb
-  DM:DatabaseDebug("dmspellsdb saved to saved variables.")
+
+  local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+  DM:DatabaseDebug("dmspellsdb saved to saved variables (" .. count .. " spells)")
 end
 
--- Function to normalize database IDs to ensure they're all strings
+-- Function to normalize database IDs to ensure they're all numbers
 function DM:NormalizeDatabaseIDs()
   local normalized = {}
   local fixed = 0
@@ -257,31 +206,54 @@ function DM:NormalizeDatabaseIDs()
   end
 
   for id, data in pairs(DM.dmspellsdb) do
-    local idStr = tostring(id)
-    normalized[idStr] = data
-    if idStr ~= id then fixed = fixed + 1 end
+    local numericID = tonumber(id)
+    -- Only process valid numeric IDs
+    if numericID then
+      normalized[numericID] = data
+      if numericID ~= id then fixed = fixed + 1 end
+    else
+      DM:DatabaseDebug(string.format("Skipping invalid non-numeric ID: %s", tostring(id)))
+    end
   end
 
   DM.dmspellsdb = normalized
 
   if fixed > 0 then
-    DM:DatabaseDebug(string.format("Normalized %d spell IDs in database to ensure string format", fixed))
+    DM:DatabaseDebug(string.format("Normalized %d spell IDs in database to ensure numeric format", fixed))
   end
 end
 
 -- Function to load the database from saved variables
 function DM:LoadDMSpellsDB()
+  -- Check if saved variables exist and contain dmspellsdb
   if DotMasterDB and DotMasterDB.dmspellsdb then
-    DM.dmspellsdb = DotMasterDB.dmspellsdb
-    DM:DatabaseDebug("dmspellsdb loaded from saved variables.")
+    -- Capture current count for debugging
+    local oldCount = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
 
-    -- Normalize IDs to ensure they're all strings
+    -- Load spell data from saved variables
+    DM.dmspellsdb = DotMasterDB.dmspellsdb
+
+    -- Count loaded spells
+    local newCount = DM:TableCount(DM.dmspellsdb)
+    DM:DatabaseDebug("dmspellsdb loaded from saved variables: " .. newCount .. " spells (was " .. oldCount .. ")")
+
+    -- Normalize IDs to ensure they're all numbers
     DM:NormalizeDatabaseIDs()
   else
+    -- Initialize empty database
     DM.dmspellsdb = {}
-    DM:DatabaseDebug("No saved database found, initialized new dmspellsdb.")
+    DM:DatabaseDebug("No saved database found, initialized new empty dmspellsdb.")
+  end
+
+  -- Check for and warn about legacy spellConfig data
+  if DotMasterDB and DotMasterDB.spellConfig then
+    DM:DatabaseDebug(
+    "WARNING: Legacy spellConfig data found in SavedVariables. Run '/dm reset' or '/dm fixdb' to clean up.")
+
+    -- Optionally migrate any remaining spells from spellConfig if needed
+    -- This code is left as a placeholder for potential migration needs
   end
 end
 
--- Call LoadDMSpellsDB on addon load
-DM:LoadDMSpellsDB()
+-- Make sure to NOT call LoadDMSpellsDB here - it will be called during ADDON_LOADED in bootstrap
+-- DM:LoadDMSpellsDB() -- This line is removed
