@@ -152,6 +152,28 @@ function DM:CreateGUI()
       tabFrames[self.id]:Show()
       self:GetRegions():SetColorTexture(0.3, 0.3, 0.3, 0.8)
       activeTab = self.id
+
+      -- Refresh appropriate tab content when clicked
+      if self.id == 2 then -- Tracked Spells tab
+        -- Use the new RefreshTrackedSpellList function for the tracked spells tab
+        if DM.GUI.RefreshTrackedSpellList then
+          DM:GUIDebug("Refreshing Tracked Spells list")
+          DM.GUI:RefreshTrackedSpellList()
+        else
+          DM:GUIDebug("WARNING: RefreshTrackedSpellList not found!")
+          -- Fall back to old function if new one doesn't exist
+          if DM.GUI.RefreshSpellList then
+            DM:GUIDebug("Falling back to RefreshSpellList")
+            DM.GUI:RefreshSpellList()
+          end
+        end
+      elseif self.id == 3 then -- Database tab
+        -- Refresh database tab
+        if DM.GUI.RefreshDatabaseTabList then
+          DM:DatabaseDebug("Refreshing Database tab list")
+          DM.GUI:RefreshDatabaseTabList("")
+        end
+      end
     end)
 
     -- Position tabs side by side with space between
@@ -195,10 +217,14 @@ function DM:CreateGUI()
   DM.GUI.frame = frame
 
   -- Try/catch for RefreshSpellList, in case it's not loaded yet
-  if DM.GUI.RefreshSpellList then
+  if DM.GUI.RefreshTrackedSpellList then
+    DM:GUIDebug("Initializing Tracked Spells list with RefreshTrackedSpellList")
+    DM.GUI:RefreshTrackedSpellList()
+  elseif DM.GUI.RefreshSpellList then
+    DM:GUIDebug("Initializing with legacy RefreshSpellList")
     DM.GUI:RefreshSpellList()
   else
-    DM:DebugMsg("WARNING: RefreshSpellList not found!")
+    DM:GUIDebug("WARNING: Neither RefreshTrackedSpellList nor RefreshSpellList found!")
   end
 
   -- Tooltip for resize button

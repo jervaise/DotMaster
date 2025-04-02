@@ -3,20 +3,30 @@
 
 local DM = DotMaster
 
+-- TEMPORARY: Message to show when nameplate functions are called
+local DISABLED_MESSAGE = "Nameplate features are temporarily disabled during development."
+
 -- Checks for tracked debuffs on a unit
 function DM:CheckForTrackedDebuffs(unitToken)
+  -- TEMPORARILY DISABLED
+  self:DebugMsg("CheckForTrackedDebuffs: " .. DISABLED_MESSAGE)
+  return nil
+
+  -- Updated code using dmspellsdb with numeric IDs
+  --[[
   if not unitToken or not UnitExists(unitToken) then return nil end
 
   DM:NameplateDebug("CheckForTrackedDebuffs called: %s", unitToken)
 
-  -- If no spell config is present, early return
-  if not self.spellConfig or not next(self.spellConfig) then return nil end
+  -- If no spell database is present, early return
+  if not self.dmspellsdb or not next(self.dmspellsdb) then return nil end
 
   -- Check each spell config in priority order (if available)
   local sortedConfigs = {}
-  for spellIDString, config in pairs(self.spellConfig) do
-    if config.enabled then
-      table.insert(sortedConfigs, { id = spellIDString, priority = config.priority or 999, config = config })
+  for spellID, config in pairs(self.dmspellsdb) do
+    -- Check if spell is enabled (1 = enabled, 0 = disabled) and tracked (1 = tracked, 0 = not tracked)
+    if config.enabled == 1 and config.tracked == 1 then
+      table.insert(sortedConfigs, { id = spellID, priority = config.priority or 999, config = config })
     end
   end
 
@@ -25,39 +35,32 @@ function DM:CheckForTrackedDebuffs(unitToken)
 
   -- Check each spell in priority order
   for _, entry in ipairs(sortedConfigs) do
-    local spellIDString = entry.id
+    local spellID = entry.id
     local config = entry.config
 
-    DM:NameplateDebug("Checking SpellID: %s, Priority: %s", tostring(spellIDString), tostring(config.priority or "none"))
+    DM:NameplateDebug("Checking SpellID: %d, Priority: %s", spellID, tostring(config.priority or "none"))
 
-    -- Get the numeric spell ID
-    local spellID = tonumber(spellIDString)
-    if spellID then
-      DM:NameplateDebug("Checking spell: %d", spellID)
+    -- Get aura information using the WoW API
+    for i = 1, 40 do
+      local name, _, _, _, _, _, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
+      if not name then break end
 
-      -- Get aura information using the WoW API
-      for i = 1, 40 do
-        local name, _, _, _, _, _, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
-        if not name then break end
+      DM:NameplateDebug("Aura found: %d, Source: %s", auraSpellID, tostring(source))
 
-        DM:NameplateDebug("Aura found: %d, Source: %s", auraSpellID, tostring(source))
+      -- Check if this is our spell and it's cast by the player
+      if auraSpellID == spellID and source == "player" then
+        DM:NameplateDebug("Aura matched and is from player!")
 
-        -- Check if this is our spell and it's cast by the player
-        if auraSpellID == spellID and source == "player" then
-          DM:NameplateDebug("Aura matched and is from player!")
-
-          -- Return this spell's color (if it has one)
-          if config.color then
-            DM:NameplateDebug("Debuff present, returning color: %s", tostring(spellIDString))
-            return config.color, spellID
-          end
+        -- Return this spell's color (if it has one)
+        if config.color then
+          DM:NameplateDebug("Debuff present, returning color: %d", spellID)
+          return spellID, config.color
         end
       end
-    else
-      DM:NameplateDebug("Invalid spell ID: %s", tostring(spellIDString))
     end
   end
 
   DM:NameplateDebug("No tracked debuffs found")
   return nil
+  --]]
 end

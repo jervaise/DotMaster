@@ -10,44 +10,37 @@ function DM:GetSpellName(spellID)
   local numericID = tonumber(spellID)
   if not numericID then return "Unknown" end
 
-  -- First check our local database
-  if DM.SpellNames[numericID] then
-    return DM.SpellNames[numericID]
+  -- First check our spell database
+  if self.spellDatabase and self.spellDatabase[numericID] and self.spellDatabase[numericID].name then
+    return self.spellDatabase[numericID].name
   end
 
-  -- If not in local database, try the API
+  -- If not in database, try the API
   local name
   if C_Spell and C_Spell.GetSpellInfo then
-    name = C_Spell.GetSpellInfo(numericID)
+    local spellInfo = C_Spell.GetSpellInfo(numericID)
+    if spellInfo then
+      name = spellInfo.name
+    end
   end
 
   if name then
-    -- If successful, add to database
-    DM.SpellNames[numericID] = name
+    -- If successful and database exists, add to database
+    if self.spellDatabase then
+      if not self.spellDatabase[numericID] then
+        self.spellDatabase[numericID] = {
+          name = name,
+          class = "UNKNOWN",
+          spec = "General",
+          firstSeen = GetServerTime(),
+          lastUsed = GetServerTime(),
+          useCount = 1
+        }
+      end
+    end
     return name
   end
 
   -- If all else fails
   return "Spell #" .. numericID
-end
-
--- Save spell database (optional)
-function DM:SaveSpellDatabase()
-  -- This function could be used to persistently store spells added at runtime
-  -- Not needed in current design, but could be implemented like this:
-
-  -- DotMasterDB.spellNames = DM.SpellNames
-end
-
--- Load spell database (optional)
-function DM:LoadSpellDatabase()
-  -- This would load saved spells if SaveSpellDatabase was implemented
-
-  -- if DotMasterDB and DotMasterDB.spellNames then
-  --   for id, name in pairs(DotMasterDB.spellNames) do
-  --     if not DM.SpellNames[id] then
-  --       DM.SpellNames[id] = name
-  --     end
-  --   end
-  -- end
 end

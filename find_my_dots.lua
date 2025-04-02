@@ -9,6 +9,13 @@ DM.detectedDots = {}
 
 -- Start dot recording mode
 function DM:StartFindMyDots()
+  -- TEMPORARILY DISABLED
+  DM:DebugMsg("Find My Dots feature temporarily disabled during development.")
+  DM:PrintMessage(
+    "Find My Dots feature is temporarily disabled. Nameplate features will be re-enabled in a future update.")
+
+  -- Original code commented out
+  --[[
   -- If already active, exit
   if self.recordingDots then return end
 
@@ -39,6 +46,7 @@ function DM:StartFindMyDots()
       self:RecordDots(...)
     end
   end)
+  --]]
 end
 
 -- Stop dot recording mode

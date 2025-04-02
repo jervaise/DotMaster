@@ -70,17 +70,23 @@ function DM:DeepCopy(original)
   return copy
 end
 
--- Check if a spell ID exists in the spell config
+-- Check if a spell ID exists in the spell database
 function DM:SpellExists(spellID)
-  -- Convert to number for comparison if needed
+  -- Convert to number for comparison
   local numericID = tonumber(spellID)
   if not numericID then return false end
 
-  -- Check each spell config
-  for existingID, _ in pairs(self.spellConfig) do
-    -- Direct ID match
-    if tonumber(existingID) == numericID then
-      return true
+  -- Direct lookup by numeric ID
+  if self.dmspellsdb and self.dmspellsdb[numericID] then
+    return true
+  end
+
+  -- For backward compatibility, check if it exists with a different type
+  if self.dmspellsdb then
+    for existingID, _ in pairs(self.dmspellsdb) do
+      if tonumber(existingID) == numericID then
+        return true
+      end
     end
   end
 
@@ -129,29 +135,37 @@ function DM:SetDefaultPriorities()
   -- Loop through existing spell config rows in current display order
   if self.GUI.spellFrames then
     for _, frame in ipairs(self.GUI.spellFrames) do
-      if frame.spellID and self.spellConfig[frame.spellID] then
-        self.spellConfig[frame.spellID].priority = priority
+      if frame.spellID and self.dmspellsdb[frame.spellID] then
+        self.dmspellsdb[frame.spellID].priority = priority
         priority = priority + 1
       end
     end
   end
 
-  -- If no frames exist yet, iterate through spellConfig directly
-  if priority == 1 then
-    for spellID, _ in pairs(self.spellConfig) do
-      self.spellConfig[spellID].priority = priority
-      priority = priority + 1
+  -- If no frames exist yet, iterate through dmspellsdb directly
+  if priority == 1 and self.dmspellsdb then
+    for spellID, _ in pairs(self.dmspellsdb) do
+      if self.dmspellsdb[spellID].tracked == 1 then
+        self.dmspellsdb[spellID].priority = priority
+        priority = priority + 1
+      end
     end
   end
 
   self.lastSortOrder = priority - 1
+  DM:SaveDMSpellsDB()
 end
 
 -- Get max priority value from current spell configs
 function DM:GetMaxPriority()
   local maxPriority = 0
-  for _, config in pairs(self.spellConfig) do
-    if config.priority and config.priority > maxPriority then
+
+  if not self.dmspellsdb then
+    return maxPriority
+  end
+
+  for _, config in pairs(self.dmspellsdb) do
+    if config.tracked == 1 and config.priority and config.priority > maxPriority then
       maxPriority = config.priority
     end
   end

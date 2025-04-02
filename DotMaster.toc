@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Enhanced DoT tracking and nameplate colorization
 ## Author: Jervaise
-## Version: 0.6.7
+## Version: 0.6.8
 ## SavedVariables: DotMasterDB
 
 # Libraries

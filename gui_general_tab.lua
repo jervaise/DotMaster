@@ -5,20 +5,34 @@ local DM = DotMaster
 
 -- Create General tab content
 function DM:CreateGeneralTab(parent)
-  -- General Tab Header
+  -- Temporary Disable Notice
+  local disableNotice = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  disableNotice:SetPoint("TOP", 0, -10)
+  disableNotice:SetText("NAMEPLATE FEATURES TEMPORARILY DISABLED")
+  disableNotice:SetTextColor(1, 0.3, 0.3)
+
+  -- Disable explanation
+  local disableExplanation = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  disableExplanation:SetPoint("TOP", disableNotice, "BOTTOM", 0, -5)
+  disableExplanation:SetWidth(350)
+  disableExplanation:SetText(
+    "Nameplate coloring has been temporarily disabled during development. These features will be re-enabled in a future update.")
+  disableExplanation:SetTextColor(1, 0.8, 0.3)
+
+  -- General Tab Header (moved down)
   local generalHeader = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  generalHeader:SetPoint("TOP", 0, -10)
+  generalHeader:SetPoint("TOP", disableExplanation, "BOTTOM", 0, -20)
   generalHeader:SetText("Debuff nameplate coloring")
 
   -- General Tab Background
   local generalBg = parent:CreateTexture(nil, "BACKGROUND")
-  generalBg:SetPoint("TOPLEFT", 5, -35)
+  generalBg:SetPoint("TOPLEFT", 5, -95) -- Adjusted for the warning message
   generalBg:SetPoint("BOTTOMRIGHT", -5, 5)
   generalBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
 
   -- Enable checkbox - left aligned
   local checkBox = CreateFrame("CheckButton", "DotMasterEnableCheckbox", parent, "UICheckButtonTemplate")
-  checkBox:SetPoint("TOPLEFT", 20, -50) -- Left aligned
+  checkBox:SetPoint("TOPLEFT", 20, -110) -- Adjusted position
   checkBox:SetSize(26, 26)
 
   local checkBoxText = _G[checkBox:GetName() .. "Text"]
@@ -58,7 +72,7 @@ function DM:CreateGeneralTab(parent)
   -- Reset All Settings button
   local resetButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
   resetButton:SetSize(150, 30)
-  resetButton:SetPoint("TOPLEFT", 20, -120) -- Below debug checkbox
+  resetButton:SetPoint("TOPLEFT", 20, -180) -- Adjusted position
   resetButton:SetText("Reset All Settings")
 
   resetButton:SetScript("OnClick", function()
@@ -72,15 +86,17 @@ function DM:CreateGeneralTab(parent)
         DM:PrintMessage("Resetting all settings to defaults...")
         -- Reset all settings
         DotMasterDB = nil
-        DM.spellConfig = {}
-        DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig)
         DM.enabled = DM.defaults.enabled
         DM.DEBUG_MODE = true
+
+        -- Reset spell database
+        DM:ResetDMSpellsDB()
 
         -- Apply changes
         DM:ResetAllNameplates()
         DM:UpdateAllNameplates()
         DM:SaveSettings()
+        DM:SaveDMSpellsDB()
 
         -- Refresh UI
         if DM.GUI and DM.GUI.RefreshSpellList then

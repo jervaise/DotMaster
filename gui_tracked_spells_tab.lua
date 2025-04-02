@@ -287,11 +287,11 @@ function DM:CreateTrackedSpellsTab(parent)
   end)
 end
 
--- Function to refresh the spell list with class/spec grouping
-function DM.GUI:RefreshSpellList()
+-- Function to refresh the tracked spells list with class/spec grouping
+function DM.GUI:RefreshTrackedSpellList()
   -- Ensure the necessary GUI elements exist
   if not DM.GUI.scrollChild or not DM.GUI.scrollFrame then
-    DM:DebugMsg("Required GUI elements (scrollChild or scrollFrame) not found in RefreshSpellList")
+    DM:DatabaseDebug("Required GUI elements (scrollChild or scrollFrame) not found in RefreshTrackedSpellList")
     return
   end
 
@@ -308,7 +308,7 @@ function DM.GUI:RefreshSpellList()
 
   -- Ensure DM.dmspellsdb exists and has data
   if not DM.dmspellsdb or not next(DM.dmspellsdb) then
-    DM:DebugMsg("dmspellsdb is empty or nil, nothing to display in Tracked Spells.")
+    DM:DatabaseDebug("dmspellsdb is empty or nil, nothing to display in Tracked Spells.")
     DM.GUI.scrollChild:SetHeight(DM.GUI.scrollFrame:GetHeight()) -- Set height to default if empty
     return
   end
@@ -371,74 +371,29 @@ function DM.GUI:RefreshSpellList()
 
   -- First add player's class/spec if it has tracked spells
   if playerClass and playerSpec and spellsByClassSpec[playerClass] and spellsByClassSpec[playerClass][playerSpec] then
-    local playerSpells = spellsByClassSpec[playerClass][playerSpec]
-    if #playerSpells > 0 then
-      -- Add class/spec header
-      local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
-      headerFrame:SetSize(DM.GUI.scrollChild:GetWidth() - 16, 25)
-      headerFrame:SetPoint("TOPLEFT", 8, -yOffset)
-      local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-      headerBg:SetAllPoints(); headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-      local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-      headerText:SetPoint("LEFT", 10, 0)
-      headerText:SetText(DM:GetClassDisplayName(playerClass) .. " - " .. playerSpec)
-      headerText:SetTextColor(1, 0.82, 0)
-      yOffset = yOffset + 30
-
-      addSpellRows(playerSpells, playerClass, playerSpec)
-
-      -- Mark as processed
-      spellsByClassSpec[playerClass][playerSpec] = nil
+    addSpellRows(spellsByClassSpec[playerClass][playerSpec], playerClass, playerSpec)
+    -- Remove this class/spec after processing to avoid duplication
+    spellsByClassSpec[playerClass][playerSpec] = nil
+    if not next(spellsByClassSpec[playerClass]) then
+      spellsByClassSpec[playerClass] = nil
     end
   end
 
-  -- Then add the rest of the spells grouped by class/spec
-  local sortedClasses = {}
-  for className in pairs(spellsByClassSpec) do table.insert(sortedClasses, className) end
-  table.sort(sortedClasses, function(a, b)
-    if a == playerClass then return true end -- Ensure player class is considered if not added first
-    if b == playerClass then return false end
-    if a == "Unknown" or a == "UNKNOWN" then return false end
-    if b == "Unknown" or b == "UNKNOWN" then return true end
-    return a < b
-  end)
-
-  for _, class in ipairs(sortedClasses) do
-    if spellsByClassSpec[class] then
-      local sortedSpecs = {}
-      for specName in pairs(spellsByClassSpec[class]) do table.insert(sortedSpecs, specName) end
-      table.sort(sortedSpecs, function(a, b)
-        if a == playerSpec and class == playerClass then return true end
-        if b == playerSpec and class == playerClass then return false end
-        if a == "General" then return false end
-        if b == "General" then return true end
-        return a < b
-      end)
-
-      for _, spec in ipairs(sortedSpecs) do
-        local spells = spellsByClassSpec[class][spec]
-        if spells and #spells > 0 then
-          -- Add class/spec header
-          local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
-          headerFrame:SetSize(DM.GUI.scrollChild:GetWidth() - 16, 25)
-          headerFrame:SetPoint("TOPLEFT", 8, -yOffset)
-          local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-          headerBg:SetAllPoints(); headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-          local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-          headerText:SetPoint("LEFT", 10, 0)
-          headerText:SetText(DM:GetClassDisplayName(class) .. " - " .. spec)
-          headerText:SetTextColor(1, 0.82, 0)
-          yOffset = yOffset + 30
-
-          addSpellRows(spells, class, spec)
-        end
+  -- Then add remaining specs
+  for class, specs in pairs(spellsByClassSpec) do
+    for spec, spells in pairs(specs) do
+      if #spells > 0 then -- Only add if there are spells
+        addSpellRows(spells, class, spec)
       end
     end
   end
 
-  -- Adjust scroll child height and show it
-  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 10, DM.GUI.scrollFrame:GetHeight()))
+  -- Show the scroll child again with new content
   DM.GUI.scrollChild:Show()
 
-  DM:DebugMsg("Tracked spells list refreshed. Displaying %d rows.", index, "gui") -- Use gui category if available
+  -- Update scroll child height for scrolling
+  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 20, DM.GUI.scrollFrame:GetHeight()))
+
+  -- Debug log of tracked spells count
+  DM:DatabaseDebug(string.format("RefreshTrackedSpellList: displayed %d tracked spells", index))
 end

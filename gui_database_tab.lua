@@ -464,12 +464,12 @@ function GUI:RefreshDatabaseTabList(filter)
 
           checkbox:SetScript("OnClick", function(self)
             local isChecked = self:GetChecked()
-            local spellIDStr = tostring(spellID) -- Ensure we have string ID
+            local numericID = spellID -- Already numeric
 
             -- Make sure the entry exists before trying to modify it
-            if not DM.dmspellsdb[spellIDStr] then
-              DM:DatabaseDebug(string.format("Creating entry for spell %s in dmspellsdb", spellIDStr))
-              DM.dmspellsdb[spellIDStr] = {
+            if not DM.dmspellsdb[numericID] then
+              DM:DatabaseDebug(string.format("Creating entry for spell %d in dmspellsdb", numericID))
+              DM.dmspellsdb[numericID] = {
                 spellname = spellData.spellname or "Unknown",
                 spellicon = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark",
                 wowclass = spellData.wowclass or "UNKNOWN",
@@ -481,29 +481,9 @@ function GUI:RefreshDatabaseTabList(filter)
             end
 
             -- Now safe to modify
-            DM.dmspellsdb[spellIDStr].tracked = isChecked and 1 or 0
-            DM:DatabaseDebug(string.format("Spell %s tracked status set to %d", spellIDStr,
-            DM.dmspellsdb[spellIDStr].tracked))
-
-            -- Also update the spellConfig for compatibility
-            if isChecked then
-              if not DM.spellConfig[spellID] then
-                DM:DatabaseDebug("Creating default config for newly tracked spell: " .. spellIDStr)
-                DM.spellConfig = DM.spellConfig or {}
-                DM.spellConfig[spellID] = {
-                  enabled = DM.dmspellsdb[spellIDStr].enabled == 1,
-                  color = DM.dmspellsdb[spellIDStr].color or { 1, 0, 0 }, -- Use spell's color if exists
-                  name = DM.dmspellsdb[spellIDStr].spellname,
-                  priority = DM.dmspellsdb[spellIDStr].priority,
-                  saved = true
-                }
-              end
-            else
-              if DM.spellConfig and DM.spellConfig[spellID] then
-                DM:DatabaseDebug("Removing config for untracked spell: " .. spellIDStr)
-                DM.spellConfig[spellID] = nil
-              end
-            end
+            DM.dmspellsdb[numericID].tracked = isChecked and 1 or 0
+            DM:DatabaseDebug(string.format("Spell %d tracked status set to %d", numericID,
+              DM.dmspellsdb[numericID].tracked))
 
             -- Refresh the other tab's list
             if GUI.RefreshTrackedSpellList then
@@ -512,7 +492,6 @@ function GUI:RefreshDatabaseTabList(filter)
 
             -- Save changes
             DM:SaveDMSpellsDB()
-            DM:SaveSettings()
           end)
 
           yOffset = yOffset + entryHeight + spacing

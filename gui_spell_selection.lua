@@ -186,13 +186,20 @@ function DM:ShowSpellSelectionDialog()
             local spellData = self.spellDatabase[tonumber(id)]
 
             if spellData then
-              -- Create new dot configuration
-              self.spellConfig[tostring(id)] = {
-                enabled = true,
-                color = { 1, 0, 0 }, -- Default red color
-                name = spellData.name,
-                priority = self:GetNextPriority()
-              }
+              -- Add to dmspellsdb with default settings
+              local numericID = tonumber(id)
+              self:AddSpellToDMSpellsDB(
+                numericID,
+                spellData.name,
+                "Interface\\Icons\\INV_Misc_QuestionMark", -- Default icon, can be updated later
+                spellData.class or "UNKNOWN",
+                spellData.spec or "General"
+              )
+
+              -- Enable tracking for this spell
+              self.dmspellsdb[numericID].tracked = 1
+              self.dmspellsdb[numericID].priority = self:GetNextPriority()
+
               added = added + 1
             end
           end
@@ -205,7 +212,7 @@ function DM:ShowSpellSelectionDialog()
           self.GUI:RefreshSpellList()
         end
 
-        self:SaveSettings()
+        self:SaveDMSpellsDB()
         self:PrintMessage(string.format("%d spells successfully added!", added))
       else
         self:PrintMessage("No new spells added.")

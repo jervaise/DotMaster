@@ -19,11 +19,14 @@ function DM.GUI:RefreshSpellList()
   local yOffset = 40 -- Start after header with more space
   local index = 0
 
-  -- Add all spells
-  for spellID, _ in pairs(DM.spellConfig) do
-    index = index + 1
-    DM:CreateSpellConfigRow(spellID, index, yOffset)
-    yOffset = yOffset + 36 -- More space between rows
+  -- Add all spells from dmspellsdb that are tracked
+  for spellID, config in pairs(DM.dmspellsdb) do
+    -- Only display tracked spells (tracked = 1)
+    if config.tracked == 1 then
+      index = index + 1
+      DM:CreateSpellConfigRow(spellID, index, yOffset)
+      yOffset = yOffset + 36 -- More space between rows
+    end
   end
 
   if DM.GUI.scrollChild and DM.GUI.scrollFrame then
@@ -39,18 +42,25 @@ function DM:SpellExists(spellID)
   local numericID = tonumber(spellID)
   if not numericID then return false end
 
-  -- Check each spell config
-  for existingID, _ in pairs(DM.spellConfig) do
-    -- Direct ID match
-    if tonumber(existingID) == numericID then
-      return true
-    end
+  -- Check dmspellsdb first with the string ID
+  if self.dmspellsdb and self.dmspellsdb[tostring(numericID)] then
+    return true
+  end
 
-    -- Check for IDs in comma-separated list
-    if type(existingID) == "string" and existingID:find(",") then
-      for id in string.gmatch(existingID, "%d+") do
-        if tonumber(id) == numericID then
-          return true
+  -- Also check with numeric ID for compatibility
+  if self.dmspellsdb then
+    for existingIDStr, _ in pairs(self.dmspellsdb) do
+      -- Direct ID match
+      if tonumber(existingIDStr) == numericID then
+        return true
+      end
+
+      -- Check for IDs in comma-separated list
+      if type(existingIDStr) == "string" and existingIDStr:find(",") then
+        for id in string.gmatch(existingIDStr, "%d+") do
+          if tonumber(id) == numericID then
+            return true
+          end
         end
       end
     end
