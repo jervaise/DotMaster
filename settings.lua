@@ -7,7 +7,7 @@ local DM = DotMaster
 function DM:SaveSettings()
   DotMasterDB = DotMasterDB or {}
   DotMasterDB.enabled = DM.enabled
-  DotMasterDB.version = "0.6.6"
+  DotMasterDB.version = "0.6.7"
 
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then
@@ -41,16 +41,6 @@ function DM:LoadSettings()
     DM:DatabaseDebug("Debug console output setting loaded")
   else
     DM:DatabaseDebug("No saved debug console output setting found, using default")
-  end
-
-  -- Load spell configuration or use defaults
-  if DotMasterDB.spellConfig and next(DotMasterDB.spellConfig) then
-    DM.spellConfig = DotMasterDB.spellConfig
-    DM:DatabaseDebug("Spell configuration loaded from saved variables")
-  else
-    -- Deep copy default spellConfig to avoid reference issues
-    DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig)
-    DM:DatabaseDebug("No saved spell configuration found, using defaults")
   end
 
   DM:DebugMsg("Settings loaded")
@@ -126,7 +116,7 @@ function DM:InitializeDebugSlashCommands()
           DM:PrintMessage("  /dmdebug - Toggle debug console")
           DM:PrintMessage("  /dmdebug console - Open debug console")
           DM:PrintMessage("  /dmdebug status - Show debug status")
-          DM:PrintMessage("  /dmdebug category <name> [on|off] - Toggle category")
+          DM:PrintMessage("  /dmdebug category <n> [on|off] - Toggle category")
           DM:PrintMessage("  /dmdebug help - Show this help")
         end
       else
@@ -139,7 +129,7 @@ function DM:InitializeDebugSlashCommands()
           DM:PrintMessage("  /dmdebug - Toggle debug console")
           DM:PrintMessage("  /dmdebug console - Open debug console")
           DM:PrintMessage("  /dmdebug status - Show debug status")
-          DM:PrintMessage("  /dmdebug category <name> [on|off] - Toggle category")
+          DM:PrintMessage("  /dmdebug category <n> [on|off] - Toggle category")
           DM:PrintMessage("  /dmdebug help - Show this help")
         end
       end
@@ -174,12 +164,23 @@ function DM:InitializeMainSlashCommands()
       DM:DebugMsg("GUI frame exists: " .. (DM.GUI and DM.GUI.frame and "Yes" or "No"))
       DM:DebugMsg("Active plates: " .. (DM.TableCount and DM:TableCount(DM.activePlates) or "N/A"))
       DM:DebugMsg("Colored plates: " .. (DM.TableCount and DM:TableCount(DM.coloredPlates) or "N/A"))
-      DM:DebugMsg("Tracked spells: " .. (DM.TableCount and DM:TableCount(DM.spellConfig) or "N/A"))
-      DM:DebugMsg("Spell configurations:")
-      for spellID, config in pairs(DM.spellConfig or {}) do
-        DM:DebugMsg("  - " ..
-          spellID .. ": " .. (config.name or "Unknown") .. " (" .. (config.enabled and "Enabled" or "Disabled") .. ")")
+      DM:DebugMsg("Tracked spells: " .. (DM.TableCount and DM:TableCount(DM.dmspellsdb) or "N/A"))
+      DM:DebugMsg("Spell database entries:")
+
+      local tracked = 0
+      for spellID, config in pairs(DM.dmspellsdb or {}) do
+        local enabledText = config.enabled == 1 and "Enabled" or "Disabled"
+        local trackedText = config.tracked == 1 and "Tracked" or "Not tracked"
+        DM:DebugMsg("  - " .. spellID .. ": " .. (config.spellname or "Unknown") ..
+          " (" .. enabledText .. ", " .. trackedText .. ")")
+
+        if config.tracked == 1 then
+          tracked = tracked + 1
+        end
       end
+
+      DM:DebugMsg("Total spells: " .. (DM.TableCount and DM:TableCount(DM.dmspellsdb) or "N/A") ..
+        ", Tracked: " .. tracked)
     elseif command == "console" or command == "debugconsole" or command == "log" then
       -- Open the debug console
       if DM.Debug and DM.Debug.ToggleWindow then
@@ -203,9 +204,13 @@ function DM:InitializeMainSlashCommands()
           button2 = "No",
           OnAccept = function()
             DM:DebugMsg("Resetting all settings")
+            -- Explicitly clear each component of DotMasterDB
+            if DotMasterDB then
+              DotMasterDB.spellConfig = nil
+              DotMasterDB.dmspellsdb = nil
+              DotMasterDB.spellDatabase = nil
+            end
             DotMasterDB = nil
-            DM.spellConfig = {}
-            if DM.DeepCopy then DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig) end
             DM.enabled = DM.defaults.enabled
             DM:PrintMessage("Settings reset to defaults")
             if DM.ResetAllNameplates then DM:ResetAllNameplates() end
@@ -234,6 +239,13 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("Current database size: " .. dbSize .. " entries")
 
         DM:NormalizeDatabaseIDs()
+
+        -- Clean up legacy spellConfig data
+        if DotMasterDB and DotMasterDB.spellConfig then
+          DM:PrintMessage("Removing legacy spellConfig data...")
+          DotMasterDB.spellConfig = nil
+        end
+
         DM:SaveDMSpellsDB()
 
         -- Update the UI if database tab is active

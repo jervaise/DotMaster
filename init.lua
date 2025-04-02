@@ -15,25 +15,13 @@ DM.activePlates = {}
 DM.coloredPlates = {}
 DM.originalColors = {}
 DM.enabled = true
-DM.spellConfig = {}
-DM.GUI = {}
--- Setup basic variables
-DM.activePlates = {}
-DM.coloredPlates = {}
-DM.originalColors = {}
-DM.enabled = true
-DM.spellConfig = {}
 DM.GUI = {}
 DM.recordingDots = false
 DM.detectedDots = {}
 DM.defaults = {
   enabled = true,
-  version = "0.6.6",
+  version = "0.6.7",
   lastSortOrder = 1, -- Added for sorting functionality
-  spellConfig = {
-    -- Default spells disabled, users will add their own
-    -- [DM.VIRULENT_PLAGUE_ID] = { enabled = true, color = DM.DEFAULT_PURPLE_COLOR, name = "Virulent Plague" }
-  }
 }
 
 -- Debug mode enabled by default
@@ -56,13 +44,16 @@ function DM:Initialize()
     self:SimplePrint("Starting Main Initialization")
   end
 
-  -- Register core events (these are generally safe)
-  self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-  self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-  self:RegisterEvent("UNIT_AURA")
+  -- TEMPORARILY DISABLED NAMEPLATE FEATURES
+  -- Core nameplate events commented out for development
+  -- self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+  -- self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+  -- self:RegisterEvent("UNIT_AURA")
+
+  -- Only register non-nameplate events
   self:RegisterEvent("PLAYER_ENTERING_WORLD")
   self:RegisterEvent("PLAYER_LOGOUT")
-  if self.DebugMsg then self:DebugMsg("Core events registered") end
+  if self.DebugMsg then self:DebugMsg("Core events registered (nameplate features temporarily disabled)") end
 
   -- Initialize potentially fragile components using pcall
 
@@ -87,41 +78,49 @@ function DM:Initialize()
     if self.DebugMsg then self:DebugMsg("ERROR initializing main slash commands: " .. tostring(slashErr)) end
   end
 
-  -- Hook Plater if available
-  local platerOK, platerErr = pcall(function()
-    if _G["Plater"] then
-      local Plater = _G["Plater"]
-      if self.DebugMsg then self:DebugMsg("Plater detected, adding hooks") end
-      hooksecurefunc(Plater, "UpdatePlateFrame", function(plateFrame)
-        C_Timer.After(0.1, function()
-          if not DM.enabled then return end
-          local unitToken = plateFrame.namePlateUnitToken
-          if unitToken and DM.activePlates[unitToken] then
-            DM:UpdateNameplate(unitToken)
-          end
-        end)
-      end)
-    else
-      if self.DebugMsg then self:DebugMsg("Plater not detected.") end
-    end
-  end)
-  if not platerOK then
-    if self.DebugMsg then self:DebugMsg("ERROR hooking Plater: " .. tostring(platerErr)) end
-  end
+  -- TEMPORARILY DISABLED NAMEPLATE FEATURES
+  -- Plater hook disabled for development
+  -- local platerOK, platerErr = pcall(function()
+  --   if _G["Plater"] then
+  --     local Plater = _G["Plater"]
+  --     if self.DebugMsg then self:DebugMsg("Plater detected, adding hooks") end
+  --     hooksecurefunc(Plater, "UpdatePlateFrame", function(plateFrame)
+  --       C_Timer.After(0.1, function()
+  --         if not DM.enabled then return end
+  --         local unitToken = plateFrame.namePlateUnitToken
+  --         if unitToken and DM.activePlates[unitToken] then
+  --           DM:UpdateNameplate(unitToken)
+  --         end
+  --       end)
+  --     end)
+  --   else
+  --     if self.DebugMsg then self:DebugMsg("Plater not detected.") end
+  --   end
+  -- end)
+  -- if not platerOK then
+  --   if self.DebugMsg then self:DebugMsg("ERROR hooking Plater: " .. tostring(platerErr)) end
+  -- end
 
   -- Final message
-  self:PrintMessage("loaded. Type /dm for options or /dmdebug for debug console.")
+  self:PrintMessage(
+    "loaded with nameplate features temporarily disabled. Type /dm for options or /dmdebug for debug console.")
   if self.DebugMsg then self:DebugMsg("Main Initialization finished.") end
 end
 
 -- Event handler
 function DM:OnEvent(event, ...)
   if event == "NAME_PLATE_UNIT_ADDED" then
-    self:NameplateAdded(...)
+    -- TEMPORARILY DISABLED
+    -- self:NameplateAdded(...)
+    self:DebugMsg("Nameplate feature disabled: NAME_PLATE_UNIT_ADDED event ignored")
   elseif event == "NAME_PLATE_UNIT_REMOVED" then
-    self:NameplateRemoved(...)
+    -- TEMPORARILY DISABLED
+    -- self:NameplateRemoved(...)
+    self:DebugMsg("Nameplate feature disabled: NAME_PLATE_UNIT_REMOVED event ignored")
   elseif event == "UNIT_AURA" then
-    self:UnitAuraChanged(...)
+    -- TEMPORARILY DISABLED
+    -- self:UnitAuraChanged(...)
+    self:DebugMsg("Nameplate feature disabled: UNIT_AURA event ignored")
   elseif event == "PLAYER_ENTERING_WORLD" then
     wipe(self.activePlates)
     wipe(self.coloredPlates)

@@ -1,8 +1,8 @@
-## Interface: 100200
-## Title: |cFFCC00FFDotMaster|r
-## Notes: Colors nameplates based on player debuffs
+## Interface: 100205
+## Title: DotMaster
+## Notes: Enhanced DoT tracking and nameplate colorization
 ## Author: Jervaise
-## Version: 0.6.6
+## Version: 0.6.7
 ## SavedVariables: DotMasterDB
 
 # Libraries
