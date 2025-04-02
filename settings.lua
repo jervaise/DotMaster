@@ -7,7 +7,7 @@ local DM = DotMaster
 function DM:SaveSettings()
   DotMasterDB = DotMasterDB or {}
   DotMasterDB.enabled = DM.enabled
-  DotMasterDB.version = "0.6.5"
+  DotMasterDB.version = "0.6.6"
 
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then
@@ -217,6 +217,91 @@ function DM:InitializeMainSlashCommands()
     elseif command == "save" then
       DM:SaveSettings()
       DM:PrintMessage("Settings saved")
+    elseif command == "fixdb" or command == "normalizedb" or command == "fixdatabase" then
+      DM:PrintMessage("Attempting to fix database ID format...")
+      if DM.NormalizeDatabaseIDs then
+        local dbSize = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+        DM:PrintMessage("Current database size: " .. dbSize .. " entries")
+
+        DM:NormalizeDatabaseIDs()
+        DM:SaveDMSpellsDB()
+
+        -- Update the UI if database tab is active
+        if DM.GUI and DM.GUI.RefreshDatabaseTabList then
+          DM.GUI:RefreshDatabaseTabList()
+          DM:PrintMessage("UI refreshed with normalized database")
+        end
+
+        DM:PrintMessage("Database fix complete. Database now has " .. DM:TableCount(DM.dmspellsdb) .. " entries")
+      else
+        DM:PrintMessage("Database normalization function not found")
+      end
+    elseif command == "dbstate" or command == "dumpdb" then
+      -- Print detailed information about the database
+      DM:PrintMessage("Database State:")
+
+      -- Check if database exists
+      if not DM.dmspellsdb then
+        DM:PrintMessage("Database is nil!")
+        return
+      end
+
+      -- Print database size
+      local dbSize = DM:TableCount(DM.dmspellsdb)
+      DM:PrintMessage("Database contains " .. dbSize .. " spells")
+
+      -- Check SavedVariables entries
+      if DotMasterDB and DotMasterDB.dmspellsdb then
+        local svSize = DM:TableCount(DotMasterDB.dmspellsdb)
+        DM:PrintMessage("SavedVariables database contains " .. svSize .. " spells")
+      else
+        DM:PrintMessage("SavedVariables database is nil or empty")
+      end
+
+      -- Print type information
+      DM:PrintMessage("Database type: " .. type(DM.dmspellsdb))
+
+      -- Count ID types
+      local stringIds, numberIds, otherIds = 0, 0, 0
+      for id, _ in pairs(DM.dmspellsdb) do
+        if type(id) == "string" then
+          stringIds = stringIds + 1
+        elseif type(id) == "number" then
+          numberIds = numberIds + 1
+        else
+          otherIds = otherIds + 1
+        end
+      end
+
+      DM:PrintMessage("ID Types: " .. stringIds .. " string, " .. numberIds .. " number, " .. otherIds .. " other")
+
+      -- Print details of each spell
+      local count = 0
+      for id, data in pairs(DM.dmspellsdb) do
+        count = count + 1
+        if count <= 10 or dbSize <= 20 then -- Show all if 20 or less, otherwise first 10
+          local colorStr = data.color and
+              string.format("R:%.1f G:%.1f B:%.1f", data.color[1], data.color[2], data.color[3]) or "nil"
+          DM:PrintMessage(string.format(
+            "Spell %d: ID=%s (type=%s), Name=%s, Class=%s, Spec=%s, Icon=%s, Tracked=%s, Enabled=%s, Priority=%s, Color=%s",
+            count,
+            tostring(id),
+            type(id),
+            data.spellname or "nil",
+            data.wowclass or "nil",
+            data.wowspec or "nil",
+            data.spellicon or "nil",
+            data.tracked or "nil",
+            data.enabled or "nil",
+            data.priority or "nil",
+            colorStr
+          ))
+        end
+      end
+
+      if count > 10 and dbSize > 20 then
+        DM:PrintMessage("... and " .. (count - 10) .. " more spells (showing only first 10)")
+      end
     else
       -- Try to toggle main GUI if available, otherwise print help
       if DM.GUI and DM.GUI.frame then
@@ -237,6 +322,8 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
+        DM:PrintMessage("  /dm fixdb - Fix database ID format issues")
+        DM:PrintMessage("  /dm dbstate - Show detailed database state and spells")
       end
     end
   end

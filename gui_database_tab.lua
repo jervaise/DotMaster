@@ -181,13 +181,37 @@ function Components.CreateDatabaseTab(parentFrame)
 
   -- Initialize dmspellsdb if needed
   if not DM.dmspellsdb then
+    DM:DatabaseDebug("dmspellsdb not found during tab creation, attempting to load from saved variables")
     DM:LoadDMSpellsDB() -- Try to load from saved variables
 
     if not DM.dmspellsdb or DM:TableCount(DM.dmspellsdb) == 0 then
-      DM:DebugMsg("No saved dmspellsdb found, initialized new empty database.")
+      DM:DatabaseDebug("No saved dmspellsdb found, initialized new empty database.")
       DM.dmspellsdb = {} -- Initialize empty table if not loaded
     else
-      DM:DebugMsg("Loaded dmspellsdb with " .. DM:TableCount(DM.dmspellsdb) .. " spells.")
+      DM:DatabaseDebug("Loaded dmspellsdb with " .. DM:TableCount(DM.dmspellsdb) .. " spells.")
+    end
+  else
+    -- Even if dmspellsdb exists, let's verify it has content
+    local count = DM:TableCount(DM.dmspellsdb)
+    DM:DatabaseDebug("Existing dmspellsdb found with " .. count .. " spells.")
+
+    -- If empty but we know we should have data in saved variables, try loading again
+    if count == 0 and DotMasterDB and DotMasterDB.dmspellsdb and DM:TableCount(DotMasterDB.dmspellsdb) > 0 then
+      DM:DatabaseDebug("Database appears empty but SavedVariables has data. Forcing reload.")
+      DM:LoadDMSpellsDB()
+      DM:DatabaseDebug("Reloaded dmspellsdb with " .. DM:TableCount(DM.dmspellsdb) .. " spells.")
+    end
+  end
+
+  -- Dump the first few spells for debugging
+  local debugCount = 0
+  for spellID, spellData in pairs(DM.dmspellsdb or {}) do
+    if debugCount < 3 then
+      DM:DatabaseDebug(string.format("DB Spell: ID=%s, Name=%s, Class=%s",
+        spellID, spellData.spellname or "?", spellData.wowclass or "?"))
+      debugCount = debugCount + 1
+    else
+      break
     end
   end
 
@@ -196,7 +220,7 @@ function Components.CreateDatabaseTab(parentFrame)
   -- Initial population - use C_Timer to ensure UI is fully initialized
   C_Timer.After(0.2, function()
     GUI:RefreshDatabaseTabList("")
-    DM:DebugMsg("Initial database list refresh completed")
+    DM:DatabaseDebug("Initial database list refresh completed")
   end)
 end
 
@@ -206,18 +230,39 @@ function GUI:GetGroupedSpellDatabase()
 
   -- Use dmspellsdb instead of spellDatabase
   if not DM.dmspellsdb then
-    DM:DebugMsg("dmspellsdb is nil or empty")
+    DM:DatabaseDebug("dmspellsdb is nil or empty in GetGroupedSpellDatabase")
     return grouped
   end
 
   local count = 0
+  local stringIdCount = 0
+  local numberIdCount = 0
+  local invalidIdCount = 0
+
+  DM:DatabaseDebug("GetGroupedSpellDatabase starting - Current dmspellsdb type: " .. type(DM.dmspellsdb))
+
   for idStr, data in pairs(DM.dmspellsdb) do
-    -- Convert string ID to number if needed
-    local id = tonumber(idStr)
     count = count + 1
 
+    -- Analyze ID type and format
+    if type(idStr) == "string" then
+      stringIdCount = stringIdCount + 1
+    elseif type(idStr) == "number" then
+      numberIdCount = numberIdCount + 1
+    end
+
+    -- Debug first few entries
+    if count <= 3 then
+      DM:DatabaseDebug(string.format("Processing DB entry %d: ID=%s (type=%s), Name=%s",
+        count, tostring(idStr), type(idStr), data.spellname or "unknown"))
+    end
+
+    -- Convert string ID to number if needed
+    local id = tonumber(idStr)
+
     if not id then
-      DM:DebugMsg(string.format("WARNING: Invalid spell ID in dmspellsdb: %s", tostring(idStr)))
+      invalidIdCount = invalidIdCount + 1
+      DM:DatabaseDebug(string.format("WARNING: Invalid spell ID in dmspellsdb: %s", tostring(idStr)))
       -- Skip this entry
     else
       local className = data.wowclass or "UNKNOWN"
@@ -230,17 +275,19 @@ function GUI:GetGroupedSpellDatabase()
     end
   end
 
-  DM:DebugMsg("GetGroupedSpellDatabase processed " .. count .. " entries")
+  DM:DatabaseDebug(string.format(
+    "GetGroupedSpellDatabase processed %d entries (%d string IDs, %d number IDs, %d invalid)",
+    count, stringIdCount, numberIdCount, invalidIdCount))
   return grouped
 end
 
 -- Function to refresh the database list UI
 function GUI:RefreshDatabaseTabList(filter)
-  DM:DebugMsg("Refreshing Database Tab List. Filter: '" .. (filter or "none") .. "'")
+  DM:DatabaseDebug("Refreshing Database Tab List. Filter: '" .. (filter or "none") .. "'")
 
   local scrollChild = GUI.dbScrollChild
   if not scrollChild then
-    DM:DebugMsg("ERROR: dbScrollChild is nil in RefreshDatabaseTabList")
+    DM:DatabaseDebug("ERROR: dbScrollChild is nil in RefreshDatabaseTabList")
     return
   end
 
@@ -271,9 +318,34 @@ function GUI:RefreshDatabaseTabList(filter)
       end
     end
   end
-  DM:DebugMsg(string.format("Database structure: %d classes, %d specs, %d spells", classCount, specCount, spellCount))
+  DM:DatabaseDebug(string.format("Database structure: %d classes, %d specs, %d spells", classCount, specCount, spellCount))
 
   if spellCount == 0 then
+    DM:DatabaseDebug("No spells to display in database tab. DB type: " .. type(DM.dmspellsdb))
+
+    -- Check SavedVariables to understand the discrepancy
+    if DotMasterDB and DotMasterDB.dmspellsdb then
+      local svCount = DM:TableCount(DotMasterDB.dmspellsdb)
+      DM:DatabaseDebug("SavedVariables has " .. svCount .. " spells, but none loaded into memory")
+
+      -- If SavedVariables has data but we don't, try to reload
+      if svCount > 0 then
+        DM:DatabaseDebug("Attempting emergency reload of database from SavedVariables")
+        DM:LoadDMSpellsDB()
+
+        -- Check if reload succeeded
+        local reloadCount = DM:TableCount(DM.dmspellsdb)
+        if reloadCount > 0 then
+          DM:DatabaseDebug("Emergency reload successful, found " .. reloadCount .. " spells")
+          -- Re-run the function to try again with loaded data
+          self:RefreshDatabaseTabList(filter)
+          return
+        else
+          DM:DatabaseDebug("Emergency reload failed, still no spells available")
+        end
+      end
+    end
+
     -- Create a "no spells found" message
     local noSpellsText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     noSpellsText:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
@@ -466,9 +538,12 @@ function GUI:RefreshDatabaseTabList(filter)
             local isChecked = self:GetChecked()
             local spellIDStr = tostring(spellID) -- Ensure we have string ID
 
+            DM:DatabaseDebug(string.format("Checkbox clicked for spell %s (%s) - Checked: %s",
+              spellIDStr, spellName, isChecked and "true" or "false"))
+
             -- Make sure the entry exists before trying to modify it
             if not DM.dmspellsdb[spellIDStr] then
-              DM:DebugMsg(string.format("Creating entry for spell %s in dmspellsdb", spellIDStr))
+              DM:DatabaseDebug(string.format("Creating entry for spell %s in dmspellsdb", spellIDStr))
               DM.dmspellsdb[spellIDStr] = {
                 spellname = spellData.spellname or "Unknown",
                 spellicon = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark",
@@ -482,12 +557,13 @@ function GUI:RefreshDatabaseTabList(filter)
 
             -- Now safe to modify
             DM.dmspellsdb[spellIDStr].tracked = isChecked and 1 or 0
-            DM:DebugMsg(string.format("Spell %s tracked status set to %d", spellIDStr, DM.dmspellsdb[spellIDStr].tracked))
+            DM:DatabaseDebug(string.format("Spell %s tracked status set to %d", spellIDStr,
+              DM.dmspellsdb[spellIDStr].tracked))
 
             -- Also update the spellConfig for compatibility
             if isChecked then
               if not DM.spellConfig[spellID] then
-                DM:DebugMsg("Creating default config for newly tracked spell: " .. spellIDStr)
+                DM:DatabaseDebug(string.format("Creating default config for newly tracked spell: %s", spellIDStr))
                 DM.spellConfig = DM.spellConfig or {}
                 DM.spellConfig[spellID] = {
                   enabled = DM.dmspellsdb[spellIDStr].enabled == 1,
@@ -496,22 +572,28 @@ function GUI:RefreshDatabaseTabList(filter)
                   priority = DM.dmspellsdb[spellIDStr].priority,
                   saved = true
                 }
+                DM:DatabaseDebug(string.format("Created spellConfig entry with enabled: %s, name: %s",
+                  DM.spellConfig[spellID].enabled and "true" or "false",
+                  DM.spellConfig[spellID].name or "nil"))
               end
             else
               if DM.spellConfig and DM.spellConfig[spellID] then
-                DM:DebugMsg("Removing config for untracked spell: " .. spellIDStr)
+                DM:DatabaseDebug(string.format("Removing config for untracked spell: %s", spellIDStr))
                 DM.spellConfig[spellID] = nil
               end
             end
 
             -- Refresh the other tab's list
             if GUI.RefreshTrackedSpellList then
+              DM:DatabaseDebug("Refreshing tracked spells tab")
               GUI:RefreshTrackedSpellList()
             end
 
             -- Save changes
+            DM:DatabaseDebug("Saving database changes")
             DM:SaveDMSpellsDB()
             DM:SaveSettings()
+            DM:DatabaseDebug("Save complete")
           end)
 
           yOffset = yOffset + entryHeight + spacing

@@ -204,16 +204,28 @@ end
 
 -- Function to add a spell to the new database
 function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specName)
-  if not spellID or not spellName then return end
+  if not spellID or not spellName then
+    self:DatabaseDebug("Failed to add spell to database - missing spellID or spellName")
+    return
+  end
 
   -- Always convert ID to string for consistency
   local idStr = tostring(spellID)
+
+  self:DatabaseDebug(string.format("Adding spell to dmspellsdb - ID=%s, Name=%s, Class=%s, Spec=%s",
+    idStr, spellName, className or "UNKNOWN", specName or "General"))
 
   -- Default values
   local defaultColor = { 1, 0, 0 } -- Red
   local defaultPriority = 999
   local defaultTracked = 1
   local defaultEnabled = 1
+
+  -- Check if the spell already exists in the database
+  local isNew = not DM.dmspellsdb[idStr]
+  if not isNew then
+    self:DatabaseDebug(string.format("Spell %s already exists in database, updating", idStr))
+  end
 
   -- Add or update spell in the database
   DM.dmspellsdb[idStr] = {
@@ -227,59 +239,126 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
     enabled = defaultEnabled
   }
 
-  DM:DebugMsg(string.format("Added spell to dmspellsdb: ID=%s, Name=%s", idStr, spellName))
+  self:DatabaseDebug(string.format("%s spell in dmspellsdb: ID=%s, Name=%s",
+    isNew and "Added new" or "Updated", idStr, spellName))
 end
 
 -- Function to reset the database
 function DM:ResetDMSpellsDB()
+  self:DatabaseDebug("Resetting database - current size: " .. (DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0))
+
   -- Clear the dmspellsdb table
   DM.dmspellsdb = {}
 
-  -- Removed obsolete spellConfig clearing
-  DM:DebugMsg("Database completely reset.")
+  self:DatabaseDebug("Database completely reset.")
 end
 
 -- Function to save the database to saved variables
 function DM:SaveDMSpellsDB()
+  self:DatabaseDebug("Saving database to saved variables - size: " ..
+  (DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0))
+
   if not DotMasterDB then DotMasterDB = {} end
   DotMasterDB.dmspellsdb = DM.dmspellsdb
-  DM:DebugMsg("dmspellsdb saved to saved variables.")
+
+  -- Verify the saved data
+  local savedSize = DotMasterDB.dmspellsdb and DM:TableCount(DotMasterDB.dmspellsdb) or 0
+  self:DatabaseDebug("Database saved to saved variables - verified size: " .. savedSize)
 end
 
 -- Function to normalize database IDs to ensure they're all strings
 function DM:NormalizeDatabaseIDs()
   local normalized = {}
   local fixed = 0
+  local stringCount = 0
+  local numberCount = 0
+  local otherCount = 0
 
   if not DM.dmspellsdb then
-    DM:DebugMsg("No spell database to normalize")
+    self:DatabaseDebug("No spell database to normalize")
     return
   end
 
+  -- First, log what we're working with
+  self:DatabaseDebug("Starting database ID normalization - DB type: " .. type(DM.dmspellsdb))
+  self:DatabaseDebug("Current database has " .. DM:TableCount(DM.dmspellsdb) .. " entries")
+
   for id, data in pairs(DM.dmspellsdb) do
+    local idType = type(id)
     local idStr = tostring(id)
+
+    -- Count by type
+    if idType == "string" then
+      stringCount = stringCount + 1
+    elseif idType == "number" then
+      numberCount = numberCount + 1
+    else
+      otherCount = otherCount + 1
+    end
+
+    -- If original type wasn't string, we fixed something
+    if idType ~= "string" then
+      fixed = fixed + 1
+      if fixed <= 3 then
+        self:DatabaseDebug(string.format("Normalizing ID %s of type %s to string, spell name: %s",
+          tostring(id), idType, data.spellname or "unknown"))
+      end
+    end
+
+    -- Always store with string key
     normalized[idStr] = data
-    if idStr ~= id then fixed = fixed + 1 end
   end
 
+  -- Replace with normalized version
   DM.dmspellsdb = normalized
 
-  if fixed > 0 then
-    DM:DebugMsg(string.format("Normalized %d spell IDs in database to ensure string format", fixed))
+  local totalFixed = fixed + numberCount + otherCount
+
+  -- Provide detailed log of what happened
+  if totalFixed > 0 then
+    self:DatabaseDebug(string.format("Database ID normalization complete: %d entries processed",
+      DM:TableCount(normalized)))
+    self:DatabaseDebug(string.format("- Found %d string IDs, %d number IDs, %d other types", stringCount, numberCount,
+      otherCount))
+    self:DatabaseDebug(string.format("- Normalized %d IDs to ensure string format", totalFixed))
+  else
+    self:DatabaseDebug("Database IDs already normalized (all string format)")
   end
 end
 
 -- Function to load the database from saved variables
 function DM:LoadDMSpellsDB()
+  self:DatabaseDebug("Loading database from saved variables")
+
   if DotMasterDB and DotMasterDB.dmspellsdb then
+    local savedSize = DM:TableCount(DotMasterDB.dmspellsdb)
+    self:DatabaseDebug("Found saved database with " .. savedSize .. " entries")
+
+    -- Debug first few spells to verify data structure
+    local count = 0
+    for id, data in pairs(DotMasterDB.dmspellsdb) do
+      if count < 3 then
+        self:DatabaseDebug(string.format("Saved spell: ID=%s (type=%s), Name=%s",
+          tostring(id), type(id), data.spellname or "unknown"))
+        count = count + 1
+      else
+        break
+      end
+    end
+
+    -- Copy the database
     DM.dmspellsdb = DotMasterDB.dmspellsdb
-    DM:DebugMsg("dmspellsdb loaded from saved variables.")
+    self:DatabaseDebug("Database loaded from saved variables - copied structure")
 
     -- Normalize IDs to ensure they're all strings
-    DM:NormalizeDatabaseIDs()
+    self:DatabaseDebug("Running ID normalization on loaded database")
+    self:NormalizeDatabaseIDs()
+
+    -- Verify final database state
+    self:DatabaseDebug("Database loading complete - final size: " .. DM:TableCount(DM.dmspellsdb))
   else
+    self:DatabaseDebug("No saved database found in SavedVariables, initializing empty database")
     DM.dmspellsdb = {}
-    DM:DebugMsg("No saved database found, initialized new dmspellsdb.")
   end
 end
 
