@@ -60,7 +60,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local scrollChild = DM.GUI.scrollChild
   local spellRow = CreateFrame("Frame", "DotMasterSpellRow" .. index, scrollChild)
 
-  local rowWidth = math.max((scrollChild:GetWidth() - (PADDING.INNER * 2)), 420)
+  -- Calculate row width properly accounting for scrollbar
+  -- Use the exact width of the scrollChild, which already has scrollbar width subtracted
+  local rowWidth = scrollChild:GetWidth() - (PADDING.INNER * 2)
   local rowHeight = 36 -- Define row height
   spellRow:SetSize(rowWidth, rowHeight)
   spellRow:SetPoint("TOPLEFT", PADDING.INNER, -yOffset)
@@ -84,7 +86,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   -- ON: Enable/Disable Checkbox
   local enableCheckbox = CreateFrame("CheckButton", nil, spellRow, "UICheckButtonTemplate")
   enableCheckbox:SetSize(24, 24)
-  enableCheckbox:SetPoint("LEFT", COLUMN_POSITIONS.ON, 0)
+  -- Center the checkbox in its column for better alignment
+  enableCheckbox:SetPoint("LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2) - 12, 0)
   enableCheckbox:SetChecked(config.enabled == 1)
 
   enableCheckbox:SetScript("OnClick", function(self)
@@ -122,7 +125,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   -- Spell Name and ID Text
   local nameText = spellContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-  nameText:SetWidth(COLUMN_WIDTHS.NAME - iconSize - 8)
+  -- Allow more space for name by using most of the available width
+  -- Leave 20px margin on right for better spacing
+  nameText:SetWidth(COLUMN_WIDTHS.NAME + COLUMN_WIDTHS.ID - iconSize - 28)
   nameText:SetJustifyH("LEFT")
   local spellName = config.spellname or "Unknown Name"
   nameText:SetText(string.format("%s (%d)", spellName, numericID))
@@ -155,18 +160,23 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   orderContainer:SetSize(COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN, rowHeight)
   orderContainer:SetPoint("LEFT", COLUMN_POSITIONS.UP, 0)
 
+  -- Calculate centered position for the buttons
+  local buttonAreaWidth = COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN
+  local buttonsWidth = 24 + 5 + 24 -- button + spacing + button
+  local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
+
   -- Down Button (left) - Standard WoW arrow
   local downButton = CreateFrame("Button", nil, orderContainer)
   downButton:SetSize(24, 24)
-  downButton:SetPoint("LEFT", 0, 0)
+  downButton:SetPoint("LEFT", leftPadding, 0)
   downButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
   downButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
   downButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
 
-  -- UP Button (right) - Standard WoW arrow
+  -- UP Button (right) - Standard WoW arrow - minimal spacing
   local upButton = CreateFrame("Button", nil, orderContainer)
   upButton:SetSize(24, 24)
-  upButton:SetPoint("LEFT", downButton, "RIGHT", 8, 0)
+  upButton:SetPoint("LEFT", downButton, "RIGHT", 5, 0)
   upButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
   upButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
   upButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
@@ -208,9 +218,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
 
   -- UNTRACK: Cross button to untrack spell - make it more visible
   local untrackButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
-  untrackButton:SetSize(55, 24)
-  untrackButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL, 0)
-  untrackButton:SetText("Untrack")
+  untrackButton:SetSize(65, 24) -- Wider for better visibility and text fit
+  untrackButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL + 5, 0)
+  untrackButton:SetText("Remove")
 
   -- Make button red to stand out
   untrackButton.Left:SetVertexColor(0.8, 0.2, 0.2)
@@ -220,8 +230,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   -- Add tooltip
   untrackButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Untrack")
-    GameTooltip:AddLine("Remove this spell from tracked spells", 1, 0.82, 0, true)
+    GameTooltip:SetText("Remove Tracking")
+    GameTooltip:AddLine("Remove this spell from tracked spells list", 1, 0.82, 0, true)
     GameTooltip:Show()
   end)
 
@@ -247,17 +257,27 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     if not positions or not widths then return end
 
     -- Update positioned elements
-    enableCheckbox:SetPoint("LEFT", positions.ON, 0)
+    enableCheckbox:SetPoint("LEFT", positions.ON + (widths.ON / 2) - 12, 0)
 
     spellContainer:SetPoint("LEFT", positions.ID, 0)
     spellContainer:SetSize(widths.ID + widths.NAME, rowHeight)
+
+    -- Update nameText width when positions change
+    nameText:SetWidth(widths.NAME + widths.ID - iconSize - 28)
 
     colorSwatch:SetPoint("LEFT", positions.COLOR, 0)
 
     orderContainer:SetPoint("LEFT", positions.UP, 0)
     orderContainer:SetSize(widths.UP + widths.DOWN, rowHeight)
 
-    untrackButton:SetPoint("LEFT", positions.DEL, 0)
+    -- Recalculate centered button positions
+    local buttonAreaWidth = widths.UP + widths.DOWN
+    local buttonsWidth = 24 + 5 + 24 -- button + spacing + button
+    local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
+    downButton:SetPoint("LEFT", leftPadding, 0)
+    upButton:SetPoint("LEFT", downButton, "RIGHT", 5, 0)
+
+    untrackButton:SetPoint("LEFT", positions.DEL + 5, 0)
   end
 
   -- Add to tracking table

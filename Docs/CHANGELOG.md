@@ -235,4 +235,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic DoT tracking on enemy nameplates
 - Simple "Find My Dots" window
 - Configuration UI
-- Support for common DoT spells 
+- Support for common DoT spells
+
+## Version 0.6.9
+- UI Improvements for the Tracked Spells tab:
+  - Fixed scrollbar overlap issue by properly accounting for scrollbar width
+  - Improved column spacing and alignments throughout the interface
+  - Renamed "Untrack" to "Tracking" in the header and "Remove" in the button for clarity
+  - Increased name field width to prevent spell name truncation
+  - Improved button positioning and alignments for better visual harmony
+  - Better centered checkboxes and order arrows for a cleaner layout
+  - Adjusted spacing between UI elements for optimal readability
+
+## Version 0.6.8
+// ... existing code ... 

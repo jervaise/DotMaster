@@ -248,7 +248,7 @@ function DM:LoadDMSpellsDB()
   -- Check for and warn about legacy spellConfig data
   if DotMasterDB and DotMasterDB.spellConfig then
     DM:DatabaseDebug(
-    "WARNING: Legacy spellConfig data found in SavedVariables. Run '/dm reset' or '/dm fixdb' to clean up.")
+      "WARNING: Legacy spellConfig data found in SavedVariables. Run '/dm reset' or '/dm fixdb' to clean up.")
 
     -- Optionally migrate any remaining spells from spellConfig if needed
     -- This code is left as a placeholder for potential migration needs

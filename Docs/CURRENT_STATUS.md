@@ -81,4 +81,30 @@ Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 - World of Warcraft Retail Version: 11.1.0
 - Development Path: `F:\World of Warcraft\_retail_\Interface\AddOns\DotMaster`
 - Testing Environments: Solo play, Dungeons, Raids, World content
-- Test Classes: Warlock, Shadow Priest, Affliction Warlock 
+- Test Classes: Warlock, Shadow Priest, Affliction Warlock
+
+## Version 0.6.9
+
+The addon has been updated with significant UI improvements to the Tracked Spells tab. The new design addresses issues with scrollbar overlapping, improves element spacing and alignment, and enhances the overall user experience. Key improvements include:
+
+1. **Fixed scrollbar overlap** - Properly accounted for scrollbar width in all calculations
+2. **Improved spacing and proportions** - Optimized column widths and spacing for better readability
+3. **Clearer terminology** - Renamed elements for better clarity ("Untrack" → "Tracking"/"Remove")
+4. **Better alignment** - Centered elements and improved alignment of all UI components
+5. **Enhanced spell name display** - Increased the width allocation for spell names to prevent truncation
+
+These improvements follow professional UI/UX design principles, creating a more polished and user-friendly interface.
+
+## Upcoming Tasks
+
+- Continue enhancing the Find My Dots window UI
+- Implement spell auto-detection improvements
+- Add additional spell database entries
+- Performance optimizations for nameplate coloring
+- Expand documentation for API usage
+
+## Known Issues
+
+1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
+2. **Performance**: May experience frame drops during combat with many targets
+3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios 

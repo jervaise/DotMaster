@@ -16,12 +16,12 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Percentage-based column widths
   local COLUMN_WIDTH_PCT = {
-    ON = 0.06,    -- 6% Checkbox
-    ID = 0.18,    -- 18% ID/Icon area
-    NAME = 0.40,  -- 40% Name area
+    ON = 0.08,    -- 8% Checkbox (increased from 6%)
+    ID = 0.12,    -- 12% Icon area
+    NAME = 0.46,  -- 46% Name area (decreased from 48%)
     COLOR = 0.10, -- 10% Color
-    ORDER = 0.15, -- 15% Order buttons
-    DEL = 0.11    -- 11% Untrack button
+    ORDER = 0.10, -- 10% Order buttons (decreased from 12%)
+    DEL = 0.14    -- 14% Tracking button (increased from 12%)
   }
 
   -- Default positioning - increase to 550px
@@ -29,8 +29,12 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Create UpdateLayout function - frame resize olduğunda pozisyonları günceller
   local function UpdateColumnPositions(width)
-    -- Fixed width for consistent layout
-    width = 510 -- Set to a fixed width (slightly less than frame width of 550)
+    -- Calculate scrollbar width and adjust width to avoid overlap
+    local scrollBarWidth = 20 -- Standard WoW scrollbar width
+
+    -- Use provided width but ensure scrollbar doesn't overlap content
+    -- Account for right padding
+    width = math.min(width, 510) - scrollBarWidth
 
     local positions = {}
     local widths = {}
@@ -95,7 +99,9 @@ function DM:CreateTrackedSpellsTab(parent)
 
   local scrollChild = CreateFrame("Frame")
   scrollFrame:SetScrollChild(scrollChild)
-  scrollChild:SetSize(scrollFrame:GetWidth(), 500) -- Extra width for content
+  -- Set size accounting for scrollbar width
+  scrollChild:SetWidth(scrollFrame:GetWidth() - 20) -- Subtract scrollbar width
+  scrollChild:SetHeight(500)                        -- Extra height for content
 
   -- Store references in GUI namespace
   DM.GUI.scrollFrame = scrollFrame
@@ -111,6 +117,7 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Create header row with professional styling
   local headerFrame = CreateFrame("Frame", nil, scrollChild)
+  -- Set width to match the exact width of scrollChild (which already accounts for scrollbar)
   headerFrame:SetSize(scrollChild:GetWidth() - (PADDING.INNER * 2), 30)
   headerFrame:SetPoint("TOPLEFT", PADDING.INNER, -PADDING.INNER)
 
@@ -141,15 +148,18 @@ function DM:CreateTrackedSpellsTab(parent)
   -- Order başlığını ortala
   local orderText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   local orderX = COLUMN_POSITIONS.UP + (COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN) / 2
-  orderText:SetPoint("CENTER", headerFrame, "LEFT", orderX - 8, 0) -- Ortalama için offset
+  -- Adjust the order text to be properly centered over the arrows
+  orderText:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
   orderText:SetText("Order")
   orderText:SetTextColor(1, 0.82, 0)
   headerTexts.ORDER = orderText
 
-  headerTexts.UNTRACK = CreateHeaderText("Untrack", COLUMN_POSITIONS.DEL, COLUMN_WIDTHS.DEL)
+  -- Adjust the Tracking header alignment to better match the button position
+  headerTexts.UNTRACK = CreateHeaderText("Tracking", COLUMN_POSITIONS.DEL + 5, COLUMN_WIDTHS.DEL - 5)
 
   -- Update başlık pozisyonlarını güncelleme fonksiyonu
   local function UpdateHeaderPositions()
+    -- Use scrollChild width which already accounts for scrollbar
     local width = scrollChild:GetWidth() - (PADDING.INNER * 2)
     local positions, widths = UpdateColumnPositions(width)
 
@@ -164,10 +174,12 @@ function DM:CreateTrackedSpellsTab(parent)
 
     -- Order başlığını ortala
     local orderX = positions.UP + (widths.UP + widths.DOWN) / 2
-    headerTexts.ORDER:SetPoint("CENTER", headerFrame, "LEFT", orderX - 8, 0)
+    -- Update the order text to be properly centered over the arrows
+    headerTexts.ORDER:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
 
-    headerTexts.UNTRACK:SetPoint("LEFT", positions.DEL, 0)
-    headerTexts.UNTRACK:SetWidth(widths.DEL)
+    -- Update Tracking header position to be better aligned with the button
+    headerTexts.UNTRACK:SetPoint("LEFT", positions.DEL + 5, 0)
+    headerTexts.UNTRACK:SetWidth(widths.DEL - 5)
 
     -- Update frame sizes
     headerFrame:SetWidth(width)
@@ -268,7 +280,8 @@ function DM:CreateTrackedSpellsTab(parent)
   -- Parent frame'in boyutu değiştiğinde çağrılacak fonksiyon
   -- Respond to any parent frame size changes (not needed for resize, but kept for compatibility)
   parent:HookScript("OnSizeChanged", function()
-    scrollChild:SetWidth(scrollFrame:GetWidth())
+    -- Account for scrollbar width when setting the scrollChild width
+    scrollChild:SetWidth(scrollFrame:GetWidth() - 20) -- Subtract scrollbar width
     UpdateHeaderPositions()
   end)
 
