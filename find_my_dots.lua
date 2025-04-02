@@ -28,7 +28,7 @@ function DM:StartFindMyDots()
   end)
 
   -- User information message
-  self:PrintMessage("Dot recording mode active! Cast your spells on targets (30 seconds).")
+  DM:DebugMsg("Dot recording mode active! Cast your spells on targets (30 seconds).")
 
   -- Create special event handler and register it
   self:RegisterEvent("UNIT_AURA")
@@ -66,18 +66,18 @@ function DM:StopFindMyDots(automatic, finished)
 
   if count > 0 then
     if finished then
-      self:PrintMessage(string.format("%d dots detected! Recording completed.", count))
+      DM:DebugMsg(string.format("%d dots detected! Recording completed.", count))
     else
-      self:PrintMessage(string.format("%d dots detected! Do you want to add them?", count))
+      DM:DebugMsg(string.format("%d dots detected! Do you want to add them?", count))
     end
     self:ShowDotsConfirmationDialog(self.detectedDots)
   else
     if automatic then
-      self:PrintMessage("Time expired! No dots detected.")
+      DM:DebugMsg("Time expired! No dots detected.")
     elseif finished then
-      self:PrintMessage("Recording completed. No dots detected.")
+      DM:DebugMsg("Recording completed. No dots detected.")
     else
-      self:PrintMessage("Dot recording mode canceled. No dots detected.")
+      DM:DebugMsg("Dot recording mode canceled. No dots detected.")
     end
   end
 end
@@ -129,7 +129,7 @@ function DM:RecordDots(unitToken)
       end
 
       -- Inform user
-      self:PrintMessage(string.format("Dot detected: %s (ID: %d)", name, id))
+      DM:DebugMsg(string.format("Dot detected: %s (ID: %d)", name, id))
 
       -- Show visual feedback
       self:ShowDetectedDotNotification(name, id)
@@ -508,7 +508,12 @@ function DM:ShowDetectedDotNotification(name, id)
   end)
 end
 
+-- Add debug messages to verify spell data
 function DM:ShowDotsConfirmationDialog(dots)
+  for id, dotInfo in pairs(dots) do
+    DM:DebugMsg(string.format("Detected Dot - ID: %d, Name: %s", id, dotInfo.name))
+  end
+
   -- Confirmation dialog for detected dots
   if not self.dotsConfirmFrame then
     self.dotsConfirmFrame = CreateFrame("Frame", "DotMasterDotsConfirm", UIParent, "BackdropTemplate")
@@ -568,12 +573,15 @@ function DM:ShowDotsConfirmationDialog(dots)
 
     -- Add selected dots
     addButton:SetScript("OnClick", function()
+      DM:DebugMsg("Add to Database button clicked.")
       local added = 0
 
       for id, checkbox in pairs(self.dotCheckboxes) do
         if checkbox:GetChecked() then
           local dotInfo = self.detectedDots[tonumber(id)]
           if dotInfo and not self:SpellExists(id) then
+            DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
+
             -- Create new dot configuration
             self.spellConfig[tostring(id)] = {
               enabled = true,
@@ -582,9 +590,20 @@ function DM:ShowDotsConfirmationDialog(dots)
               priority = self:GetNextPriority()
             }
 
-            -- Add to new database
+            -- Add to new database with defaults
             local className, specName = self:GetPlayerClassAndSpec()
-            DM:AddSpellToDMSpellsDB(id, dotInfo.name, "Interface\\Icons\\Spell_Nature_HealingTouch", className, specName)
+            local defaultIcon = "Interface\\Icons\\Spell_Nature_HealingTouch"
+            local defaultColor = { 1, 0, 0 } -- Red
+            local defaultPriority = 999
+            local defaultTracked = 1
+            local defaultEnabled = 1
+
+            DM:AddSpellToDMSpellsDB(id, dotInfo.name, defaultIcon, className, specName)
+            DM.dmspellsdb[id].color = defaultColor
+            DM.dmspellsdb[id].priority = defaultPriority
+            DM.dmspellsdb[id].tracked = defaultTracked
+            DM.dmspellsdb[id].enabled = defaultEnabled
+
             DM:SaveDMSpellsDB()
             DM:DebugMsg("Spell added to dmspellsdb: " .. dotInfo.name)
 
@@ -599,7 +618,7 @@ function DM:ShowDotsConfirmationDialog(dots)
       end
 
       self:SaveSettings()
-      self:PrintMessage(string.format("%d dots successfully added!", added))
+      DM:DebugMsg(string.format("%d dots successfully added!", added))
       self.dotsConfirmFrame:Hide()
     end)
 
@@ -802,4 +821,13 @@ function DM:GetClassDisplayName(className)
   }
 
   return classNames[className] or className
+end
+
+-- Ensure nameplate debugger section loads unchecked by default
+function DM:CreateNameplateDebuggerSection()
+  -- Existing code for creating the nameplate debugger section
+  -- ...
+
+  -- Set default state to unchecked
+  self.nameplateDebuggerCheckbox:SetChecked(false)
 end

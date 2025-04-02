@@ -47,15 +47,15 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
   -- Use standard WoW color picker with updated API
   swatch:SetScript("OnClick", function()
-    print("|cFFCC00FFDotMaster Debug:|r Color swatch clicked")
+    DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Color swatch clicked")
 
     -- Check if ColorPickerFrame exists
     if not ColorPickerFrame then
-      print("|cFFCC00FFDotMaster Debug:|r ERROR: ColorPickerFrame does not exist!")
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r ERROR: ColorPickerFrame does not exist!")
       return
     end
 
-    print("|cFFCC00FFDotMaster Debug:|r Setting up ColorPickerFrame functions")
+    DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Setting up ColorPickerFrame functions")
 
     -- Store current color for cancelFunc
     local currentR, currentG, currentB = r, g, b
@@ -66,34 +66,34 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
       if restore then
         -- User canceled, restore original color
-        print("|cFFCC00FFDotMaster Debug:|r Color canceled, reverting to original")
+        DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Color canceled, reverting to original")
         newR, newG, newB = currentR, currentG, currentB
       else
         -- Get selected color from color picker
-        print("|cFFCC00FFDotMaster Debug:|r Getting new color from color picker")
+        DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Getting new color from color picker")
         -- Check available APIs for getting color
         if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
-          print("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker API")
+          DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker API")
           newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
         elseif ColorPickerFrame.GetColorRGB then
-          print("|cFFCC00FFDotMaster Debug:|r Using GetColorRGB API")
+          DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using GetColorRGB API")
           newR, newG, newB = ColorPickerFrame:GetColorRGB()
         else
           -- Try to get color via individual RGB functions (fallback method)
-          print("|cFFCC00FFDotMaster Debug:|r Using fallback RGB methods")
+          DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using fallback RGB methods")
           if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
             newR = ColorPickerFrame.Content.ColorPicker:GetColorValueTexture() or currentR
             newG = ColorPickerFrame.Content.ColorPicker:GetColorSaturationTexture() or currentG
             newB = ColorPickerFrame.Content.ColorPicker:GetColorBrightnessTexture() or currentB
           else
-            print("|cFFCC00FFDotMaster Debug:|r Couldn't get color - using defaults")
+            DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Couldn't get color - using defaults")
             newR, newG, newB = currentR, currentG, currentB
           end
         end
       end
 
       -- Apply color to swatch
-      print("|cFFCC00FFDotMaster Debug:|r Setting texture color to:", newR, newG, newB)
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Setting texture color to:", newR, newG, newB)
       texture:SetColorTexture(newR, newG, newB)
 
       -- Update color reference values
@@ -101,20 +101,20 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
       -- Call user callback if provided
       if callback then
-        print("|cFFCC00FFDotMaster Debug:|r Running callback function with", newR, newG, newB)
+        DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Running callback function with", newR, newG, newB)
         callback(newR, newG, newB)
-        print("|cFFCC00FFDotMaster Debug:|r Callback completed, saving settings")
+        DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Callback completed, saving settings")
         -- Renklerin kaydedildiğinden emin olmak için SaveSettings'i doğrudan çağır
         DM:SaveSettings()
       end
     end
 
     -- Set up color picker
-    print("|cFFCC00FFDotMaster Debug:|r Setting up color picker with color:", r, g, b)
+    DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Setting up color picker with color:", r, g, b)
 
     -- Modern API
     if ColorPickerFrame.SetupColorPickerAndShow then
-      print("|cFFCC00FFDotMaster Debug:|r Using SetupColorPickerAndShow API")
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using SetupColorPickerAndShow API")
       local info = {}
       info.swatchFunc = colorPickerCallback
       info.cancelFunc = function() colorPickerCallback(true) end
@@ -128,11 +128,11 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame:SetupColorPickerAndShow(info)
     else
       -- Legacy API fallback
-      print("|cFFCC00FFDotMaster Debug:|r Using legacy color picker API")
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using legacy color picker API")
 
       -- Set frame attributes directly
       if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-        print("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker.SetColorRGB")
+        DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Using Content.ColorPicker.SetColorRGB")
         ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
       end
 
@@ -144,9 +144,9 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame.previousValues = { r = r, g = g, b = b }
 
       -- Show the frame
-      print("|cFFCC00FFDotMaster Debug:|r About to show ColorPickerFrame")
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r About to show ColorPickerFrame")
       ColorPickerFrame:Show()
-      print("|cFFCC00FFDotMaster Debug:|r After Show() - IsShown:", ColorPickerFrame:IsShown())
+      DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r After Show() - IsShown:", ColorPickerFrame:IsShown())
     end
   end)
 
@@ -156,7 +156,7 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
     texture:SetColorTexture(r, g, b, 1)
   end
 
-  print("|cFFCC00FFDotMaster Debug:|r Color swatch created successfully")
+  DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Color swatch created successfully")
   return swatch
 end
 

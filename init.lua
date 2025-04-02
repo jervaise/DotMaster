@@ -41,7 +41,7 @@ DM.DEBUG_MODE = true
 
 -- Simple print function that doesn't require DebugMsg
 function DM:SimplePrint(message)
-  print("|cFFCC00FFDotMaster:|r " .. message)
+  DM:DebugMsg("|cFFCC00FFDotMaster:|r " .. message)
 end
 
 -- Main initialization function
@@ -131,13 +131,14 @@ end
 -- Set up event handling
 DM:SetScript("OnEvent", function(self, ...) self:OnEvent(...) end)
 
--- Basic print message function in case utils.lua isn't loaded yet
+-- Modify PrintMessage to respect DEBUG_MODE
 function DM:PrintMessage(message, ...)
+  if not self.DEBUG_MODE then return end
   local prefix = "|cFFCC00FFDotMaster:|r "
   if select('#', ...) > 0 then
-    print(prefix .. message, ...)
+    DM:DebugMsg(prefix .. message, ...)
   else
-    print(prefix .. message)
+    DM:DebugMsg(prefix .. message)
   end
 end
 
