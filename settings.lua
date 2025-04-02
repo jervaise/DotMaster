@@ -49,119 +49,21 @@ function DM:LoadSettings()
   DM:DebugMsg("Settings loaded")
 end
 
--- Initialize slash commands
-function DM:InitializeSlashCommands()
-  DM:DebugMsg("Initializing slash commands")
-
-  SLASH_DOTMASTER1 = "/dm"
-  SlashCmdList["DOTMASTER"] = function(msg)
-    DM:DebugMsg("Slash command received: " .. msg)
-
-    local command, arg = strsplit(" ", msg, 2)
-    command = strtrim(command:lower())
-
-    if command == "on" or command == "enable" then
-      DM.enabled = true
-      DM:PrintMessage("Enabled")
-      DM:UpdateAllNameplates()
-      DM:SaveSettings() -- Save settings immediately
-    elseif command == "off" or command == "disable" then
-      DM.enabled = false
-      DM:PrintMessage("Disabled")
-      DM:ResetAllNameplates()
-      DM:SaveSettings() -- Save settings immediately
-    elseif command == "debug" or command == "status" then
-      DM:DebugMsg("Status Information:")
-      DM:DebugMsg("Enabled: " .. (DM.enabled and "Yes" or "No"))
-      DM:DebugMsg("GUI loaded: " .. (DM.GUI and "Yes" or "No"))
-      DM:DebugMsg("GUI frame exists: " .. (DM.GUI and DM.GUI.frame and "Yes" or "No"))
-      DM:DebugMsg("Active plates: " .. DM:TableCount(DM.activePlates))
-      DM:DebugMsg("Colored plates: " .. DM:TableCount(DM.coloredPlates))
-      DM:DebugMsg("Tracked spells: " .. DM:TableCount(DM.spellConfig))
-
-      -- List all tracked spells
-      DM:DebugMsg("Spell configurations:")
-      for spellID, config in pairs(DM.spellConfig) do
-        DM:DebugMsg("  - " ..
-          spellID .. ": " .. config.name .. " (" .. (config.enabled and "Enabled" or "Disabled") .. ")")
-      end
-    elseif command == "console" or command == "debugconsole" or command == "log" then
-      -- Open the debug console
-      if DM.Debug and DM.Debug.ToggleWindow then
-        DM.Debug:ToggleWindow()
-      else
-        DM:PrintMessage("Debug console not available")
-      end
-    elseif command == "show" and DM.GUI and DM.GUI.frame then
-      DM:DebugMsg("Attempting to show GUI")
-      DM.GUI.frame:Show()
-    elseif command == "reload" then
-      DM:DebugMsg("Reloading UI")
-      ReloadUI()
-    elseif command == "reset" then
-      -- Create confirmation dialog
-      StaticPopupDialogs["DOTMASTER_RESET_CONFIRM"] = {
-        text =
-        "Are you sure you want to reset all DotMaster settings? This will delete all your saved spells and configurations.",
-        button1 = "Yes",
-        button2 = "No",
-        OnAccept = function()
-          DM:DebugMsg("Resetting all settings")
-          DotMasterDB = nil
-          DM.spellConfig = {}
-          DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig)
-          DM.enabled = DM.defaults.enabled
-          print("|cFFCC00FFDotMaster:|r Settings reset to defaults")
-          DM:ResetAllNameplates()
-          DM:UpdateAllNameplates()
-          DM:SaveSettings() -- Save settings immediately
-
-          if DM.GUI and DM.GUI.RefreshSpellList then
-            DM.GUI:RefreshSpellList()
-          end
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-      }
-      StaticPopup_Show("DOTMASTER_RESET_CONFIRM")
-    elseif command == "save" then
-      DM:SaveSettings()
-      DM:PrintMessage("Settings saved")
-    else
-      -- Try to show GUI if available
-      if DM.GUI and DM.GUI.frame then
-        DM:DebugMsg("Attempting to toggle GUI")
-        if DM.GUI.frame:IsShown() then
-          DM.GUI.frame:Hide()
-        else
-          DM.GUI.frame:Show()
-        end
-      else
-        DM:DebugMsg("GUI not available")
-        print("|cFFCC00FFDotMaster:|r Available commands:")
-        print("  /dm on - Enable addon")
-        print("  /dm off - Disable addon")
-        print("  /dm status - Display debug information")
-        print("  /dm console - Open Debug Console")
-        print("  /dm show - Show GUI (if available)")
-        print("  /dm reset - Reset to default settings")
-        print("  /dm save - Force save settings")
-        print("  /dm reload - Reload UI")
-      end
-    end
-  end
-
-  -- Add dedicated debug command
+-- Initialize ONLY the debug slash commands
+function DM:InitializeDebugSlashCommands()
   SLASH_DOTMASTERDEBUG1 = "/dmdebug"
   SlashCmdList["DOTMASTERDEBUG"] = function(msg)
+    if not DM.Debug then
+      DM:PrintMessage("Debug system not fully initialized.")
+      return
+    end
+
     if not msg or msg == "" then
       -- Toggle debug window if no arguments
-      if DM.Debug and DM.Debug.ToggleWindow then
+      if DM.Debug.ToggleWindow then
         DM.Debug:ToggleWindow()
       else
-        DM:PrintMessage("Debug console not available")
+        DM:PrintMessage("Debug console toggle not available")
       end
     else
       -- Parse the command
@@ -177,10 +79,10 @@ function DM:InitializeSlashCommands()
         DM:PrintMessage("Debug Mode Disabled")
         DM:SaveSettings()
       elseif command == "console" or command == "window" then
-        if DM.Debug and DM.Debug.ToggleWindow then
+        if DM.Debug.ToggleWindow then
           DM.Debug:ToggleWindow()
         else
-          DM:PrintMessage("Debug console not available")
+          DM:PrintMessage("Debug console toggle not available")
         end
       elseif command == "status" then
         DM:PrintMessage("Debug Status: " .. (DM.DEBUG_MODE and "Enabled" or "Disabled"))
@@ -217,7 +119,7 @@ function DM:InitializeSlashCommands()
         end
       elseif command == "help" then
         -- Show help information
-        if DM.Debug and DM.Debug.ShowHelp then
+        if DM.Debug.ShowHelp then
           DM.Debug:ShowHelp()
         else
           -- Fallback if help function is not available
@@ -230,8 +132,8 @@ function DM:InitializeSlashCommands()
           DM:PrintMessage("  /dmdebug help - Show this help")
         end
       else
-        -- Show help
-        if DM.Debug and DM.Debug.ShowHelp then
+        -- Show help if command is unknown
+        if DM.Debug.ShowHelp then
           DM.Debug:ShowHelp()
         else
           -- Fallback if help function is not available
@@ -246,6 +148,112 @@ function DM:InitializeSlashCommands()
       end
     end
   end
+  DM:DebugMsg("Debug slash commands initialized")
+end
+
+-- Initialize the main slash commands
+function DM:InitializeMainSlashCommands()
+  SLASH_DOTMASTER1 = "/dm"
+  SlashCmdList["DOTMASTER"] = function(msg)
+    DM:DebugMsg("Slash command received: /dm " .. msg)
+
+    local command, arg = strsplit(" ", msg, 2)
+    command = strtrim(command:lower())
+
+    if command == "on" or command == "enable" then
+      DM.enabled = true
+      DM:PrintMessage("Enabled")
+      if DM.UpdateAllNameplates then DM:UpdateAllNameplates() else DM:DebugMsg("UpdateAllNameplates not available") end
+      DM:SaveSettings()
+    elseif command == "off" or command == "disable" then
+      DM.enabled = false
+      DM:PrintMessage("Disabled")
+      if DM.ResetAllNameplates then DM:ResetAllNameplates() else DM:DebugMsg("ResetAllNameplates not available") end
+      DM:SaveSettings()
+    elseif command == "debug" or command == "status" then
+      DM:DebugMsg("Status Information:")
+      DM:DebugMsg("Enabled: " .. (DM.enabled and "Yes" or "No"))
+      DM:DebugMsg("GUI loaded: " .. (DM.GUI and "Yes" or "No"))
+      DM:DebugMsg("GUI frame exists: " .. (DM.GUI and DM.GUI.frame and "Yes" or "No"))
+      DM:DebugMsg("Active plates: " .. (DM.TableCount and DM:TableCount(DM.activePlates) or "N/A"))
+      DM:DebugMsg("Colored plates: " .. (DM.TableCount and DM:TableCount(DM.coloredPlates) or "N/A"))
+      DM:DebugMsg("Tracked spells: " .. (DM.TableCount and DM:TableCount(DM.spellConfig) or "N/A"))
+      DM:DebugMsg("Spell configurations:")
+      for spellID, config in pairs(DM.spellConfig or {}) do
+        DM:DebugMsg("  - " ..
+          spellID .. ": " .. (config.name or "Unknown") .. " (" .. (config.enabled and "Enabled" or "Disabled") .. ")")
+      end
+    elseif command == "console" or command == "debugconsole" or command == "log" then
+      -- Open the debug console
+      if DM.Debug and DM.Debug.ToggleWindow then
+        DM.Debug:ToggleWindow()
+      else
+        DM:PrintMessage("Debug console not available")
+      end
+    elseif command == "show" and DM.GUI and DM.GUI.frame then
+      DM:DebugMsg("Attempting to show GUI")
+      DM.GUI.frame:Show()
+    elseif command == "reload" then
+      DM:DebugMsg("Reloading UI")
+      ReloadUI()
+    elseif command == "reset" then
+      -- Create confirmation dialog
+      if StaticPopupDialogs and StaticPopup_Show then
+        StaticPopupDialogs["DOTMASTER_RESET_CONFIRM"] = {
+          text =
+          "Are you sure you want to reset all DotMaster settings? This will delete all your saved spells and configurations.",
+          button1 = "Yes",
+          button2 = "No",
+          OnAccept = function()
+            DM:DebugMsg("Resetting all settings")
+            DotMasterDB = nil
+            DM.spellConfig = {}
+            if DM.DeepCopy then DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig) end
+            DM.enabled = DM.defaults.enabled
+            DM:PrintMessage("Settings reset to defaults")
+            if DM.ResetAllNameplates then DM:ResetAllNameplates() end
+            if DM.UpdateAllNameplates then DM:UpdateAllNameplates() end
+            DM:SaveSettings()
+            if DM.GUI and DM.GUI.RefreshSpellList then
+              DM.GUI:RefreshSpellList()
+            end
+          end,
+          timeout = 0,
+          whileDead = true,
+          hideOnEscape = true,
+          preferredIndex = 3,
+        }
+        StaticPopup_Show("DOTMASTER_RESET_CONFIRM")
+      else
+        DM:PrintMessage("Cannot show reset confirmation dialog.")
+      end
+    elseif command == "save" then
+      DM:SaveSettings()
+      DM:PrintMessage("Settings saved")
+    else
+      -- Try to toggle main GUI if available, otherwise print help
+      if DM.GUI and DM.GUI.frame then
+        DM:DebugMsg("Attempting to toggle GUI")
+        if DM.GUI.frame:IsShown() then
+          DM.GUI.frame:Hide()
+        else
+          DM.GUI.frame:Show()
+        end
+      else
+        DM:DebugMsg("Main GUI not available, showing help")
+        DM:PrintMessage("Available commands:")
+        DM:PrintMessage("  /dm on - Enable addon")
+        DM:PrintMessage("  /dm off - Disable addon")
+        DM:PrintMessage("  /dm status - Display debug information")
+        DM:PrintMessage("  /dm console - Open Debug Console (use /dmdebug)")
+        DM:PrintMessage("  /dm show - Show GUI (if loaded)")
+        DM:PrintMessage("  /dm reset - Reset to default settings")
+        DM:PrintMessage("  /dm save - Force save settings")
+        DM:PrintMessage("  /dm reload - Reload UI")
+      end
+    end
+  end
+  DM:DebugMsg("Main slash commands initialized")
 end
 
 -- Create a function that automatically saves after config changes

@@ -1,10 +1,12 @@
--- DotMaster gui_spells_tab.lua
--- Contains the Spells tab functionality for the GUI
+-- DotMaster gui_tracked_spells_tab.lua
+-- Contains the Tracked Spells tab functionality for the GUI
 
 local DM = DotMaster
 
--- Create Spells tab content
-function DM:CreateSpellsTab(parent)
+-- Create Tracked Spells tab content
+function DM:CreateTrackedSpellsTab(parent)
+  DM:DebugMsg("Creating Tracked Spells Tab") -- Updated debug message
+
   -- Constants for professional layout
   local PADDING = {
     OUTER = 5,  -- Outside frame padding

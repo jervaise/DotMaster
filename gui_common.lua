@@ -9,8 +9,8 @@ DotMaster_Components.CreateGeneralTab = function(parent)
   return DM:CreateGeneralTab(parent)
 end
 
-DotMaster_Components.CreateSpellsTab = function(parent)
-  return DM:CreateSpellsTab(parent)
+DotMaster_Components.CreateTrackedSpellsTab = function(parent)
+  return DM:CreateTrackedSpellsTab(parent)
 end
 
 -- Create the main GUI
@@ -130,7 +130,7 @@ function DM:CreateGUI()
     -- Tab text
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER")
-    text:SetText(i == 1 and "General" or "Spells")
+    text:SetText(i == 1 and "General" or "Tracked Spells")
     text:SetTextColor(1, 0.82, 0)
 
     -- Store ID and script
@@ -168,14 +168,14 @@ function DM:CreateGUI()
     DM:DebugMsg("ERROR: CreateGeneralTab function not found!")
   end
 
-  if DM.CreateSpellsTab then
-    DM:DebugMsg("Using DM:CreateSpellsTab directly")
-    DM:CreateSpellsTab(tabFrames[2])
-  elseif DotMaster_Components.CreateSpellsTab then
-    DM:DebugMsg("Using DotMaster_Components.CreateSpellsTab")
-    DotMaster_Components.CreateSpellsTab(tabFrames[2])
+  if DM.CreateTrackedSpellsTab then
+    DM:DebugMsg("Using DM:CreateTrackedSpellsTab directly")
+    DM:CreateTrackedSpellsTab(tabFrames[2])
+  elseif DotMaster_Components.CreateTrackedSpellsTab then
+    DM:DebugMsg("Using DotMaster_Components.CreateTrackedSpellsTab")
+    DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
   else
-    DM:DebugMsg("ERROR: CreateSpellsTab function not found!")
+    DM:DebugMsg("ERROR: CreateTrackedSpellsTab function not found!")
   end
 
   -- Initialize spell list

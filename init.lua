@@ -48,71 +48,67 @@ end
 function DM:Initialize()
   -- Use SimplePrint as a fallback if DebugMsg is not available yet
   if self.DebugMsg then
-    self:DebugMsg("Initializing DotMaster")
+    self:DebugMsg("Starting Main Initialization")
   else
-    self:SimplePrint("Initializing DotMaster")
+    self:SimplePrint("Starting Main Initialization")
   end
 
-  -- Load settings
-  self:LoadSettings()
-  if self.DebugMsg then
-    self:DebugMsg("Settings loaded")
-  else
-    self:SimplePrint("Settings loaded")
-  end
-
-  -- Register events
+  -- Register core events (these are generally safe)
   self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
   self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
   self:RegisterEvent("UNIT_AURA")
   self:RegisterEvent("PLAYER_ENTERING_WORLD")
   self:RegisterEvent("PLAYER_LOGOUT")
-  if self.DebugMsg then
-    self:DebugMsg("Events registered")
-  else
-    self:SimplePrint("Events registered")
+  if self.DebugMsg then self:DebugMsg("Core events registered") end
+
+  -- Initialize potentially fragile components using pcall
+
+  -- Create the main GUI
+  local guiOK, guiErr = pcall(function()
+    if self.CreateGUI then
+      self:CreateGUI()
+      if self.DebugMsg then self:DebugMsg("Main GUI creation attempted.") end
+    else
+      if self.DebugMsg then self:DebugMsg("CreateGUI function not found.") end
+    end
+  end)
+  if not guiOK then
+    if self.DebugMsg then self:DebugMsg("ERROR creating main GUI: " .. tostring(guiErr)) end
   end
 
-  -- Create the GUI - Control removed
-  if self.CreateGUI then
-    self:CreateGUI()
-    if self.DebugMsg then
-      self:DebugMsg("GUI creation successful")
-    else
-      self:SimplePrint("GUI creation successful")
-    end
-  else
-    if self.DebugMsg then
-      self:DebugMsg("CreateGUI function not found")
-    else
-      self:SimplePrint("CreateGUI function not found")
-    end
+  -- Initialize main slash commands
+  local slashOK, slashErr = pcall(function()
+    self:InitializeMainSlashCommands()
+  end)
+  if not slashOK then
+    if self.DebugMsg then self:DebugMsg("ERROR initializing main slash commands: " .. tostring(slashErr)) end
   end
-
-  -- Initialize the slash commands
-  self:InitializeSlashCommands()
 
   -- Hook Plater if available
-  if _G["Plater"] then
-    local Plater = _G["Plater"]
-    if self.DebugMsg then
-      self:DebugMsg("Plater detected, adding hooks")
-    else
-      self:SimplePrint("Plater detected, adding hooks")
-    end
-
-    hooksecurefunc(Plater, "UpdatePlateFrame", function(plateFrame)
-      C_Timer.After(0.1, function()
-        if not DM.enabled then return end
-        local unitToken = plateFrame.namePlateUnitToken
-        if unitToken and DM.activePlates[unitToken] then
-          DM:UpdateNameplate(unitToken)
-        end
+  local platerOK, platerErr = pcall(function()
+    if _G["Plater"] then
+      local Plater = _G["Plater"]
+      if self.DebugMsg then self:DebugMsg("Plater detected, adding hooks") end
+      hooksecurefunc(Plater, "UpdatePlateFrame", function(plateFrame)
+        C_Timer.After(0.1, function()
+          if not DM.enabled then return end
+          local unitToken = plateFrame.namePlateUnitToken
+          if unitToken and DM.activePlates[unitToken] then
+            DM:UpdateNameplate(unitToken)
+          end
+        end)
       end)
-    end)
+    else
+      if self.DebugMsg then self:DebugMsg("Plater not detected.") end
+    end
+  end)
+  if not platerOK then
+    if self.DebugMsg then self:DebugMsg("ERROR hooking Plater: " .. tostring(platerErr)) end
   end
 
-  self:PrintMessage("loaded. Type /dm to open options.")
+  -- Final message
+  self:PrintMessage("loaded. Type /dm for options or /dmdebug for debug console.")
+  if self.DebugMsg then self:DebugMsg("Main Initialization finished.") end
 end
 
 -- Event handler

@@ -27,7 +27,7 @@ If you're new to DotMaster development, read these documents in this order:
 - [DEVELOPMENT_PROCESS.md](DEVELOPMENT_PROCESS.md) - Guidelines for development
 - [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - Future development plans
 - [RESTRUCTURING_SUMMARY.md](RESTRUCTURING_SUMMARY.md) - Notes on code restructuring
-- [rename_plan.md](rename_plan.md) - File renaming documentation
+- [FILE_RENAMING.md](FILE_RENAMING.md) - File renaming documentation
 
 ### Version History
 - [CHANGELOG.md](CHANGELOG.md) - Complete version history in one file

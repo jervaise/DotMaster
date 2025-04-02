@@ -39,7 +39,7 @@ This document tracks the current file structure of the DotMaster addon. It is up
 
 ## Changed in v0.5.1
 - Restructured documentation to be more user-friendly
-- Added a new Docs/README.md file to guide developers through documentation
+- Added a new Docs/DOCUMENTATION_GUIDE.md file to guide developers through documentation
 - Enhanced and consolidated information in the main README.md
 - Updated version references in all documentation files
 
@@ -111,7 +111,7 @@ DotMaster/
 │   ├── MISSING_LIBRARIES.md
 │   ├── PROJECT_SCOPE.md
 │   ├── RESTRUCTURING_SUMMARY.md
-│   ├── rename_plan.md
+│   ├── FILE_RENAMING.md
 │   └── PatchNotes/
 │       ├── v0.1.1.md
 │       ├── v0.3.0.md

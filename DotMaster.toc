@@ -8,11 +8,11 @@
 # Libraries
 embeds.xml
 
-# Core files
+# Core Initialization & Debugging (Load Early)
 init.lua
 utils.lua
-gui_debug.lua
 settings.lua
+gui_debug.lua
 
 # Spell functionality
 spell_database.lua
@@ -28,7 +28,7 @@ gui_colorpicker.lua
 gui_common.lua
 gui.lua
 gui_general_tab.lua
-gui_spells_tab.lua
+gui_tracked_spells_tab.lua
 gui_spell_row.lua
 gui_spell_selection.lua
 

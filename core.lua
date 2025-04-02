@@ -3,32 +3,53 @@
 
 local DM = DotMaster
 
--- First ensure debug system is initialized
-if DM.Debug and DM.Debug.Init then
-  -- Use pcall to catch any errors during initialization
-  local success, errorMsg = pcall(DM.Debug.Init, DM.Debug)
-  if not success then
-    print("|cFFCC00FFDotMaster:|r Error initializing debug system: " .. tostring(errorMsg))
+-- Phase 1: Early Initialization (Settings & Debug System)
+local earlyInitOK, earlyInitErr = pcall(function()
+  -- Load settings (essential for debug flags)
+  if DM.LoadSettings then
+    DM:LoadSettings()
+  else
+    DM:SimplePrint("LoadSettings function not found!")
   end
+
+  -- Initialize Debug System Core (Hooks, Logging)
+  if DM.Debug and DM.Debug.Init then
+    DM.Debug:Init()
+    DM:DebugMsg("Core debug system initialized (logging hooked).")
+  else
+    DM:SimplePrint("DM.Debug.Init not found!")
+  end
+
+  -- Create Debug Console GUI (but don't show it yet)
+  if DM.Debug and DM.Debug.CreateDebugWindow then
+    DM.Debug:CreateDebugWindow()
+    DM:DebugMsg("Debug console GUI created.")
+  else
+    DM:SimplePrint("DM.Debug.CreateDebugWindow not found!")
+  end
+
+  -- Initialize Debug Slash Commands
+  if DM.InitializeDebugSlashCommands then
+    DM:InitializeDebugSlashCommands()
+  else
+    DM:SimplePrint("InitializeDebugSlashCommands not found!")
+  end
+end)
+
+if not earlyInitOK then
+  DM:SimplePrint("CRITICAL ERROR during early initialization: " .. tostring(earlyInitErr))
 end
 
--- Now that all modules are loaded, we can safely initialize the addon
-DM:Initialize()
+-- Phase 2: Main Addon Initialization (calls DM:Initialize() from init.lua)
+-- This will now use pcall internally for fragile components
+local mainInitOK, mainInitErr = pcall(function()
+  DM:Initialize()
+end)
 
--- Debug note to indicate everything has loaded correctly
-if DM.DebugMsg then
-  DM:DebugMsg("Core initialization complete - all modules loaded")
-else
-  print("|cFFCC00FFDotMaster:|r Core initialization complete")
+if not mainInitOK then
+  DM:DebugMsg("ERROR during main initialization (DM:Initialize): " .. tostring(mainInitErr))
+  DM:PrintMessage("Main addon initialization failed. Some features may be broken. Check /dmdebug console.")
 end
 
--- Create debug window if DEBUG_MODE is enabled
-if DM.DEBUG_MODE and DM.Debug and DM.Debug.CreateDebugWindow then
-  C_Timer.After(1, function()
-    -- Use pcall to catch any errors when creating the debug window
-    local success, errorMsg = pcall(DM.Debug.CreateDebugWindow, DM.Debug)
-    if not success then
-      print("|cFFCC00FFDotMaster:|r Error creating debug window: " .. tostring(errorMsg))
-    end
-  end)
-end
+-- Final debug note
+DM:DebugMsg("Core.lua execution finished.")

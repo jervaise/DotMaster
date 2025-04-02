@@ -25,7 +25,7 @@ DotMaster is a World of Warcraft addon that colors nameplates based on player de
 - Type `/dm` or `/dotmaster` to open the configuration panel
 - Type `/dmdebug` to open the debug console or access debug options
 - Click the minimap button to quickly toggle the "Find My Dots" window
-- Configure which spells to track in the Spells tab
+- Configure which spells to track in the Tracked Spells tab
 - Customize colors and visual options in the General tab
 
 ## For Developers
@@ -50,14 +50,14 @@ local icon = spellInfo and spellInfo.iconFileID
 ```
 DotMaster/
 ├── Docs/               - Comprehensive documentation
-├── Libs/               - External libraries
+├── Libs/               - Required external libraries
 ├── Media/              - Icons and textures
 ├── Scripts/            - Validation and utility scripts
-├── Core Files          - Main addon functionality
-├── Spell System        - Spell database and utilities
-├── Nameplate System    - Nameplate detection and coloring
-├── User Interface      - Configuration UI components
-└── Find My Dots        - Target DoT tracking feature
+├── DotMaster.toc       - Addon Table of Contents
+├── embeds.xml          - Library embedding information
+├── *.lua               - Core Lua files (initialization, settings, core logic, GUI, nameplates, spells, utilities)
+├── README.md           - This file
+└── dmcheck.bat         - Validation script helper (Windows)
 ```
 
 ### Documentation

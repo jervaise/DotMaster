@@ -89,7 +89,7 @@ When creating new scripts:
 1. Include a descriptive header with purpose and usage instructions
 2. Use consistent naming with the prefix indicating the script type
 3. Keep scripts focused on a single task
-4. Add the script to this README
+4. Add the script to this SCRIPTS_GUIDE.md
 
 ## Requirements
 
