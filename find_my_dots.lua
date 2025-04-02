@@ -105,13 +105,14 @@ function DM:RecordDots(unitToken)
 
       -- Also add to spell config automatically if not exists
       if not self:SpellExists(id) then
-        self.spellConfig[tostring(id)] = {
-          enabled = true,
-          color = { 1, 0, 0 }, -- Default red color
-          name = name,
-          priority = self:GetNextPriority(),
-          saved = true
-        }
+        -- Do not create a new spell config entry
+        -- self.spellConfig[tostring(id)] = {
+        --   enabled = true,
+        --   color = { 1, 0, 0 }, -- Default red color
+        --   name = name,
+        --   priority = self:GetNextPriority(),
+        --   saved = true
+        -- }
 
         -- Refresh GUI if open
         if self.GUI and self.GUI.RefreshSpellList then
@@ -581,14 +582,6 @@ function DM:ShowDotsConfirmationDialog(dots)
           local dotInfo = self.detectedDots[tonumber(id)]
           if dotInfo and not self:SpellExists(id) then
             DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
-
-            -- Create new dot configuration
-            self.spellConfig[tostring(id)] = {
-              enabled = true,
-              color = { 1, 0, 0 }, -- Default red color
-              name = dotInfo.name,
-              priority = self:GetNextPriority()
-            }
 
             -- Add to new database with defaults
             local className, specName = self:GetPlayerClassAndSpec()
