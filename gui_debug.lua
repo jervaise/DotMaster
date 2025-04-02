@@ -69,8 +69,8 @@ end
 
 -- Centralized log function
 function DM.Debug:Log(category, message, ...)
-  -- Skip if debug mode is disabled or category is disabled
-  if not DM.DEBUG_CATEGORIES.general or (DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category]) then
+  -- Skip if category is disabled (removed general category check)
+  if DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category] then
     return
   end
 
@@ -89,7 +89,7 @@ function DM.Debug:Log(category, message, ...)
     nameplate = "00CCFF",   -- Blue
     gui = "FFCC00",         -- Gold
     performance = "00FF00", -- Green
-    database = "FF6600",    -- Orange
+    database = "FFA500",    -- Orange
   }
 
   local colorCode = categoryColors[category] or "FFFFFF"

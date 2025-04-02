@@ -185,10 +185,10 @@ function DM:CreateGUI()
 
   -- Create Database tab content
   if DotMaster_Components.CreateDatabaseTab then
-    DM:DebugMsg("Using DotMaster_Components.CreateDatabaseTab")
+    DM:DatabaseDebug("Using DotMaster_Components.CreateDatabaseTab")
     DotMaster_Components.CreateDatabaseTab(tabFrames[3])
   else
-    DM:DebugMsg("ERROR: CreateDatabaseTab function not found!")
+    DM:DatabaseDebug("ERROR: CreateDatabaseTab function not found!")
   end
 
   -- Initialize spell list

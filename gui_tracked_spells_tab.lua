@@ -289,165 +289,156 @@ end
 
 -- Function to refresh the spell list with class/spec grouping
 function DM.GUI:RefreshSpellList()
-  if not DM.GUI.spellFrames then
-    DM:DebugMsg("spellFrames not found in RefreshSpellList")
+  -- Ensure the necessary GUI elements exist
+  if not DM.GUI.scrollChild or not DM.GUI.scrollFrame then
+    DM:DebugMsg("Required GUI elements (scrollChild or scrollFrame) not found in RefreshSpellList")
     return
   end
 
+  -- Clear existing frames
+  if not DM.GUI.spellFrames then DM.GUI.spellFrames = {} end
   for _, frame in ipairs(DM.GUI.spellFrames) do
     frame:Hide()
+    -- Consider pooling frames here instead of destroying if performance is an issue
   end
-
   DM.GUI.spellFrames = {}
-  local yOffset = 40 -- Start after header with more space
+
+  local yOffset = 40 -- Start after header
   local index = 0
 
-  -- Ensure all spells have a priority
-  local needsPriorityInit = false
-  for spellID, config in pairs(DM.spellConfig) do
-    if not config.priority then
-      needsPriorityInit = true
-      break
-    end
+  -- Ensure DM.dmspellsdb exists and has data
+  if not DM.dmspellsdb or not next(DM.dmspellsdb) then
+    DM:DebugMsg("dmspellsdb is empty or nil, nothing to display in Tracked Spells.")
+    DM.GUI.scrollChild:SetHeight(DM.GUI.scrollFrame:GetHeight()) -- Set height to default if empty
+    return
   end
 
-  if needsPriorityInit then
-    DM:SetDefaultPriorities()
-  end
-
-  -- Group spells by class and spec
+  -- Group spells by class and spec from dmspellsdb
   local spellsByClassSpec = {}
   local playerClass, playerSpec = DM:GetPlayerClassAndSpec()
-
-  -- Güvenlik kontrolü
   playerClass = playerClass or "UNKNOWN"
   playerSpec = playerSpec or "General"
 
-  -- Always create entry for player's class/spec
+  -- Always create entry for player's class/spec to ensure it appears first
   spellsByClassSpec[playerClass] = spellsByClassSpec[playerClass] or {}
   spellsByClassSpec[playerClass][playerSpec] = {}
 
-  -- Create sorted list and group by class/spec
-  for spellID, config in pairs(DM.spellConfig) do
-    local class = "Unknown"
-    local spec = "General"
+  -- Iterate through dmspellsdb and filter for tracked spells
+  for spellIDStr, config in pairs(DM.dmspellsdb) do
+    -- IMPORTANT: Filter for tracked spells
+    if config.tracked and tonumber(config.tracked) == 1 then
+      local class = config.wowclass or "Unknown"
+      local spec = config.wowspec or "General"
 
-    -- Get class and spec from database if available
-    if DM.spellDatabase and DM.spellDatabase[tonumber(spellID)] then
-      local spellData = DM.spellDatabase[tonumber(spellID)]
-      class = spellData.class or class
-      spec = spellData.spec or spec
+      -- Initialize tables if needed
+      spellsByClassSpec[class] = spellsByClassSpec[class] or {}
+      spellsByClassSpec[class][spec] = spellsByClassSpec[class][spec] or {}
+
+      -- Add spell to appropriate group
+      table.insert(spellsByClassSpec[class][spec], {
+        id = spellIDStr, -- Keep ID as string from dmspellsdb
+        priority = config.priority or 999,
+        config = config  -- Pass the full config from dmspellsdb
+      })
     end
-
-    -- Initialize tables if needed
-    spellsByClassSpec[class] = spellsByClassSpec[class] or {}
-    spellsByClassSpec[class][spec] = spellsByClassSpec[class][spec] or {}
-
-    -- Add spell to appropriate group
-    table.insert(spellsByClassSpec[class][spec], {
-      id = spellID,
-      priority = config.priority or 999,
-      config = config
-    })
   end
 
   -- Sort all spell groups by priority
   for class, specs in pairs(spellsByClassSpec) do
     for spec, spells in pairs(specs) do
-      table.sort(spells, function(a, b) return a.priority < b.priority end)
+      table.sort(spells, function(a, b) return (a.priority or 999) < (b.priority or 999) end)
     end
   end
 
-  -- First add player's class/spec
+  -- Clear the scroll child before adding new content
+  DM.GUI.scrollChild:Hide()
+
+  -- Function to create and add rows for a given list of spells
+  local function addSpellRows(spellList, class, spec)
+    for _, spellData in ipairs(spellList) do
+      index = index + 1
+      -- Call the (currently basic) row creation function
+      local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
+      if row then
+        row.spellID = spellData.id -- Store spellID (string) in the frame
+        row.class = class
+        row.spec = spec
+        table.insert(DM.GUI.spellFrames, row) -- Keep track of the created frame
+        yOffset = yOffset + 38                -- Spacing for the next row (adjust as needed)
+      end
+    end
+  end
+
+  -- First add player's class/spec if it has tracked spells
   if playerClass and playerSpec and spellsByClassSpec[playerClass] and spellsByClassSpec[playerClass][playerSpec] then
-    -- Add header for player's current spec
-    if #spellsByClassSpec[playerClass][playerSpec] > 0 then
+    local playerSpells = spellsByClassSpec[playerClass][playerSpec]
+    if #playerSpells > 0 then
       -- Add class/spec header
       local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
       headerFrame:SetSize(DM.GUI.scrollChild:GetWidth() - 16, 25)
       headerFrame:SetPoint("TOPLEFT", 8, -yOffset)
-
-      -- Header background
       local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-      headerBg:SetAllPoints()
-      headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-
-      -- Class/spec text
+      headerBg:SetAllPoints(); headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
       local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       headerText:SetPoint("LEFT", 10, 0)
       headerText:SetText(DM:GetClassDisplayName(playerClass) .. " - " .. playerSpec)
       headerText:SetTextColor(1, 0.82, 0)
-
       yOffset = yOffset + 30
 
-      -- Add spells for this class/spec
-      for _, spellData in ipairs(spellsByClassSpec[playerClass][playerSpec]) do
-        index = index + 1
-        local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
-        if row then
-          row.spellID = spellData.id -- Store spellID in the frame for reference
-          row.class = playerClass
-          row.spec = playerSpec
-          yOffset = yOffset + 38 -- More space between rows
-        end
-      end
-    end
+      addSpellRows(playerSpells, playerClass, playerSpec)
 
-    -- Remove processed spells to avoid duplication
-    spellsByClassSpec[playerClass][playerSpec] = {}
+      -- Mark as processed
+      spellsByClassSpec[playerClass][playerSpec] = nil
+    end
   end
 
   -- Then add the rest of the spells grouped by class/spec
-  for class, specs in pairs(spellsByClassSpec) do
-    -- Skip empty classes
-    local hasSpells = false
-    for spec, spells in pairs(specs) do
-      if #spells > 0 then
-        hasSpells = true
-        break
-      end
-    end
+  local sortedClasses = {}
+  for className in pairs(spellsByClassSpec) do table.insert(sortedClasses, className) end
+  table.sort(sortedClasses, function(a, b)
+    if a == playerClass then return true end -- Ensure player class is considered if not added first
+    if b == playerClass then return false end
+    if a == "Unknown" or a == "UNKNOWN" then return false end
+    if b == "Unknown" or b == "UNKNOWN" then return true end
+    return a < b
+  end)
 
-    if hasSpells then
-      for spec, spells in pairs(specs) do
-        if #spells > 0 then
+  for _, class in ipairs(sortedClasses) do
+    if spellsByClassSpec[class] then
+      local sortedSpecs = {}
+      for specName in pairs(spellsByClassSpec[class]) do table.insert(sortedSpecs, specName) end
+      table.sort(sortedSpecs, function(a, b)
+        if a == playerSpec and class == playerClass then return true end
+        if b == playerSpec and class == playerClass then return false end
+        if a == "General" then return false end
+        if b == "General" then return true end
+        return a < b
+      end)
+
+      for _, spec in ipairs(sortedSpecs) do
+        local spells = spellsByClassSpec[class][spec]
+        if spells and #spells > 0 then
           -- Add class/spec header
           local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
           headerFrame:SetSize(DM.GUI.scrollChild:GetWidth() - 16, 25)
           headerFrame:SetPoint("TOPLEFT", 8, -yOffset)
-
-          -- Header background
           local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-          headerBg:SetAllPoints()
-          headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-
-          -- Class/spec text
+          headerBg:SetAllPoints(); headerBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
           local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
           headerText:SetPoint("LEFT", 10, 0)
           headerText:SetText(DM:GetClassDisplayName(class) .. " - " .. spec)
           headerText:SetTextColor(1, 0.82, 0)
-
           yOffset = yOffset + 30
 
-          -- Add spells for this class/spec
-          for _, spellData in ipairs(spells) do
-            index = index + 1
-            local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
-            if row then
-              row.spellID = spellData.id -- Store spellID in the frame for reference
-              row.class = class
-              row.spec = spec
-              yOffset = yOffset + 38 -- More space between rows
-            end
-          end
+          addSpellRows(spells, class, spec)
         end
       end
     end
   end
 
-  if DM.GUI.scrollChild and DM.GUI.scrollFrame then
-    DM.GUI.scrollChild:SetHeight(math.max(yOffset + 10, DM.GUI.scrollFrame:GetHeight()))
-  else
-    DM:DebugMsg("scrollChild or scrollFrame not found in RefreshSpellList")
-  end
+  -- Adjust scroll child height and show it
+  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 10, DM.GUI.scrollFrame:GetHeight()))
+  DM.GUI.scrollChild:Show()
+
+  DM:DebugMsg("Tracked spells list refreshed. Displaying %d rows.", index, "gui") -- Use gui category if available
 end

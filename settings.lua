@@ -12,10 +12,12 @@ function DM:SaveSettings()
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then
     DotMasterDB.debugCategories = DM.DEBUG_CATEGORIES
+    DM:DatabaseDebug("Debug categories saved")
   end
 
   if DM.DEBUG_CONSOLE_OUTPUT ~= nil then
     DotMasterDB.debugConsoleOutput = DM.DEBUG_CONSOLE_OUTPUT
+    DM:DatabaseDebug("Debug console output setting saved")
   end
 
   DM:DebugMsg("Settings saved")
@@ -29,18 +31,26 @@ function DM:LoadSettings()
   -- Load debug settings
   if DotMasterDB.debugCategories then
     DM.DEBUG_CATEGORIES = DotMasterDB.debugCategories
+    DM:DatabaseDebug("Debug categories loaded from saved variables")
+  else
+    DM:DatabaseDebug("No saved debug categories found, using defaults")
   end
 
   if DotMasterDB.debugConsoleOutput ~= nil then
     DM.DEBUG_CONSOLE_OUTPUT = DotMasterDB.debugConsoleOutput
+    DM:DatabaseDebug("Debug console output setting loaded")
+  else
+    DM:DatabaseDebug("No saved debug console output setting found, using default")
   end
 
   -- Load spell configuration or use defaults
   if DotMasterDB.spellConfig and next(DotMasterDB.spellConfig) then
     DM.spellConfig = DotMasterDB.spellConfig
+    DM:DatabaseDebug("Spell configuration loaded from saved variables")
   else
     -- Deep copy default spellConfig to avoid reference issues
     DM.spellConfig = DM:DeepCopy(DM.defaults.spellConfig)
+    DM:DatabaseDebug("No saved spell configuration found, using defaults")
   end
 
   DM:DebugMsg("Settings loaded")
