@@ -576,7 +576,7 @@ function DM:ShowDotsConfirmationDialog(dots)
 
     -- Add selected dots
     addButton:SetScript("OnClick", function()
-      DM:DebugMsg("Add to Database button clicked.")
+      DM:DatabaseDebug("Add to Database button clicked.")
       local added = 0
 
       for id, checkbox in pairs(self.dotCheckboxes) do

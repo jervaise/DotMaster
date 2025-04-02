@@ -227,7 +227,7 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
     enabled = defaultEnabled
   }
 
-  DM:DebugMsg(string.format("Added spell to dmspellsdb: ID=%s, Name=%s", idStr, spellName))
+  DM:DatabaseDebug(string.format("Added spell to dmspellsdb: ID=%s, Name=%s", idStr, spellName))
 end
 
 -- Function to reset the database
@@ -236,14 +236,14 @@ function DM:ResetDMSpellsDB()
   DM.dmspellsdb = {}
 
   -- Removed obsolete spellConfig clearing
-  DM:DebugMsg("Database completely reset.")
+  DM:DatabaseDebug("Database completely reset.")
 end
 
 -- Function to save the database to saved variables
 function DM:SaveDMSpellsDB()
   if not DotMasterDB then DotMasterDB = {} end
   DotMasterDB.dmspellsdb = DM.dmspellsdb
-  DM:DebugMsg("dmspellsdb saved to saved variables.")
+  DM:DatabaseDebug("dmspellsdb saved to saved variables.")
 end
 
 -- Function to normalize database IDs to ensure they're all strings
@@ -252,7 +252,7 @@ function DM:NormalizeDatabaseIDs()
   local fixed = 0
 
   if not DM.dmspellsdb then
-    DM:DebugMsg("No spell database to normalize")
+    DM:DatabaseDebug("No spell database to normalize")
     return
   end
 
@@ -265,7 +265,7 @@ function DM:NormalizeDatabaseIDs()
   DM.dmspellsdb = normalized
 
   if fixed > 0 then
-    DM:DebugMsg(string.format("Normalized %d spell IDs in database to ensure string format", fixed))
+    DM:DatabaseDebug(string.format("Normalized %d spell IDs in database to ensure string format", fixed))
   end
 end
 
@@ -273,13 +273,13 @@ end
 function DM:LoadDMSpellsDB()
   if DotMasterDB and DotMasterDB.dmspellsdb then
     DM.dmspellsdb = DotMasterDB.dmspellsdb
-    DM:DebugMsg("dmspellsdb loaded from saved variables.")
+    DM:DatabaseDebug("dmspellsdb loaded from saved variables.")
 
     -- Normalize IDs to ensure they're all strings
     DM:NormalizeDatabaseIDs()
   else
     DM.dmspellsdb = {}
-    DM:DebugMsg("No saved database found, initialized new dmspellsdb.")
+    DM:DatabaseDebug("No saved database found, initialized new dmspellsdb.")
   end
 end
 

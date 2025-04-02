@@ -14,6 +14,7 @@ local debugCategories = {
   nameplate = true,   -- Nameplate-related debug
   gui = true,         -- GUI-related debug
   performance = true, -- Performance-related debug
+  database = true,    -- Database-related debug
 }
 
 -- Initialize debug system
@@ -60,12 +61,16 @@ function DM.Debug:HookDebugFunctions()
   DM.PerformanceDebug = function(self, message, ...)
     DM.Debug:Log("performance", message, ...)
   end
+
+  DM.DatabaseDebug = function(self, message, ...)
+    DM.Debug:Log("database", message, ...)
+  end
 end
 
 -- Centralized log function
 function DM.Debug:Log(category, message, ...)
-  -- Skip if debug mode is disabled or category is disabled
-  if not DM.DEBUG_CATEGORIES.general or (DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category]) then
+  -- Skip if category is disabled (removed general category check)
+  if DM.DEBUG_CATEGORIES and not DM.DEBUG_CATEGORIES[category] then
     return
   end
 
@@ -84,6 +89,7 @@ function DM.Debug:Log(category, message, ...)
     nameplate = "00CCFF",   -- Blue
     gui = "FFCC00",         -- Gold
     performance = "00FF00", -- Green
+    database = "FFA500",    -- Orange
   }
 
   local colorCode = categoryColors[category] or "FFFFFF"
