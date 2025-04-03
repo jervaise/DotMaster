@@ -614,6 +614,63 @@ function DM:ShowCombinationDialog(comboID)
 
       -- Small delay to ensure UI updates properly
       C_Timer.After(0.01, function()
+        -- If spell database isn't available, try to initialize it
+        if not DM.dmspellsdb then
+          local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+          errorText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
+          errorText:SetText("Attempting to load spell database...")
+          errorText:SetTextColor(1, 0.8, 0)
+
+          DM:DebugMsg("ERROR: Spell database (DM.dmspellsdb) not found, attempting to load default spells")
+
+          -- Try to initialize from the default database
+          if DM.InitializeSpellDatabase then
+            DM:InitializeSpellDatabase()
+
+            -- Check if we succeeded
+            if DM.dmspellsdb and next(DM.dmspellsdb) then
+              DM:DebugMsg("SUCCESS: Loaded default spell database with entries")
+              -- Continue with database now loaded
+            else
+              -- Failed - try our fallback minimal database
+              DM:DebugMsg("Failed to load default database, using minimal fallback database")
+              if CreateMinimalSpellDatabase() then
+                errorText:SetText("Using minimal spell database")
+                errorText:SetTextColor(1, 0.8, 0)
+                -- Short delay to let user read message
+                C_Timer.After(1.5, function()
+                  errorText:Hide()
+                  -- Update the spell list with our minimal database
+                  UpdateSpellList(searchBox:GetText() or "")
+                end)
+              else
+                -- Everything failed
+                errorText:SetText("Failed to load any spell database")
+                errorText:SetTextColor(1, 0.3, 0.3)
+                return
+              end
+            end
+          else
+            -- No initialization function - try our fallback
+            DM:DebugMsg("No initialization function found, using minimal fallback database")
+            if CreateMinimalSpellDatabase() then
+              errorText:SetText("Using minimal spell database")
+              errorText:SetTextColor(1, 0.8, 0)
+              -- Short delay to let user read message
+              C_Timer.After(1.5, function()
+                errorText:Hide()
+                -- Update the spell list with our minimal database
+                UpdateSpellList(searchBox:GetText() or "")
+              end)
+            else
+              -- Everything failed
+              errorText:SetText("Failed to load any spell database")
+              errorText:SetTextColor(1, 0.3, 0.3)
+              return
+            end
+          end
+        end
+
         -- Show spell selection UI
         DM:ShowSpellSelectionForCombo(dialog)
 
@@ -994,12 +1051,76 @@ function DM:ShowSpellSelectionForCombo(parent)
         child:Hide()
       end
 
-      -- If spell database isn't available, show error
+      -- If spell database isn't available, try to initialize it
       if not DM.dmspellsdb then
         local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         errorText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
-        errorText:SetText("Spell database not available")
+        errorText:SetText("Attempting to load spell database...")
+        errorText:SetTextColor(1, 0.8, 0)
+
+        DM:DebugMsg("ERROR: Spell database (DM.dmspellsdb) not found, attempting to load default spells")
+
+        -- Try to initialize from the default database
+        if DM.InitializeSpellDatabase then
+          DM:InitializeSpellDatabase()
+
+          -- Check if we succeeded
+          if DM.dmspellsdb and next(DM.dmspellsdb) then
+            DM:DebugMsg("SUCCESS: Loaded default spell database with entries")
+            -- Continue with database now loaded
+          else
+            -- Failed - try our fallback minimal database
+            DM:DebugMsg("Failed to load default database, using minimal fallback database")
+            if CreateMinimalSpellDatabase() then
+              errorText:SetText("Using minimal spell database")
+              errorText:SetTextColor(1, 0.8, 0)
+              -- Short delay to let user read message
+              C_Timer.After(1.5, function()
+                errorText:Hide()
+                -- Update the spell list with our minimal database
+                UpdateSpellList(searchBox:GetText() or "")
+              end)
+            else
+              -- Everything failed
+              errorText:SetText("Failed to load any spell database")
+              errorText:SetTextColor(1, 0.3, 0.3)
+              return
+            end
+          end
+        else
+          -- No initialization function - try our fallback
+          DM:DebugMsg("No initialization function found, using minimal fallback database")
+          if CreateMinimalSpellDatabase() then
+            errorText:SetText("Using minimal spell database")
+            errorText:SetTextColor(1, 0.8, 0)
+            -- Short delay to let user read message
+            C_Timer.After(1.5, function()
+              errorText:Hide()
+              -- Update the spell list with our minimal database
+              UpdateSpellList(searchBox:GetText() or "")
+            end)
+          else
+            -- Everything failed
+            errorText:SetText("Failed to load any spell database")
+            errorText:SetTextColor(1, 0.3, 0.3)
+            return
+          end
+        end
+      end
+
+      -- Check if spell database has any entries
+      local spellCount = 0
+      for _ in pairs(DM.dmspellsdb) do
+        spellCount = spellCount + 1
+        if spellCount > 0 then break end
+      end
+
+      if spellCount == 0 then
+        local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        errorText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
+        errorText:SetText("Spell database is empty")
         errorText:SetTextColor(1, 0.3, 0.3)
+        DM:DebugMsg("ERROR: Spell database (DM.dmspellsdb) is empty")
         return
       end
 
@@ -1007,16 +1128,47 @@ function DM:ShowSpellSelectionForCombo(parent)
       local filteredSpells = {}
       searchText = searchText and searchText:lower() or ""
 
+      -- Debug message about spell database
+      DM:DebugMsg("Filtering spells from database with " .. tostring(spellCount) .. " entries")
+
+      -- Track how many spells we process
+      local processedCount = 0
+      local matchedCount = 0
+
       for spellIDStr, spellData in pairs(DM.dmspellsdb) do
-        -- Match search text
-        if (not searchText or searchText == "" or
-              (spellData.spellname and spellData.spellname:lower():find(searchText)) or
-              (spellData.wowclass and spellData.wowclass:lower():find(searchText)) or
-              (spellData.wowspec and spellData.wowspec:lower():find(searchText))) then
-          -- Only DoT spells (could be extended with additional filters)
-          table.insert(filteredSpells, { id = tonumber(spellIDStr), data = spellData })
+        processedCount = processedCount + 1
+
+        -- Make sure spellData has the expected structure
+        if type(spellData) ~= "table" then
+          DM:DebugMsg("ERROR: Spell " .. tostring(spellIDStr) .. " has invalid data type: " .. type(spellData))
+        else
+          -- Check for required fields
+          if not spellData.spellname then
+            DM:DebugMsg("WARNING: Spell " .. tostring(spellIDStr) .. " missing spellname")
+            -- Try to get spell name from WoW API as fallback
+            local spellInfo = C_Spell.GetSpellInfo(tonumber(spellIDStr) or 0)
+            if spellInfo and spellInfo.name then
+              spellData.spellname = spellInfo.name
+            else
+              spellData.spellname = "Unknown Spell " .. tostring(spellIDStr)
+            end
+          end
+
+          -- Match search text (simplified logic)
+          local matchesSearch = (not searchText or searchText == "")
+          if not matchesSearch and spellData.spellname then
+            matchesSearch = string.find(string.lower(spellData.spellname), searchText, 1, true) ~= nil
+          end
+
+          if matchesSearch then
+            matchedCount = matchedCount + 1
+            table.insert(filteredSpells, { id = tonumber(spellIDStr), data = spellData })
+          end
         end
       end
+
+      -- Log counts for debugging
+      DM:DebugMsg("Processed " .. tostring(processedCount) .. " spells, matched " .. tostring(matchedCount))
 
       -- Sort spells by name
       table.sort(filteredSpells, function(a, b)
@@ -1217,4 +1369,31 @@ function DM:ShowSpellSelectionForCombo(parent)
   frame:SetScript("OnShow", function(self)
     self:Raise()
   end)
+end
+
+-- Helper function to create a minimal spell database if everything else fails
+local function CreateMinimalSpellDatabase()
+  if not DM.dmspellsdb then
+    DM.dmspellsdb = {}
+  end
+
+  -- Add some example spell entries for each class
+  -- Death Knight
+  DM.dmspellsdb["55078"] = { spellname = "Blood Plague", wowclass = "DEATHKNIGHT", wowspec = "Unholy", spellicon = 237514 }
+  DM.dmspellsdb["55095"] = { spellname = "Frost Fever", wowclass = "DEATHKNIGHT", wowspec = "Unholy", spellicon = 237522 }
+
+  -- Druid
+  DM.dmspellsdb["164812"] = { spellname = "Moonfire", wowclass = "DRUID", wowspec = "Balance", spellicon = 136096 }
+  DM.dmspellsdb["164815"] = { spellname = "Sunfire", wowclass = "DRUID", wowspec = "Balance", spellicon = 236216 }
+
+  -- Priest
+  DM.dmspellsdb["589"] = { spellname = "Shadow Word: Pain", wowclass = "PRIEST", wowspec = "Shadow", spellicon = 136207 }
+  DM.dmspellsdb["34914"] = { spellname = "Vampiric Touch", wowclass = "PRIEST", wowspec = "Shadow", spellicon = 135978 }
+
+  -- Warlock
+  DM.dmspellsdb["172"] = { spellname = "Corruption", wowclass = "WARLOCK", wowspec = "Affliction", spellicon = 136118 }
+  DM.dmspellsdb["980"] = { spellname = "Agony", wowclass = "WARLOCK", wowspec = "Affliction", spellicon = 136139 }
+
+  DM:DebugMsg("Created minimal spell database with example spells")
+  return true
 end
