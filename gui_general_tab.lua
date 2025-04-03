@@ -8,8 +8,8 @@ function DM:CreateGeneralTab(parent)
   -- Create standardized info area
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     parent,
-    "DotMaster",
-    "Track your DoTs on enemy nameplates with visual indicators. Use the Find My Dots feature to discover and manage your damage-over-time effects for any class or specialization."
+    "DotMaster: Your DoT Tracking Companion",
+    "• Highlights enemy nameplates with your active DoTs\n• Tracks all your damage-over-time effects in one place\n• Works with any class and specialization"
   )
 
   -- Create main content container frame (similar to searchContainer in Database tab)
@@ -34,9 +34,9 @@ function DM:CreateGeneralTab(parent)
   settingsContainer:SetSize(430, 200)
   settingsContainer:SetPoint("TOP", pandaImage, "BOTTOM", 0, -10) -- Reduced margin from -20 to -10
 
-  -- Enable checkbox - centered horizontally
+  -- Enable checkbox - left aligned with the image's left side
   local checkBox = CreateFrame("CheckButton", "DotMasterEnableCheckbox", settingsContainer, "UICheckButtonTemplate")
-  checkBox:SetPoint("TOP", settingsContainer, "TOP", 0, 0) -- Center aligned (changed from -80,0 to 0,0)
+  checkBox:SetPoint("TOPLEFT", settingsContainer, "TOPLEFT", pandaImage:GetLeft() - settingsContainer:GetLeft(), 0)
   checkBox:SetSize(26, 26)
 
   local checkBoxText = _G[checkBox:GetName() .. "Text"]
@@ -55,10 +55,10 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings() -- Save settings immediately
   end)
 
-  -- Minimap checkbox - directly below enable checkbox and center aligned
+  -- Minimap checkbox - directly below enable checkbox and left aligned with it
   local minimapCheckBox = CreateFrame("CheckButton", "DotMasterMinimapCheckbox", settingsContainer,
     "UICheckButtonTemplate")
-  minimapCheckBox:SetPoint("TOP", checkBox, "BOTTOM", 0, -10)
+  minimapCheckBox:SetPoint("TOPLEFT", checkBox, "BOTTOMLEFT", 0, -10)
   minimapCheckBox:SetSize(26, 26)
 
   local minimapCheckBoxText = _G[minimapCheckBox:GetName() .. "Text"]
@@ -92,6 +92,40 @@ function DM:CreateGeneralTab(parent)
         end
       end
     end
+  end)
+
+  -- Force Threat Color checkbox - below minimap checkbox
+  local forceColorCheckBox = CreateFrame("CheckButton", "DotMasterForceColorCheckbox", settingsContainer,
+    "UICheckButtonTemplate")
+  forceColorCheckBox:SetPoint("TOPLEFT", minimapCheckBox, "BOTTOMLEFT", 0, -10)
+  forceColorCheckBox:SetSize(26, 26)
+
+  local forceColorCheckBoxText = _G[forceColorCheckBox:GetName() .. "Text"]
+  forceColorCheckBoxText:SetText("Force Threat Color")
+  forceColorCheckBoxText:SetPoint("LEFT", forceColorCheckBox, "RIGHT", 2, 0)
+
+  -- Create a description text below the checkbox
+  local forceColorDesc = settingsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  forceColorDesc:SetPoint("TOPLEFT", forceColorCheckBox, "BOTTOMLEFT", 0, -2)
+  forceColorDesc:SetWidth(300)
+  forceColorDesc:SetText(
+  "Highlight targets with threat colors when they have DoTs (aggro warning for DPS, lost aggro warning for tanks)")
+  forceColorDesc:SetJustifyH("LEFT")
+  forceColorDesc:SetTextColor(0.7, 0.7, 0.7)
+
+  -- Set initial state from saved variables
+  if DM.settings == nil then DM.settings = {} end
+  if DM.settings.forceColor == nil then DM.settings.forceColor = false end
+  forceColorCheckBox:SetChecked(DM.settings.forceColor)
+
+  -- Handle clicks
+  forceColorCheckBox:SetScript("OnClick", function(self)
+    DM.settings.forceColor = self:GetChecked()
+    DM:PrintMessage("Force Threat Color " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
+    if DM.enabled then
+      DM:UpdateAllNameplates()
+    end
+    DM:SaveSettings() -- Save settings immediately
   end)
 
   -- Container for bottom buttons

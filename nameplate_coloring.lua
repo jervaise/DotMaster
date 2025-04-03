@@ -3,6 +3,58 @@
 
 local DM = DotMaster
 
+-- Helper function to apply threat coloring based on Plater settings
+function DM:ApplyThreatColor(unitFrame, unitToken)
+  local Plater = _G["Plater"]
+  if not Plater then return false end
+
+  -- Check if we're in combat
+  if not Plater.IsInCombat() then
+    return false
+  end
+
+  -- Check if the unit is in combat
+  if not unitFrame.InCombat then
+    return false
+  end
+
+  -- Check if player is a tank
+  if Plater.PlayerIsTank then
+    -- Player is a tank, check if we lost aggro
+    if not unitFrame.namePlateThreatIsTanking then
+      -- Check for raid tanks (same logic as the mod example)
+      if Plater.ZoneInstanceType == "raid" then
+        -- Get tanks in the raid
+        local tankPlayersInTheRaid = Plater.GetTanks()
+
+        -- Get the target of this unit
+        local unitTargetName = UnitName(unitFrame.targetUnitID)
+
+        -- If the unit isn't targeting another tank, show the noaggro color
+        if not tankPlayersInTheRaid[unitTargetName] then
+          DM:NameplateDebug("Tank lost aggro - applying no-aggro color")
+          Plater.SetNameplateColor(unitFrame, Plater.db.profile.tank.colors.noaggro)
+          return true
+        end
+      else
+        -- Not in raid, just apply no-aggro color
+        DM:NameplateDebug("Tank lost aggro - applying no-aggro color")
+        Plater.SetNameplateColor(unitFrame, Plater.db.profile.tank.colors.noaggro)
+        return true
+      end
+    end
+  else
+    -- Player is DPS/healer - check if we have aggro
+    if unitFrame.namePlateThreatIsTanking then
+      DM:NameplateDebug("DPS/Healer has aggro - applying aggro color")
+      Plater.SetNameplateColor(unitFrame, Plater.db.profile.dps.colors.aggro)
+      return true
+    end
+  end
+
+  return false
+end
+
 -- Apply a color to a nameplate
 function DM:ApplyColorToNameplate(nameplate, unitToken, color)
   if not nameplate or not color then return false end
@@ -17,8 +69,26 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
     DM:NameplateDebug("Plater detected")
     local unitFrame = nameplate.unitFrame
     if unitFrame and unitFrame.healthBar then
-      -- Use Plater's API instead of direct color setting
+      -- If Force Threat Color is enabled, check threat conditions
+      if DM.settings and DM.settings.forceColor then
+        DM:NameplateDebug("Force Threat Color is enabled - checking threat state")
+
+        -- Apply threat-based color if applicable
+        if self:ApplyThreatColor(unitFrame, unitToken) then
+          -- Tell DotMaster we're handling this nameplate
+          self.coloredPlates[unitToken] = true
+          return true
+        end
+      end
+
+      -- If not using threat colors or no threat condition matched, use our DoT color
+      DM:NameplateDebug("Applying regular DoT color")
       Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+
+      -- These flags tell Plater not to change this nameplate's color
+      unitFrame.UsingCustomColor = true
+      unitFrame.DenyColorChange = true
+
       self.coloredPlates[unitToken] = true
       return true
     else

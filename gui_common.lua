@@ -57,7 +57,7 @@ function DM:CreateGUI()
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or
-  { r = 0.6, g = 0.2, b = 1.0 }                                                      -- Default to purple if no class color found
+      { r = 0.6, g = 0.2, b = 1.0 } -- Default to purple if no class color found
 
   -- Main frame
   local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
@@ -69,6 +69,9 @@ function DM:CreateGUI()
   frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
   frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+
+  -- Register with UI special frames to enable Escape key closing
+  tinsert(UISpecialFrames, "DotMasterOptionsFrame")
 
   -- Make frame resizable if supported
   -- RESIZING FEATURE REMOVED

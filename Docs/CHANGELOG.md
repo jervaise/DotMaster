@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Changelog
+## Version History
+
+### Version 0.9.3 (2023-04-15)
+
+#### Added
+- Force Threat Color feature for Plater integration
+  - Now shows appropriate threat colors for tanks losing aggro or DPS gaining aggro
+  - Uses player's Plater profile color settings
+- Escape key now properly closes the DotMaster UI
+- Improved alignment of checkboxes in the General tab
+
+#### Changed
+- Updated General tab with more creative title and bullet point description
+- Improved Plater integration for more consistent behavior
 
 ### Version 0.9.1 (2023-04-10)
 

@@ -13,6 +13,13 @@ function DM:SaveSettings()
   DotMasterDB.enabled = DM.enabled
   DotMasterDB.version = DM.defaults.version
 
+  -- Save force threat color setting
+  if DM.settings then
+    DotMasterDB.settings = DotMasterDB.settings or {}
+    DotMasterDB.settings.forceColor = DM.settings.forceColor
+    DM:DatabaseDebug("Force threat color setting saved: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
+  end
+
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then
     DotMasterDB.debugCategories = DM.DEBUG_CATEGORIES
@@ -40,6 +47,18 @@ function DM:LoadSettings()
   -- Set enabled state (from SavedVariables or defaults)
   DM.enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or DM.defaults.enabled
   DM:DatabaseDebug("Addon enabled state: " .. (DM.enabled and "Enabled" or "Disabled"))
+
+  -- Initialize settings container if needed
+  DM.settings = DM.settings or {}
+
+  -- Load force threat color setting
+  if DotMasterDB.settings and DotMasterDB.settings.forceColor ~= nil then
+    DM.settings.forceColor = DotMasterDB.settings.forceColor
+    DM:DatabaseDebug("Force threat color setting loaded: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
+  else
+    DM.settings.forceColor = false
+    DM:DatabaseDebug("No saved force threat color setting found, using default (Disabled)")
+  end
 
   -- Load debug settings
   if DotMasterDB.debugCategories then

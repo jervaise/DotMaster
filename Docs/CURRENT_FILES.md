@@ -1,44 +1,58 @@
-# Current File Structure - DotMaster v0.9.1
+# Current File Structure - DotMaster v0.9.3
 
-This document tracks the current file structure of the DotMaster addon. It is updated with each version to serve as a reference for developers.
+This document provides an overview of all files in the DotMaster addon and their purpose.
 
-## Active Files (v0.9.1)
+## Active Files (v0.9.3)
 
 ### Core Files
-- **bootstrap.lua** - Initialization bootstrap to ensure proper loading sequence
-- **core.lua** - Core functionality and final initialization
-- **settings.lua** - Settings management
-- **utils.lua** - Utility functions
-- **gui_debug.lua** - Debug console and logging system
-- **minimap.lua** - Minimap icon functionality
+1. **bootstrap.lua** - Initial addon setup and core variable initialization
+2. **core.lua** - Main addon functionality, event handling
+3. **settings.lua** - Settings management, SavedVariables handling
+4. **utils.lua** - General utility functions
+5. **minimap.lua** - Minimap icon functionality
+6. **gui_debug.lua** - Debug console implementation
 
-### Spell System
-- **spell_database.lua** - Spell database and management
-- **spell_utils.lua** - Spell-specific utility functions
+### Database Files
+7. **spell_database.lua** - DoT spell database management
+8. **spell_utils.lua** - Spell manipulation utilities
 
-### Nameplate System
-- **nameplate_core.lua** - Core nameplate functionality
-- **nameplate_detection.lua** - Nameplate detection and tracking
-- **nameplate_coloring.lua** - Nameplate coloring and visual effects
+### GUI Files
+9. **gui.lua** - Core GUI functions
+10. **gui_common.lua** - Shared GUI components
+11. **gui_general_tab.lua** - General tab interface
+12. **gui_tracked_spells_tab.lua** - Tracked spells tab interface
+13. **gui_database_tab.lua** - Database management tab interface
+14. **gui_colorpicker.lua** - Color picker functionality
+15. **gui_spell_row.lua** - Spell list row component
+16. **gui_spell_selection.lua** - Spell selection interface
 
-### User Interface
-- **gui.lua** - Main UI framework
-- **gui_common.lua** - Common UI components
-- **gui_colorpicker.lua** - Color picker component
-- **gui_general_tab.lua** - General settings panel
-- **gui_tracked_spells_tab.lua** - Tracked spells configuration panel
-- **gui_database_tab.lua** - Database tab implementation
-- **gui_spell_row.lua** - Spell row UI component
-- **gui_spell_selection.lua** - Spell selection dialog
+### Nameplate Files
+17. **nameplate_core.lua** - Core nameplate functionality
+18. **nameplate_detection.lua** - Nameplate detection and tracking
+19. **nameplate_coloring.lua** - Nameplate color manipulation
 
-### Find My Dots Feature
-- **find_my_dots.lua** - Find My Dots feature implementation
+### Feature Files
+20. **find_my_dots.lua** - Implementation of "Find My Dots" feature
+21. **minimap.lua** - Minimap button functionality
 
-### Support Files
-- **embeds.xml** - Library embedding file
-- **DotMaster.toc** - Table of Contents file for WoW
-- **dmcheck.bat** - Validation utility launcher
-- **README.md** - Main addon documentation
+### Asset Files
+22. **Media/dotmaster-icon.tga** - Addon icon
+23. **Media/dotmaster-main-icon.tga** - Main interface icon
+
+### Library Files (in Libs/ directory)
+24. **LibStub** - Library management
+25. **CallbackHandler-1.0** - Event handling
+26. **LibDataBroker-1.1** - Data broker functionality
+27. **LibDBIcon-1.0** - Minimap icon support
+
+### Documentation Files (in Docs/ directory)
+28. **CHANGELOG.md** - Version changelog
+29. **CODE_STRUCTURE.md** - Code organization overview
+30. **CURRENT_FILES.md** - This file
+31. **CURRENT_STATUS.md** - Development status
+32. **DEBUG_SYSTEM.md** - Debug system documentation
+33. **DEVELOPER_GUIDE.md** - Guide for developers
+34. **PROJECT_SCOPE.md** - Project scope and goals
 
 ## Changed in v0.5.1
 - Restructured documentation to be more user-friendly
