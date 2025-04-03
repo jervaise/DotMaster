@@ -33,6 +33,9 @@ end
 if not DM.DEBUG_CATEGORIES.performance then
   DM.DEBUG_CATEGORIES.performance = false
 end
+if not DM.DEBUG_CATEGORIES.colorpicker then
+  DM.DEBUG_CATEGORIES.colorpicker = true
+end
 
 -- Create Components namespace if it doesn't exist
 if not DotMaster_Components then

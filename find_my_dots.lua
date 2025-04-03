@@ -601,20 +601,29 @@ function DM:ShowDotsConfirmationDialog(dots)
         added = added + 1
       end
 
-      -- Only refresh UI if spells were added
-      if added > 0 then
-        -- Refresh both tabs
-        if self.GUI then
-          if self.GUI.RefreshDatabaseTabList then
-            self.GUI:RefreshDatabaseTabList()
-          end
-          if self.GUI.RefreshTrackedSpellTabList then
-            self.GUI:RefreshTrackedSpellTabList()
+      -- Force an immediate database save
+      DM:SaveDMSpellsDB()
+
+      -- Add a small delay before refreshing UI to ensure database changes are complete
+      C_Timer.After(0.1, function()
+        -- Only refresh UI if spells were added
+        if added > 0 then
+          -- Refresh both tabs
+          if self.GUI then
+            if self.GUI.RefreshDatabaseTabList then
+              self.GUI:RefreshDatabaseTabList()
+              DM:DatabaseDebug("Database tab refreshed after adding dots")
+            end
+            if self.GUI.RefreshTrackedSpellTabList then
+              self.GUI:RefreshTrackedSpellTabList()
+              DM:DatabaseDebug("Tracked spells tab refreshed after adding dots")
+            end
           end
         end
-      end
 
-      DM:DebugMsg(string.format("%d dots successfully added!", added))
+        DM:DebugMsg(string.format("%d dots successfully added!", added))
+      end)
+
       self.dotsConfirmFrame:Hide()
     end)
 

@@ -1,0 +1,25 @@
+## Interface: 40402
+## RequiredDeps: Plater
+## Title: Plater Performance Units (plugin)
+## Notes: Add a tag to configure performance units.
+## IconTexture-blank: 982414
+## IconTexture: Interface\AddOns\Plater\images\cast_bar
+## SavedVariables: PlaterPerfUnitsDB
+## Version: Plater-PerfUnits.v20250225.010-Cata
+## X-Curse-Project-ID: 1030801
+## X-Wago-ID: ZKxq0pGk
+
+locales\enUS.lua
+locales\deDE.lua
+locales\esES.lua
+locales\esMX.lua
+locales\frFR.lua
+locales\itIT.lua
+locales\koKR.lua
+locales\ptBR.lua
+locales\ruRU.lua
+locales\zhCN.lua
+locales\zhTW.lua
+
+Plater_PerfUnits.lua
+
