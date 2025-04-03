@@ -261,4 +261,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added class icons for better visual identification
 - Maintained ordering by priority within each class group
 
+## Bug Fixes
+
+- Fixed issue with class-based grouping by using the correct row creation function
+- Improved scroll position handling for class groups
+- Fixed variable scoping issues in tracked spells tab
+
 // ... existing code ... 
