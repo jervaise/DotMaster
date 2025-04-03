@@ -330,8 +330,11 @@ function DM:ShowCombinationDialog(comboID)
     local dialog = CreateFrame("Frame", "DotMasterCombinationDialog", UIParent, "BackdropTemplate")
     dialog:SetSize(400, 400)
 
-    -- Set initial position to a reliable location on the right side of the screen
-    dialog:SetPoint("CENTER", UIParent, "CENTER", 250, 100)
+    -- Position dialog using screen dimensions for consistent placement
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
+    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.3, screenHeight * 0.8)
+
     dialog:SetFrameStrata("DIALOG")
     dialog:SetMovable(true)
     dialog:EnableMouse(true)
@@ -596,9 +599,11 @@ function DM:ShowCombinationDialog(comboID)
   -- Show the dialog
   dialog:Show()
 
-  -- Position dialog in a reliable location
+  -- Ensure positioning is correct when shown
   dialog:ClearAllPoints()
-  dialog:SetPoint("CENTER", UIParent, "CENTER", 250, 100)
+  local screenWidth = GetScreenWidth()
+  local screenHeight = GetScreenHeight()
+  dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.3, screenHeight * 0.8)
 end
 
 -- Function to update the spell list in the combination dialog
@@ -741,7 +746,10 @@ function DM:ShowSpellSelectionForCombo(parent)
   if not DM.GUI.comboSpellSelectionFrame then
     local frame = CreateFrame("Frame", "DotMasterComboSpellSelection", UIParent, "BackdropTemplate")
     frame:SetSize(350, 450)
-    -- Position will be set when shown based on parent
+    -- Initial position using screen dimensions
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, screenHeight * 0.8)
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
     frame:EnableMouse(true)
@@ -1021,13 +1029,19 @@ function DM:ShowSpellSelectionForCombo(parent)
   -- Show the frame
   frame:Show()
 
-  -- Position relative to parent dialog or in a fixed location
+  -- Position relative to parent dialog or using screen dimensions
   frame:ClearAllPoints()
+
+  local screenWidth = GetScreenWidth()
+  local screenHeight = GetScreenHeight()
+
   if parent and parent:IsShown() then
-    frame:SetPoint("LEFT", parent, "RIGHT", 5, 0)
+    -- Position to the right of the combination dialog
+    local _, _, _, _, parentY = parent:GetPoint()
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, parentY or (screenHeight * 0.8))
   else
-    -- Fallback - position on the far right of the screen
-    frame:SetPoint("CENTER", UIParent, "CENTER", 500, 100)
+    -- Fallback position if no parent
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, screenHeight * 0.8)
   end
 end
 
