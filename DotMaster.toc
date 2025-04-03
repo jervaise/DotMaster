@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Track your DoTs on enemy nameplates
 ## Author: Your Name
-## Version: 0.8.6
+## Version: 0.8.7
 ## SavedVariables: DotMasterDB
 ## X-Category: Combat
 ## X-License: All Rights Reserved
@@ -14,15 +14,18 @@ Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 # Core files
+bootstrap.lua
 core.lua
 settings.lua
-debug.lua
+gui_debug.lua
+utils.lua
 
 # Database and spells
 spell_database.lua
 spell_utils.lua
 
 # GUI
+gui.lua
 gui_common.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua

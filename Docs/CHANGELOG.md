@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changelog
 
+### Version 0.8.7 (YYYY-MM-DD)
+
+- **Bug Fixes:**
+  - Fixed TOC file references to match actual file names
+  - Added missing bootstrap.lua to TOC file
+  - Fixed debug.lua reference (changed to gui_debug.lua)
+  - Added missing utils.lua and gui.lua to TOC file
+  - Improved addon load reliability
+
 ### Version 0.8.0 (YYYY-MM-DD)
 
 - **Tracked Spells Tab Enhancements:**
