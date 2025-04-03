@@ -1006,34 +1006,62 @@ function DM:ShowSpellSelectionForCombo(parent)
     searchBox:SetPoint("TOPLEFT", searchLabel, "TOPLEFT", 0, -20)
     searchBox:SetAutoFocus(false)
 
+    -- Give the search box a visible border
+    local searchBoxBorder = CreateFrame("Frame", nil, searchBox, "BackdropTemplate")
+    searchBoxBorder:SetAllPoints()
+    searchBoxBorder:SetBackdrop({
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 10,
+      insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    })
+    searchBoxBorder:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.8)
+
+    -- Create scroll frame with a visible background
+    local scrollBackground = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    scrollBackground:SetPoint("TOPLEFT", searchBox, "BOTTOMLEFT", -5, -15)
+    scrollBackground:SetPoint("RIGHT", frame, "RIGHT", -25, 0)
+    scrollBackground:SetPoint("BOTTOM", frame, "BOTTOM", 0, 45)
+    scrollBackground:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 12,
+      insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    scrollBackground:SetBackdropColor(0.1, 0.1, 0.1, 0.6)
+    scrollBackground:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
     -- Create spell list scroll frame
-    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", searchBox, "BOTTOMLEFT", 0, -15)
-    scrollFrame:SetPoint("RIGHT", frame, "RIGHT", -25, 0)
-    scrollFrame:SetPoint("BOTTOM", frame, "BOTTOM", 0, 45)
+    local scrollFrame = CreateFrame("ScrollFrame", "DM_SpellSelectionScrollFrame", scrollBackground,
+      "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", scrollBackground, "TOPLEFT", 8, -8)
+    scrollFrame:SetPoint("BOTTOMRIGHT", scrollBackground, "BOTTOMRIGHT", -8, 8)
 
-    -- Hide scrollbar
-    local scrollBar = nil
-    if scrollFrame:GetName() then
-      scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
-    else
-      -- For frames without names, try to get scrollbar directly from children
-      for _, child in pairs({ scrollFrame:GetChildren() }) do
-        if child:IsObjectType("Slider") then
-          scrollBar = child
-          break
-        end
-      end
-    end
+    DM:DebugMsg("Created scroll frame with dimensions: " ..
+      tostring(scrollFrame:GetWidth()) .. "x" .. tostring(scrollFrame:GetHeight()))
 
+    -- Get the scrollbar
+    local scrollBar = _G["DM_SpellSelectionScrollFrameScrollBar"]
     if scrollBar then
-      scrollBar:SetWidth(0)
-      scrollBar:SetAlpha(0)
+      -- Make scrollbar visible and functional
+      scrollBar:ClearAllPoints()
+      scrollBar:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", 16, -16)
+      scrollBar:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", 16, 16)
+      scrollBar:SetWidth(16)
+      scrollBar:Show()
+      DM:DebugMsg("Configured scrollbar for spell selection")
+    else
+      DM:DebugMsg("WARNING: Could not find scrollbar for spell selection frame")
     end
 
-    local scrollContent = CreateFrame("Frame", nil, scrollFrame)
-    scrollContent:SetSize(scrollFrame:GetWidth(), 1000) -- Will be adjusted dynamically
+    local scrollContent = CreateFrame("Frame", "DM_SpellSelectionContent", scrollFrame)
+    -- Let width be determined by the scroll frame
+    local scrollWidth = scrollFrame:GetWidth()
+    scrollContent:SetWidth(scrollWidth)
+    scrollContent:SetHeight(100) -- Initial height, will be adjusted dynamically
     scrollFrame:SetScrollChild(scrollContent)
+
+    DM:DebugMsg("Created scroll content with initial dimensions: " ..
+      tostring(scrollContent:GetWidth()) .. "x" .. tostring(scrollContent:GetHeight()))
 
     -- "Add Selected" button
     local addButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -1185,92 +1213,117 @@ function DM:ShowSpellSelectionForCombo(parent)
       local buttonHeight = 30
       local yOffset = 0
 
-      for index, spellInfo in ipairs(filteredSpells) do
-        local spellID = spellInfo.id
-        local spellData = spellInfo.data
+      DM:DebugMsg("Creating UI elements for " .. #filteredSpells .. " filtered spells")
 
-        -- Create button for this spell
-        local button = CreateFrame("Frame", nil, scrollContent)
-        button:SetSize(scrollContent:GetWidth() - 20, buttonHeight)
-        button:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 5, -yOffset)
+      -- Clear existing content first
+      for _, child in pairs({ scrollContent:GetChildren() }) do
+        child:Hide()
+        child:SetParent(nil)
+      end
 
-        -- Background
-        local bg = button:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(index % 2 == 0 and 0.2 or 0.15, index % 2 == 0 and 0.2 or 0.15, index % 2 == 0 and 0.2 or 0.15,
-          0.8)
+      if #filteredSpells == 0 then
+        -- Show message when no spells match filter
+        local noSpellsText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noSpellsText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
+        noSpellsText:SetText("No spells found matching your search")
+        noSpellsText:SetTextColor(1, 0.7, 0)
+      else
+        for index, spellInfo in ipairs(filteredSpells) do
+          local spellID = spellInfo.id
+          local spellData = spellInfo.data
 
-        -- Checkbox
-        local checkbox = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
-        checkbox:SetSize(20, 20)
-        checkbox:SetPoint("LEFT", button, "LEFT", 5, 0)
-        checkbox:SetChecked(selectedSpells[spellID] or false)
+          -- Create button for this spell
+          local button = CreateFrame("Frame", "DM_SpellButton_" .. index, scrollContent)
+          button:SetSize(scrollContent:GetWidth() - 20, buttonHeight)
+          button:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 5, -yOffset)
 
-        checkbox:SetScript("OnClick", function(self)
-          if self:GetChecked() then
-            selectedSpells[spellID] = true
-          else
-            selectedSpells[spellID] = nil
-          end
-        end)
+          -- Background
+          local bg = button:CreateTexture(nil, "BACKGROUND")
+          bg:SetAllPoints()
+          bg:SetColorTexture(index % 2 == 0 and 0.2 or 0.15, index % 2 == 0 and 0.2 or 0.15,
+            index % 2 == 0 and 0.2 or 0.15,
+            0.8)
 
-        -- Spell icon
-        local iconSize = buttonHeight - 6
-        local icon = button:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(iconSize, iconSize)
-        icon:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
+          -- Checkbox
+          local checkbox = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
+          checkbox:SetSize(20, 20)
+          checkbox:SetPoint("LEFT", button, "LEFT", 5, 0)
+          checkbox:SetChecked(selectedSpells[spellID] or false)
 
-        -- Get spell icon
-        if spellData.spellicon then
-          icon:SetTexture(spellData.spellicon)
-        else
-          icon:SetTexture(134400) -- Question mark
-        end
-
-        -- Spell name
-        local name = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
-        name:SetPoint("RIGHT", button, "RIGHT", -5, 0)
-        name:SetJustifyH("LEFT")
-        name:SetText(spellData.spellname or "Unknown")
-
-        -- Show class and spec info if available
-        if spellData.wowclass or spellData.wowspec then
-          local classInfo = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-          classInfo:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
-
-          local classText = ""
-          if spellData.wowclass then
-            classText = spellData.wowclass
-
-            -- Get class color if available
-            local classColor = RAID_CLASS_COLORS[spellData.wowclass:upper()]
-            if classColor then
-              classText = string.format("|cFF%02x%02x%02x%s|r",
-                classColor.r * 255,
-                classColor.g * 255,
-                classColor.b * 255,
-                spellData.wowclass)
-            end
-          end
-
-          if spellData.wowspec and spellData.wowspec ~= "" then
-            if classText ~= "" then
-              classText = classText .. " - " .. spellData.wowspec
+          checkbox:SetScript("OnClick", function(self)
+            if self:GetChecked() then
+              selectedSpells[spellID] = true
+              DM:DebugMsg("Selected spell: " .. tostring(spellData.spellname))
             else
-              classText = spellData.wowspec
+              selectedSpells[spellID] = nil
+              DM:DebugMsg("Unselected spell: " .. tostring(spellData.spellname))
             end
+          end)
+
+          -- Spell icon
+          local iconSize = buttonHeight - 6
+          local icon = button:CreateTexture(nil, "ARTWORK")
+          icon:SetSize(iconSize, iconSize)
+          icon:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
+
+          -- Get spell icon
+          if spellData.spellicon then
+            icon:SetTexture(spellData.spellicon)
+          else
+            icon:SetTexture(134400) -- Question mark
           end
 
-          classInfo:SetText(classText)
-        end
+          -- Spell name
+          local name = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+          name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+          name:SetPoint("RIGHT", button, "RIGHT", -5, 0)
+          name:SetJustifyH("LEFT")
+          name:SetText(spellData.spellname or "Unknown")
 
-        button:Show()
-        yOffset = yOffset + buttonHeight
+          -- Show class and spec info if available
+          if spellData.wowclass or spellData.wowspec then
+            local classInfo = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            classInfo:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
+
+            local classText = ""
+            if spellData.wowclass then
+              classText = spellData.wowclass
+
+              -- Get class color if available
+              local classColor = RAID_CLASS_COLORS[spellData.wowclass:upper()]
+              if classColor then
+                classText = string.format("|cFF%02x%02x%02x%s|r",
+                  classColor.r * 255,
+                  classColor.g * 255,
+                  classColor.b * 255,
+                  spellData.wowclass)
+              end
+            end
+
+            if spellData.wowspec and spellData.wowspec ~= "" then
+              if classText ~= "" then
+                classText = classText .. " - " .. spellData.wowspec
+              else
+                classText = spellData.wowspec
+              end
+            end
+
+            classInfo:SetText(classText)
+          end
+
+          -- Ensure button is visible
+          button:Show()
+          DM:DebugMsg("Created button for spell: " .. tostring(spellData.spellname) .. " at offset " .. tostring(yOffset))
+
+          -- Update yOffset for next button
+          yOffset = yOffset + buttonHeight
+        end
       end
 
       -- Update content height for proper scrolling
-      scrollContent:SetHeight(math.max(yOffset, scrollFrame:GetHeight()))
+      local newHeight = math.max(yOffset + 10, scrollFrame:GetHeight())
+      DM:DebugMsg("Setting scroll content height to " .. tostring(newHeight))
+      scrollContent:SetHeight(newHeight)
     end
 
     -- Add button handler
