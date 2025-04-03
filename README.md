@@ -2,7 +2,7 @@
 
 An addon for World of Warcraft that helps track your DoTs (Damage over Time effects).
 
-**Current Version: 0.7.0**
+**Current Version: 0.7.1**
 **Compatible with World of Warcraft: The War Within (11.1.0)**
 
 ## Features
@@ -31,12 +31,14 @@ An addon for World of Warcraft that helps track your DoTs (Damage over Time effe
 
 ## Development Process
 
-When the prompt "success, increment" is received, it triggers an automated version increment process through the AI coder, which:
-1. Updates version numbers in all relevant files
-2. Adds documentation notes about the changes
-3. Prepares the changes for commit/push
+When the prompt "increment, success" is received, it triggers an automated version increment process through the AI coder, which:
+1. Increments the PATCH version (third decimal place)
+2. Updates version numbers in all relevant files
+3. Adds documentation notes about the changes
+4. Commits and pushes changes to the GitHub develop branch
+5. Ensures the local environment remains on the develop branch
 
-This streamlined process ensures consistent versioning throughout development.
+The developer should never commit and push before explicitly receiving this command. This ensures all changes are properly tested before being committed.
 
 ## For Developers
 
@@ -74,23 +76,13 @@ DotMaster/
 
 All detailed documentation is available in the `Docs/` directory:
 
+- **Developer Guide**: [Docs/DEVELOPER_GUIDE.md](Docs/DEVELOPER_GUIDE.md)
+- **Debug System**: [Docs/DEBUG_SYSTEM.md](Docs/DEBUG_SYSTEM.md)
 - **Code Structure**: [Docs/CODE_STRUCTURE.md](Docs/CODE_STRUCTURE.md)
 - **Current Files**: [Docs/CURRENT_FILES.md](Docs/CURRENT_FILES.md)
-- **Development Process**: [Docs/DEVELOPMENT_PROCESS.md](Docs/DEVELOPMENT_PROCESS.md)
 - **Project Scope**: [Docs/PROJECT_SCOPE.md](Docs/PROJECT_SCOPE.md)
-- **Critical API Notes**: [Docs/CRITICAL_API_NOTES.md](Docs/CRITICAL_API_NOTES.md)
 - **Current Status**: [Docs/CURRENT_STATUS.md](Docs/CURRENT_STATUS.md)
 - **Changelog**: [Docs/CHANGELOG.md](Docs/CHANGELOG.md)
-
-### Validation Tools
-
-The `Scripts/` directory contains validation tools to catch common errors before testing in-game. Run the following from the addon root:
-
-```
-dmcheck
-```
-
-For more information on available scripts, see [Scripts/SCRIPTS_GUIDE.md](Scripts/SCRIPTS_GUIDE.md).
 
 ### Required Libraries
 
@@ -105,10 +97,6 @@ DotMaster depends on the following libraries (included in the Libs directory):
 1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
 2. **Performance**: May experience frame drops during combat with many targets
 3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
-
-## Contributing
-
-Please review the [Development Process](Docs/DEVELOPMENT_PROCESS.md) document before making any contributions to the project.
 
 ## License
 

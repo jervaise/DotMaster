@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.7.1
+- Updated documentation structure with consolidated developer guides
+- Created comprehensive Debug System documentation
+- Improved version management documentation and workflow
+- Removed obsolete development diary in favor of structured documentation
+- Enhanced development process documentation with clear guidelines
+
+## Version 0.7.0
+- Version bump for continued development
+- Branch management and repository organization
+- Documentation updates
+
 ## [Unreleased]
 - Performance optimizations for combat situations
 - Additional spell database entries
@@ -236,11 +248,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simple "Find My Dots" window
 - Configuration UI
 - Support for common DoT spells
-
-## Version 0.7.0
-- Version bump for continued development
-- Branch management and repository organization
-- Documentation updates
 
 ## Version 0.6.9
 - UI Improvements for the Tracked Spells tab:
