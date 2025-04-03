@@ -235,10 +235,35 @@ function GUI:RefreshDatabaseTabList(query)
   end
   wipe(GUI.dbClassFrames)
 
+  -- Hide any existing friendly message
+  if scrollChild.friendlyMessage then
+    scrollChild.friendlyMessage:Hide()
+  end
+
   -- Set scroll child height to ensure visibility
   scrollChild:SetHeight(400)
 
   local groupedData = self:GetGroupedSpellDatabase()
+
+  -- Check if database is empty before filtering
+  local hasAnySpells = false
+  for _, _ in pairs(DM.dmspellsdb or {}) do
+    hasAnySpells = true
+    break
+  end
+
+  if not hasAnySpells then
+    -- Create or show friendly message for empty database
+    if not scrollChild.friendlyMessage then
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
+      scrollChild.friendlyMessage:SetText("No spells found in database. Use 'Find My Dots' to discover spells.")
+      scrollChild.friendlyMessage:SetTextColor(1, 0.82, 0)
+    end
+    scrollChild.friendlyMessage:Show()
+    scrollChild:SetHeight(200)
+    return
+  end
 
   -- Filter spells based on search query
   if query ~= "" then
@@ -275,18 +300,16 @@ function GUI:RefreshDatabaseTabList(query)
   DM:DatabaseDebug(string.format("Database structure: %d classes, %d spells (filtered by: '%s')", classCount, spellCount,
     query))
 
-  if spellCount == 0 then
-    -- Create a "no spells found" message
-    local noSpellsText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    noSpellsText:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
-    if query ~= "" then
-      noSpellsText:SetText(string.format("No spells found matching '%s'", query))
-    else
-      noSpellsText:SetText("No spells found in database. Use 'Find My Dots' to discover spells.")
+  -- Show search results message if no matches found
+  if spellCount == 0 and query ~= "" then
+    if not scrollChild.friendlyMessage then
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
     end
-    noSpellsText:SetTextColor(1, 0.82, 0)
-    scrollChild:SetHeight(200) -- Ensure there's space for the message
-    scrollChild:Show()
+    scrollChild.friendlyMessage:SetText(string.format("No spells found matching '%s'", query))
+    scrollChild.friendlyMessage:SetTextColor(1, 0.82, 0)
+    scrollChild.friendlyMessage:Show()
+    scrollChild:SetHeight(200)
     return
   end
 

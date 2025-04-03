@@ -152,7 +152,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
   CreateHeaderLabel("ON", "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2) - 16)
   CreateHeaderLabel("SPELL", "LEFT", COLUMN_POSITIONS.ID - 10)
   CreateHeaderLabel("COLOR", "LEFT", colorSwatchStart + (swatchWidth / 2) - 15) -- Center with color swatch
-  CreateHeaderLabel("ORDER", "CENTER", arrowCenter + 5)                       -- Center with arrows, moved slightly right
+  CreateHeaderLabel("ORDER", "CENTER", arrowCenter + 5)                         -- Center with arrows, moved slightly right
   CreateHeaderLabel("TRACKED", "CENTER", untrackStart + (untrackWidth / 2) - 2) -- Center with untrack button, moved slightly left
 
   -- Main scroll frame setup
@@ -262,9 +262,9 @@ function GUI:GetGroupedTrackedSpells()
   return grouped
 end
 
--- Function to refresh the tracked spells list UI (no filter parameter needed)
+-- Function to refresh the tracked spells list UI
 function GUI:RefreshTrackedSpellTabList()
-  DM:DatabaseDebug("Refreshing Tracked Spells Tab List.")
+  DM:DatabaseDebug("Refreshing Tracked Spells Tab List")
 
   local scrollChild = GUI.trackedScrollChild
   if not scrollChild then
@@ -283,12 +283,43 @@ function GUI:RefreshTrackedSpellTabList()
   end
   wipe(GUI.trackedClassFrames)
 
+  -- Get tracked spells
+  local groupedData = self:GetGroupedTrackedSpells()
+  local hasTrackedSpells = false
+
+  -- Check if we have any tracked spells
+  for className, classSpells in pairs(groupedData) do
+    if next(classSpells) then
+      hasTrackedSpells = true
+      break
+    end
+  end
+
+  -- Handle friendly message
+  if not hasTrackedSpells then
+    -- Create or show friendly message
+    if not scrollChild.friendlyMessage then
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage:SetPoint("TOP", scrollChild, "TOP", 0, -50)
+      scrollChild.friendlyMessage:SetText(
+      "No spells are currently being tracked.\nUse the 'Add from Database' button to start tracking spells.")
+      scrollChild.friendlyMessage:SetJustifyH("CENTER")
+      scrollChild.friendlyMessage:SetTextColor(0.7, 0.7, 0.7)
+    else
+      scrollChild.friendlyMessage:Show()
+    end
+    scrollChild:SetHeight(200) -- Set minimum height
+    return
+  else
+    -- Hide friendly message if it exists
+    if scrollChild.friendlyMessage then
+      scrollChild.friendlyMessage:Hide()
+    end
+  end
+
   -- Set scroll child height to ensure visibility
   scrollChild:SetHeight(400)
 
-  local groupedData = self:GetGroupedTrackedSpells()
-
-  -- Log tracked spells stats
   local classCount, spellCount = 0, 0
   for className, classData in pairs(groupedData) do
     classCount = classCount + 1

@@ -148,23 +148,20 @@ function DM:AddSpellToDMSpellsDB(spellID, spellName, spellIcon, className, specN
   local numericID = tonumber(spellID)
   if not numericID then return end
 
-  -- Default values
-  local defaultColor = { 1, 0, 0 } -- Red
-  local defaultPriority = 999
-  local defaultTracked = 1
-  local defaultEnabled = 1
-
   -- Add or update spell in the database
   DM.dmspellsdb[numericID] = {
     spellname = spellName,
-    spellicon = spellIcon,
+    spellicon = spellIcon or "Interface\\Icons\\INV_Misc_QuestionMark",
     wowclass = className or "UNKNOWN",
     wowspec = specName or "General",
-    color = defaultColor,
-    priority = defaultPriority,
-    tracked = defaultTracked,
-    enabled = defaultEnabled
+    color = { 1, 0, 0 }, -- Red
+    priority = 999,
+    tracked = 1,
+    enabled = 1
   }
+
+  -- Save immediately after adding
+  DM:SaveDMSpellsDB()
 
   DM:DatabaseDebug(string.format("Added spell to dmspellsdb: ID=%d, Name=%s", numericID, spellName))
 end

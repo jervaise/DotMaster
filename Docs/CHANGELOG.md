@@ -327,6 +327,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Remove button positioning and alignment
 - Optimized content layout for visual balance
 
+## [0.8.6] - 2024-04-10 (Database Improvements)
+
+### Fixed
+- Fixed issue requiring multiple clicks to save spells to database
+- Fixed friendly message persisting in Database tab when spells are present
+- Improved database save and refresh operations
+- Enhanced UI state management for Database and Tracked Spells tabs
+
 ## [0.8.5] - 2024-04-10 (UI Refinements)
 
 ### Changed

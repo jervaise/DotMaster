@@ -3,17 +3,8 @@
 
 local DM = DotMaster
 
--- TEMPORARY: Message to show when nameplate functions are called
-local DISABLED_MESSAGE = "Nameplate features are temporarily disabled during development."
-
 -- Apply a color to a nameplate
 function DM:ApplyColorToNameplate(nameplate, unitToken, color)
-  -- TEMPORARILY DISABLED
-  self:DebugMsg("ApplyColorToNameplate: " .. DISABLED_MESSAGE)
-  return false
-
-  -- Original code below (commented out)
-  --[[
   if not nameplate or not color then return false end
 
   DM:NameplateDebug("ApplyColorToNameplate called: %s, Color: %d/%d/%d",
@@ -55,24 +46,17 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
     DM:NameplateDebug("Nameplate color successfully changed")
     return true
   end
-  --]]
 end
 
 -- Restore a nameplate's original color
 function DM:RestoreDefaultColor(nameplate, unitToken)
-  -- TEMPORARILY DISABLED
-  self:DebugMsg("RestoreDefaultColor: " .. DISABLED_MESSAGE)
-  return
-
-  -- Original code below (commented out)
-  --[[
   if not self.coloredPlates[unitToken] then return end
 
   local healthBar
   local unitFrame
 
   if _G["Plater"] then
-    local Plater = _G["Plater"] -- Yerel değişken olarak tanımla
+    local Plater = _G["Plater"]
     unitFrame = nameplate.unitFrame
     if not unitFrame or not unitFrame.healthBar then return end
     healthBar = unitFrame.healthBar
@@ -103,5 +87,4 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
   end
 
   self.coloredPlates[unitToken] = nil
-  --]]
 end

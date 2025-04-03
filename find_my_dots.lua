@@ -9,13 +9,6 @@ DM.detectedDots = {}
 
 -- Start dot recording mode
 function DM:StartFindMyDots()
-  -- TEMPORARILY DISABLED
-  DM:DebugMsg("Find My Dots feature temporarily disabled during development.")
-  DM:PrintMessage(
-    "Find My Dots feature is temporarily disabled. Nameplate features will be re-enabled in a future update.")
-
-  -- Original code commented out
-  --[[
   -- If already active, exit
   if self.recordingDots then return end
 
@@ -46,7 +39,6 @@ function DM:StartFindMyDots()
       self:RecordDots(...)
     end
   end)
-  --]]
 end
 
 -- Stop dot recording mode
@@ -587,52 +579,41 @@ function DM:ShowDotsConfirmationDialog(dots)
       DM:DatabaseDebug("Add to Database button clicked.")
       local added = 0
 
+      -- First, collect all spells to add
+      local spellsToAdd = {}
       for id, checkbox in pairs(self.dotCheckboxes) do
         if checkbox:GetChecked() then
           local dotInfo = self.detectedDots[tonumber(id)]
           if dotInfo and not self:SpellExists(id) then
-            DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
-
-            -- Retrieve the correct spell icon
-            local spellIcon = DM:GetSpellIcon(id)
-
-            -- Debug message for spell icon
-            DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", dotInfo.name, id, spellIcon))
-
-            -- Add to new database with defaults
-            local className, specName = self:GetPlayerClassAndSpec()
-            local defaultColor = { 1, 0, 0 } -- Red
-            local defaultPriority = 999
-            local defaultTracked = 1
-            local defaultEnabled = 1
-
-            -- Convert ID to string for consistent storage
-            local idStr = tostring(id)
-            DM:AddSpellToDMSpellsDB(idStr, dotInfo.name, spellIcon, className, specName)
-            DM.dmspellsdb[idStr].color = defaultColor
-            DM.dmspellsdb[idStr].priority = defaultPriority
-            DM.dmspellsdb[idStr].tracked = defaultTracked
-            DM.dmspellsdb[idStr].enabled = defaultEnabled
-
-            DM:SaveDMSpellsDB()
-            DM:DebugMsg("Spell added to dmspellsdb: " .. dotInfo.name)
-
-            added = added + 1
+            spellsToAdd[id] = dotInfo
           end
         end
       end
 
-      -- Update GUI and save settings
-      if self.GUI and self.GUI.RefreshSpellList then
-        self.GUI:RefreshSpellList()
+      -- Then add all spells in one batch
+      for id, dotInfo in pairs(spellsToAdd) do
+        DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
+        local spellIcon = DM:GetSpellIcon(id)
+        local className, specName = self:GetPlayerClassAndSpec()
+
+        -- Add to database with all properties in one call
+        DM:AddSpellToDMSpellsDB(id, dotInfo.name, spellIcon, className, specName)
+        added = added + 1
       end
 
-      -- Refresh Database tab UI to show newly added spells
-      if self.GUI and self.GUI.RefreshDatabaseTabList then
-        self.GUI:RefreshDatabaseTabList()
+      -- Only refresh UI if spells were added
+      if added > 0 then
+        -- Refresh both tabs
+        if self.GUI then
+          if self.GUI.RefreshDatabaseTabList then
+            self.GUI:RefreshDatabaseTabList()
+          end
+          if self.GUI.RefreshTrackedSpellTabList then
+            self.GUI:RefreshTrackedSpellTabList()
+          end
+        end
       end
 
-      self:SaveSettings()
       DM:DebugMsg(string.format("%d dots successfully added!", added))
       self.dotsConfirmFrame:Hide()
     end)

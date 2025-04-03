@@ -1,43 +1,39 @@
-## Interface: 110100
+## Interface: 100200
 ## Title: DotMaster
-## Notes: Enhanced DoT tracking and nameplate colorization
-## Author: Jervaise
-## Version: 0.8.0
+## Notes: Track your DoTs on enemy nameplates
+## Author: Your Name
+## Version: 0.8.6
 ## SavedVariables: DotMasterDB
+## X-Category: Combat
+## X-License: All Rights Reserved
 
 # Libraries
-embeds.xml
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
-# Bootstrap (First Load)
-bootstrap.lua
-
-# Core Initialization & Debugging (Load Early)
-utils.lua
+# Core files
+core.lua
 settings.lua
-gui_debug.lua
-init.lua
+debug.lua
 
-# Spell functionality
+# Database and spells
 spell_database.lua
 spell_utils.lua
 
-# Nameplate functionality
-nameplate_core.lua
-nameplate_detection.lua
-nameplate_coloring.lua
-
-# GUI Components
-gui_colorpicker.lua
+# GUI
 gui_common.lua
-gui.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
 gui_database_tab.lua
 gui_spell_row.lua
 gui_spell_selection.lua
 
+# Nameplate functionality
+nameplate_core.lua
+nameplate_detection.lua
+nameplate_coloring.lua
+
 # Features
 find_my_dots.lua
-
-# Final loader
-core.lua

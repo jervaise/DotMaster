@@ -8,12 +8,6 @@ local DISABLED_MESSAGE = "Nameplate features are temporarily disabled during dev
 
 -- Checks for tracked debuffs on a unit
 function DM:CheckForTrackedDebuffs(unitToken)
-  -- TEMPORARILY DISABLED
-  self:DebugMsg("CheckForTrackedDebuffs: " .. DISABLED_MESSAGE)
-  return nil
-
-  -- Updated code using dmspellsdb with numeric IDs
-  --[[
   if not unitToken or not UnitExists(unitToken) then return nil end
 
   DM:NameplateDebug("CheckForTrackedDebuffs called: %s", unitToken)
@@ -62,5 +56,4 @@ function DM:CheckForTrackedDebuffs(unitToken)
 
   DM:NameplateDebug("No tracked debuffs found")
   return nil
-  --]]
 end
