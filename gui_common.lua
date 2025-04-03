@@ -127,17 +127,10 @@ function DM:CreateGUI()
 
       -- Refresh appropriate tab content when clicked
       if self.id == 2 then -- Tracked Spells tab
-        -- Use the new RefreshTrackedSpellList function for the tracked spells tab
-        if DM.GUI.RefreshTrackedSpellList then
-          DM:GUIDebug("Refreshing Tracked Spells list")
-          DM.GUI:RefreshTrackedSpellList()
-        else
-          DM:GUIDebug("WARNING: RefreshTrackedSpellList not found!")
-          -- Fall back to old function if new one doesn't exist
-          if DM.GUI.RefreshSpellList then
-            DM:GUIDebug("Falling back to RefreshSpellList")
-            DM.GUI:RefreshSpellList()
-          end
+        -- Refresh tracked spells tab
+        if DM.GUI.RefreshTrackedSpellTabList then
+          DM:DatabaseDebug("Refreshing Tracked Spells tab list")
+          DM.GUI:RefreshTrackedSpellTabList("")
         end
       elseif self.id == 3 then -- Database tab
         -- Refresh database tab
@@ -148,7 +141,7 @@ function DM:CreateGUI()
       end
     end)
 
-    -- Position tabs side by side with space between
+    -- Position tabs side by side with appropriate spacing
     tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * 105, -40)
   end
 
@@ -167,14 +160,12 @@ function DM:CreateGUI()
     DM:DebugMsg("ERROR: CreateGeneralTab function not found!")
   end
 
-  if DM.CreateTrackedSpellsTab then
-    DM:DebugMsg("Using DM:CreateTrackedSpellsTab directly")
-    DM:CreateTrackedSpellsTab(tabFrames[2])
-  elseif DotMaster_Components.CreateTrackedSpellsTab then
-    DM:DebugMsg("Using DotMaster_Components.CreateTrackedSpellsTab")
+  -- Create Tracked Spells tab content
+  if DotMaster_Components.CreateTrackedSpellsTab then
+    DM:DatabaseDebug("Using DotMaster_Components.CreateTrackedSpellsTab")
     DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
   else
-    DM:DebugMsg("ERROR: CreateTrackedSpellsTab function not found!")
+    DM:DatabaseDebug("ERROR: CreateTrackedSpellsTab function not found!")
   end
 
   -- Create Database tab content
@@ -185,31 +176,8 @@ function DM:CreateGUI()
     DM:DatabaseDebug("ERROR: CreateDatabaseTab function not found!")
   end
 
-  -- Initialize spell list
+  -- Initialize GUI frame
   DM.GUI.frame = frame
-
-  -- Try/catch for RefreshSpellList, in case it's not loaded yet
-  if DM.GUI.RefreshTrackedSpellList then
-    DM:GUIDebug("Initializing Tracked Spells list with RefreshTrackedSpellList")
-    DM.GUI:RefreshTrackedSpellList()
-  elseif DM.GUI.RefreshSpellList then
-    DM:GUIDebug("Initializing with legacy RefreshSpellList")
-    DM.GUI:RefreshSpellList()
-  else
-    DM:GUIDebug("WARNING: Neither RefreshTrackedSpellList nor RefreshSpellList found!")
-  end
-
-  -- Check ColorPickerFrame
-  C_Timer.After(1, function()
-    DM:DebugMsg("ColorPickerFrame check: exists = " .. (ColorPickerFrame ~= nil and "yes" or "no"))
-    if ColorPickerFrame then
-      DM:DebugMsg("ColorPickerFrame is a " .. type(ColorPickerFrame))
-      DM:DebugMsg("ColorPickerFrame frame strata: " .. ColorPickerFrame:GetFrameStrata())
-      DM:DebugMsg("ColorPickerFrame frame level: " .. ColorPickerFrame:GetFrameLevel())
-      DM:DebugMsg("ColorPickerFrame parent: " ..
-        (ColorPickerFrame:GetParent() and ColorPickerFrame:GetParent():GetName() or "none"))
-    end
-  end)
 
   DM:DebugMsg("GUI creation complete, frame exists: " .. (DM.GUI.frame and "Yes" or "No"))
 

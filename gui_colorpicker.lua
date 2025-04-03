@@ -7,9 +7,13 @@ local colorpicker = DotMaster_ColorPicker
 
 -- Helper function for color picker
 function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
+  -- *** MODIFIED DEBUG: Use DM:DebugMsg with COLORPICKER category ***
+  DM:DebugMsg("COLORPICKER", "CreateColorSwatch ENTRY - R:", r, "G:", g, "B:", b)
+
   -- Use proper debug function instead of print
-  if DM.DEBUG_CATEGORIES.general then
-    DM:DebugMsg("Creating color swatch with RGB: " .. r .. ", " .. g .. ", " .. b)
+  if DM.DEBUG_CATEGORIES.general then -- Keep this check maybe?
+    -- *** MODIFIED DEBUG: Use DM:DebugMsg with COLORPICKER category ***
+    DM:DebugMsg("COLORPICKER", "Creating swatch RGB - R:", r, "G:", g, "B:", b)
   end
 
   local swatch = CreateFrame("Button", nil, parent)

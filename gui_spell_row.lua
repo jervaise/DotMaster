@@ -141,18 +141,27 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   nameText:UpdateText(string.format("%s (%d)", spellName, numericID))
 
   -- COLOR: Color Picker button using the colorpicker module
-  local r, g, b = 1, 0, 0 -- Default red
-  if config.color and config.color[1] and config.color[2] and config.color[3] then
+  -- Provide a default color if config.color is missing or invalid
+  local r, g, b = 1, 1, 1 -- Default white
+  if config and config.color and type(config.color) == "table" and #config.color >= 3 then
     r, g, b = config.color[1], config.color[2], config.color[3]
+  else
+    -- Log if using default due to missing/invalid color
+    DM:DatabaseDebug(string.format("Spell %d missing valid color data, using default white.", numericID))
   end
+
+  -- Ensure r, g, b are numbers (handle potential non-numeric values)
+  r = tonumber(r) or 1
+  g = tonumber(g) or 1
+  b = tonumber(b) or 1
 
   -- Create color swatch using DotMaster_CreateColorSwatch
   local colorSwatch = DotMaster_CreateColorSwatch(spellRow, r, g, b, function(newR, newG, newB)
     -- Update color in database
     DM.dmspellsdb[numericID].color = { newR, newG, newB }
 
-    -- Save changes immediately
-    DM:SaveDMSpellsDB()
+    -- Save changes immediately (SaveDMSpellsDB handles saving)
+    -- DM:SaveDMSpellsDB() -- Already called within the swatch callback logic
 
     DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
       numericID, newR, newG, newB))
@@ -210,9 +219,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
 
       DM.dmspellsdb[numericID].priority = newPriority
 
-      -- Save and refresh
+      -- Save changes
       DM:SaveDMSpellsDB()
-      DM.GUI:RefreshTrackedSpellList()
     end
   end)
 
@@ -225,9 +233,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
 
     DM.dmspellsdb[numericID].priority = newPriority
 
-    -- Save and refresh
+    -- Save changes
     DM:SaveDMSpellsDB()
-    DM.GUI:RefreshTrackedSpellList()
   end)
 
   -- Create UNTRACK/Remove button with proper spacing and sizing
@@ -264,9 +271,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
       DM.dmspellsdb[numericID].tracked = 0
     end
 
-    -- Save and refresh
+    -- Save changes
     DM:SaveDMSpellsDB()
-    DM.GUI:RefreshTrackedSpellList()
   end)
 
   -- Update positions when resize happens

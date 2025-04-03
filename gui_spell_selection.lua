@@ -208,8 +208,9 @@ function DM:ShowSpellSelectionDialog()
 
       -- Update GUI and save settings
       if added > 0 then
-        if self.GUI and self.GUI.RefreshSpellList then
-          self.GUI:RefreshSpellList()
+        -- Refresh the tracked spells tab if it exists
+        if self.GUI and self.GUI.RefreshTrackedSpellTabList then
+          self.GUI:RefreshTrackedSpellTabList("")
         end
 
         self:SaveDMSpellsDB()

@@ -9,60 +9,6 @@ local GUI = DM.GUI                      -- Alias for convenience
 function Components.CreateDatabaseTab(parentFrame)
   DM:DatabaseDebug("Creating Database Tab Content...")
 
-  -- Search Box at the top
-  local searchBox = CreateFrame("EditBox", "DotMasterDbSearchBox", parentFrame, "SearchBoxTemplate")
-  searchBox:SetSize(350, 24)
-  searchBox:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 15, -15)
-  searchBox:SetAutoFocus(false)
-  searchBox:SetTextInsets(5, 5, 0, 0)
-
-  -- Clear any default SearchBoxTemplate text and set our own
-  searchBox:SetText("")
-  searchBox:SetFontObject("GameFontNormal")
-
-  -- Insert placeholder text
-  local searchPlaceholder = searchBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  searchPlaceholder:SetPoint("LEFT", 20, 0) -- Increased spacing from magnifying glass
-  searchPlaceholder:SetText("Search Spells...")
-  searchPlaceholder:SetTextColor(0.7, 0.7, 0.7)
-  searchBox.placeholder = searchPlaceholder
-
-  -- Better search handling
-  searchBox:SetScript("OnTextChanged", function(self)
-    local text = self:GetText()
-
-    -- Toggle placeholder visibility
-    if text == "" then
-      searchPlaceholder:Show()
-    else
-      searchPlaceholder:Hide()
-    end
-
-    -- Immediate filtering without timer
-    GUI:RefreshDatabaseTabList(text:lower())
-  end)
-
-  searchBox:SetScript("OnEnterPressed", function(self)
-    self:ClearFocus()
-  end)
-
-  searchBox:SetScript("OnEscapePressed", function(self)
-    self:SetText("")
-    searchPlaceholder:Show()
-    self:ClearFocus()
-    GUI:RefreshDatabaseTabList("")
-  end)
-
-  searchBox:SetScript("OnEditFocusGained", function(self)
-    self:HighlightText()
-  end)
-
-  searchBox:SetScript("OnEditFocusLost", function(self)
-    if self:GetText() == "" then
-      searchPlaceholder:Show()
-    end
-  end)
-
   -- Button container at the bottom
   local buttonContainer = CreateFrame("Frame", nil, parentFrame)
   buttonContainer:SetSize(parentFrame:GetWidth() - 20, 50)
@@ -124,8 +70,8 @@ function Components.CreateDatabaseTab(parentFrame)
         GUI:RefreshDatabaseTabList()
 
         -- Also update tracked spells tab if needed
-        if GUI.RefreshTrackedSpellList then
-          GUI:RefreshTrackedSpellList()
+        if GUI.RefreshTrackedSpellTabList then
+          GUI:RefreshTrackedSpellTabList()
         end
 
         DM:DatabaseDebug("Database has been reset and UI refreshed.")
@@ -140,35 +86,65 @@ function Components.CreateDatabaseTab(parentFrame)
 
   -- Main scroll frame for the spell list (properly constrained within the parent)
   local scrollFrame = CreateFrame("ScrollFrame", "DotMasterDbScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
-  scrollFrame:SetPoint("TOPLEFT", searchBox, "BOTTOMLEFT", 0, -10)
-  scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -23, 10) -- Leave space for scrollbar
+  -- Anchor scroll frame to the top of the parent frame now
+  scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 15, -15)
+  scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted offset for no scrollbar
+
+  -- Forcefully hide the default scroll bar elements
+  if scrollFrame.ScrollBar then
+    scrollFrame.ScrollBar:Hide()
+    scrollFrame.ScrollBar:SetAlpha(0)
+    if scrollFrame.ScrollBar.ScrollUpButton then
+      scrollFrame.ScrollBar.ScrollUpButton:Hide()
+      scrollFrame.ScrollBar.ScrollUpButton:SetAlpha(0)
+    end
+    if scrollFrame.ScrollBar.ScrollDownButton then
+      scrollFrame.ScrollBar.ScrollDownButton:Hide()
+      scrollFrame.ScrollBar.ScrollDownButton:SetAlpha(0)
+    end
+  end
+
+  -- Enable mouse wheel scrolling
+  scrollFrame:EnableMouseWheel(true)
+  scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+    local scrollStep = 25 -- Use entryHeight as a base scroll step
+    local currentScroll = self:GetVerticalScroll()
+    local maxScroll = self:GetVerticalScrollRange()
+    local newScroll = currentScroll - (delta * scrollStep) -- delta > 0 for wheel up, < 0 for down
+
+    -- Clamp the new scroll value
+    newScroll = math.max(0, math.min(newScroll, maxScroll))
+
+    if newScroll ~= currentScroll then
+      self:SetVerticalScroll(newScroll)
+    end
+  end)
 
   -- Create the scroll child (content container)
   local scrollChild = CreateFrame("Frame", "DotMasterDbScrollChild")
-  scrollChild:SetWidth(scrollFrame:GetWidth() - 20) -- Width adjusted for scrollbar
+  scrollChild:SetWidth(scrollFrame:GetWidth() - 10) -- Adjusted width for no scrollbar, slight padding
   scrollChild:SetHeight(200)                        -- Give it an initial height
   scrollFrame:SetScrollChild(scrollChild)
 
-  -- Center the scrollchild in the scrollframe
+  -- Anchor scrollChild TOPLEFT to scrollFrame TOPLEFT
   scrollChild:ClearAllPoints()
-  scrollChild:SetPoint("TOP", scrollFrame, "TOP", 0, 0)
-  scrollChild:SetWidth(scrollFrame:GetWidth() - 30) -- Adjust width to give more horizontal margins
+  scrollChild:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
+  -- Width is set below based on scrollFrame width
 
   -- Simplified handling for fixed-size window
   parentFrame:HookScript("OnSizeChanged", function(self, width, height)
     -- Update container sizes with fixed width
     buttonContainer:SetWidth(width - 20)
-    scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -23, 10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted offset for no scrollbar
 
-    -- Center the scrollchild in the scrollframe
-    scrollChild:SetWidth(scrollFrame:GetWidth() - 30)
+    -- Update scrollChild width based on scrollFrame's potentially changed width
+    scrollChild:SetWidth(scrollFrame:GetWidth() - 10)
 
     -- Force layout update
     GUI:UpdateDatabaseLayout()
   end)
 
   -- Store references
-  GUI.dbSearchBox = searchBox
   GUI.dbScrollFrame = scrollFrame
   GUI.dbScrollChild = scrollChild
   GUI.dbClassFrames = {} -- To hold references for expand/collapse
@@ -189,12 +165,12 @@ function Components.CreateDatabaseTab(parentFrame)
 
   -- Initial population - use C_Timer to ensure UI is fully initialized
   C_Timer.After(0.2, function()
-    GUI:RefreshDatabaseTabList("")
+    GUI:RefreshDatabaseTabList()
     DM:DatabaseDebug("Initial database list refresh completed")
   end)
 end
 
--- Helper to group spells by Class -> Spec -> ID
+-- Helper to group spells by Class -> ID (Removed Spec)
 function GUI:GetGroupedSpellDatabase()
   local grouped = {}
 
@@ -215,12 +191,11 @@ function GUI:GetGroupedSpellDatabase()
       -- Skip this entry
     else
       local className = data.wowclass or "UNKNOWN"
-      local specName = data.wowspec or "UNKNOWN"
+      -- Removed specName grouping
 
       if not grouped[className] then grouped[className] = {} end
-      if not grouped[className][specName] then grouped[className][specName] = {} end
-
-      grouped[className][specName][id] = data
+      -- Directly assign spell data under class
+      grouped[className][id] = data
     end
   end
 
@@ -228,9 +203,9 @@ function GUI:GetGroupedSpellDatabase()
   return grouped
 end
 
--- Function to refresh the database list UI
-function GUI:RefreshDatabaseTabList(filter)
-  DM:DatabaseDebug("Refreshing Database Tab List. Filter: '" .. (filter or "none") .. "'")
+-- Function to refresh the database list UI (no filter parameter, no spec layer)
+function GUI:RefreshDatabaseTabList()
+  DM:DatabaseDebug("Refreshing Database Tab List.")
 
   local scrollChild = GUI.dbScrollChild
   if not scrollChild then
@@ -254,18 +229,15 @@ function GUI:RefreshDatabaseTabList(filter)
 
   local groupedData = self:GetGroupedSpellDatabase()
 
-  -- Log database stats
-  local classCount, specCount, spellCount = 0, 0, 0
+  -- Log database stats (Removed specCount)
+  local classCount, spellCount = 0, 0
   for className, classData in pairs(groupedData) do
     classCount = classCount + 1
-    for specName, specData in pairs(classData) do
-      specCount = specCount + 1
-      for _ in pairs(specData) do
-        spellCount = spellCount + 1
-      end
+    for _ in pairs(classData) do
+      spellCount = spellCount + 1
     end
   end
-  DM:DatabaseDebug(string.format("Database structure: %d classes, %d specs, %d spells", classCount, specCount, spellCount))
+  DM:DatabaseDebug(string.format("Database structure: %d classes, %d spells", classCount, spellCount))
 
   if spellCount == 0 then
     -- Create a "no spells found" message
@@ -279,15 +251,20 @@ function GUI:RefreshDatabaseTabList(filter)
   end
 
   local yOffset = 5
-  local entryHeight = 25                             -- Slightly increased for better spacing
-  local headerHeight = 28                            -- Slightly increased for better visibility
-  local spacing = 3                                  -- Increased spacing
+  local entryHeight = 25
+  local headerHeight = 28
+  local spacing = 3
   local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins
 
-  -- Sort Classes (Put UNKNOWN last)
+  -- Get player class token
+  local _, playerClassToken = UnitClass("player")
+
+  -- Sort Classes (Player class first, then UNKNOWN last, then alphabetically)
   local sortedClasses = {}
   for className in pairs(groupedData) do table.insert(sortedClasses, className) end
   table.sort(sortedClasses, function(a, b)
+    if a == playerClassToken and b ~= playerClassToken then return true end
+    if b == playerClassToken and a ~= playerClassToken then return false end
     if a == "UNKNOWN" then return false end
     if b == "UNKNOWN" then return true end
     return a < b
@@ -313,35 +290,30 @@ function GUI:RefreshDatabaseTabList(filter)
     local classData = groupedData[className]
     local classFrame = CreateFrame("Button", nil, scrollChild)
     classFrame:SetSize(effectiveWidth, headerHeight)
-    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset) -- Added left margin
-    classFrame.isExpanded = true                                         -- Default expanded for better visibility
-    classFrame.specFrames = {}
-    classFrame:Show()                                                    -- Explicitly show the frame
+    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+    -- Set initial expanded state based on player class
+    classFrame.isExpanded = (className == playerClassToken)
+    classFrame.spellFrames = {} -- Changed from specFrames
+    classFrame:Show()
     GUI.dbClassFrames[className] = classFrame
 
     -- Add mouseover highlight
     AddMouseoverHighlight(classFrame)
 
-    -- Class Header Background/Text
+    -- Class Header Background/Text (same as before)
     local bg = classFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.8) -- Darker background with better transparency
-
-    -- Use class color if available but with better transparency
+    bg:SetColorTexture(0, 0, 0, 0.8)
     if DM.classColors[className] then
       local color = DM.classColors[className]
       bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8)
     end
-
     local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     text:SetPoint("LEFT", 10, 0)
     local displayName = DM:GetClassDisplayName(className) or className
     text:SetText(displayName)
-
-    -- Expand/collapse indicator
-    classFrame.indicator = CreateIndicator(classFrame, true)
-
-    -- Set class color for text
+    -- Expand/collapse indicator - set initial texture based on expanded state
+    classFrame.indicator = CreateIndicator(classFrame, classFrame.isExpanded)
     if DM.classColors[className] then
       local color = DM.classColors[className]
       text:SetTextColor(color.r, color.g, color.b)
@@ -349,170 +321,106 @@ function GUI:RefreshDatabaseTabList(filter)
 
     yOffset = yOffset + headerHeight + spacing
 
-    -- Sort Specs (Put UNKNOWN last)
-    local sortedSpecs = {}
-    for specName in pairs(classData) do table.insert(sortedSpecs, specName) end
-    table.sort(sortedSpecs, function(a, b)
-      if a == "UNKNOWN" then return false end
-      if b == "UNKNOWN" then return true end
-      return a < b
+    -- Sort Spells by priority then name (using classData)
+    local sortedSpells = {}
+    for id in pairs(classData) do table.insert(sortedSpells, id) end
+    table.sort(sortedSpells, function(a, b)
+      local spellA = classData[a]
+      local spellB = classData[b]
+      if spellA.priority and spellB.priority then
+        return spellA.priority < spellB.priority
+      end
+      local nameA = spellA.spellname or ""
+      local nameB = spellB.spellname or ""
+      return nameA < nameB
     end)
 
-    for _, specName in ipairs(sortedSpecs) do
-      local specData = classData[specName]
-      local specFrame = CreateFrame("Button", nil, scrollChild)
-      specFrame:SetSize(effectiveWidth - 20, headerHeight - 4)            -- Width reduced for indent
-      specFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 30, -yOffset) -- Added left margin with indent
-      specFrame.isExpanded = true                                         -- Default expanded
-      specFrame.spellFrames = {}
-      specFrame:Show()                                                    -- Explicitly show
-      table.insert(classFrame.specFrames, specFrame)
+    local visibleSpellCount = 0
 
-      -- Add mouseover highlight
-      AddMouseoverHighlight(specFrame)
-
-      -- Spec Header Background/Text
-      local specBg = specFrame:CreateTexture(nil, "BACKGROUND")
-      specBg:SetAllPoints()
-      specBg:SetColorTexture(0, 0, 0, 0.7) -- Darker background with better transparency
-      local specText = specFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-      specText:SetPoint("LEFT", 10, 0)
-      specText:SetText(specName)
-
-      -- Expand/collapse indicator
-      specFrame.indicator = CreateIndicator(specFrame, true)
-
-      yOffset = yOffset + headerHeight - 2 + spacing
-
-      -- Sort Spells by priority then name
-      local sortedSpells = {}
-      for id in pairs(specData) do table.insert(sortedSpells, id) end
-      table.sort(sortedSpells, function(a, b)
-        local spellA = specData[a]
-        local spellB = specData[b]
-
-        -- Sort by priority if both have priority
-        if spellA.priority and spellB.priority then
-          return spellA.priority < spellB.priority
-        end
-
-        -- Sort by name if no priority or equal priority
-        local nameA = spellA.spellname or ""
-        local nameB = spellB.spellname or ""
-        return nameA < nameB
-      end)
-
-      local visibleSpellCount = 0
-
-      for _, spellID in ipairs(sortedSpells) do
-        local spellData = specData[spellID]
-        local spellName = spellData.spellname or "Unknown"
-        local spellNameLower = spellName:lower()
-
-        -- Apply Filter
-        local passes_filter = not filter or filter == "" or spellNameLower:find(filter, 1, true)
-
-        if passes_filter then
-          visibleSpellCount = visibleSpellCount + 1
-          local spellFrame = CreateFrame("Frame", nil, scrollChild)
-          spellFrame:SetSize(effectiveWidth - 40, entryHeight)                 -- Width reduced for indent
-          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 45, -yOffset) -- Added left margin with indent
-          spellFrame:Show()                                                    -- Explicitly show
-
-          -- Add alternating row background for better readability
-          local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
-          rowBg:SetAllPoints()
-          if (visibleSpellCount % 2 == 0) then
-            rowBg:SetColorTexture(0, 0, 0, 0.3) -- Darker alternating row
-          else
-            rowBg:SetColorTexture(0, 0, 0, 0.2) -- Slightly lighter alternating row
-          end
-
-          table.insert(specFrame.spellFrames, spellFrame)
-
-          -- Spell Icon
-          local icon = spellFrame:CreateTexture(nil, "ARTWORK")
-          icon:SetSize(20, 20)
-          icon:SetPoint("LEFT", 5, 0)
-          local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
-          icon:SetTexture(iconPath)
-          icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Crop out the border
-
-          -- Spell Name & ID
-          local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-          nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-          nameText:SetWidth(spellFrame:GetWidth() - 110) -- Adjusted to leave room for Track label
-          nameText:SetText(string.format("%s (%d)", spellName, spellID))
-          nameText:SetJustifyH("LEFT")
-
-          -- Track Checkbox
-          local checkbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
-          checkbox:SetSize(20, 20)
-          checkbox:SetPoint("RIGHT", -5, 0)
-          checkbox:SetChecked(spellData.tracked == 1)
-
-          -- Add "Track" text label
-          local trackLabel = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-          trackLabel:SetText("Track")
-          trackLabel:SetPoint("RIGHT", checkbox, "LEFT", -2, 0)
-
-          checkbox:SetScript("OnClick", function(self)
-            local isChecked = self:GetChecked()
-            local numericID = spellID -- Already numeric
-
-            -- Make sure the entry exists before trying to modify it
-            if not DM.dmspellsdb[numericID] then
-              DM:DatabaseDebug(string.format("Creating entry for spell %d in dmspellsdb", numericID))
-              DM.dmspellsdb[numericID] = {
-                spellname = spellData.spellname or "Unknown",
-                spellicon = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark",
-                wowclass = spellData.wowclass or "UNKNOWN",
-                wowspec = spellData.wowspec or "UNKNOWN",
-                color = { 1, 0, 0 }, -- Default red
-                priority = 999,      -- Default priority
-                enabled = 1          -- Default enabled
-              }
-            end
-
-            -- Now safe to modify
-            DM.dmspellsdb[numericID].tracked = isChecked and 1 or 0
-            DM:DatabaseDebug(string.format("Spell %d tracked status set to %d", numericID,
-              DM.dmspellsdb[numericID].tracked))
-
-            -- Refresh the other tab's list
-            if GUI.RefreshTrackedSpellList then
-              GUI:RefreshTrackedSpellList()
-            end
-
-            -- Save changes
-            DM:SaveDMSpellsDB()
-          end)
-
-          yOffset = yOffset + entryHeight + spacing
-        end
-      end -- End Spell Loop
-
-      -- Hide spec if no visible spells
-      if visibleSpellCount == 0 and filter and filter ~= "" then
-        specFrame:Hide()
+    for _, spellID in ipairs(sortedSpells) do
+      local spellData = classData[spellID]
+      visibleSpellCount = visibleSpellCount + 1
+      local spellFrame = CreateFrame("Frame", nil, scrollChild)
+      -- Align spell frame with class frame
+      spellFrame:SetSize(effectiveWidth, entryHeight)
+      spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+      -- Hide spell frame initially if class is collapsed
+      if not classFrame.isExpanded then
+        spellFrame:Hide()
+      else
+        spellFrame:Show()
       end
 
-      -- Spec Header Click Handler (Expand/Collapse Spells)
-      specFrame:SetScript("OnClick", function(self)
-        self.isExpanded = not self.isExpanded
+      -- Add alternating row background
+      local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
+      rowBg:SetAllPoints()
+      if (visibleSpellCount % 2 == 0) then
+        rowBg:SetColorTexture(0, 0, 0, 0.3)
+      else
+        rowBg:SetColorTexture(0, 0, 0, 0.2)
+      end
 
-        -- Update indicator
-        self.indicator:SetTexture(self.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
-          "Interface\\Buttons\\UI-PlusButton-Up")
+      table.insert(classFrame.spellFrames, spellFrame) -- Add to classFrame.spellFrames
 
-        for _, frame in ipairs(self.spellFrames) do
-          if self.isExpanded then frame:Show() else frame:Hide() end
+      -- Spell Icon (same as before)
+      local icon = spellFrame:CreateTexture(nil, "ARTWORK")
+      icon:SetSize(20, 20)
+      icon:SetPoint("LEFT", 5, 0)
+      local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
+      icon:SetTexture(iconPath)
+      icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+      -- Spell Name & ID (same as before)
+      local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+      nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+      nameText:SetWidth(spellFrame:GetWidth() - 110)
+      nameText:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
+      nameText:SetJustifyH("LEFT")
+
+      -- Track Checkbox (same as before, but refresh calls updated)
+      local checkbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
+      checkbox:SetSize(20, 20)
+      checkbox:SetPoint("RIGHT", -5, 0)
+      checkbox:SetChecked(spellData.tracked == 1)
+
+      local trackLabel = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+      trackLabel:SetText("Track")
+      trackLabel:SetPoint("RIGHT", checkbox, "LEFT", -2, 0)
+
+      checkbox:SetScript("OnClick", function(self)
+        local isChecked = self:GetChecked()
+        local numericID = spellID
+
+        if not DM.dmspellsdb[numericID] then
+          DM:DatabaseDebug(string.format("Creating entry for spell %d in dmspellsdb", numericID))
+          DM.dmspellsdb[numericID] = {
+            spellname = spellData.spellname or "Unknown",
+            spellicon = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark",
+            wowclass = spellData.wowclass or "UNKNOWN",
+            wowspec = spellData.wowspec or "UNKNOWN",
+            color = { 1, 0, 0 },
+            priority = 999,
+            enabled = 1
+          }
         end
-        GUI:UpdateDatabaseLayout() -- Recalculate layout
-      end)
-    end                            -- End Spec Loop
 
-    -- Class Header Click Handler (Expand/Collapse Specs)
+        DM.dmspellsdb[numericID].tracked = isChecked and 1 or 0
+        DM:DatabaseDebug(string.format("Spell %d tracked status set to %d", numericID, DM.dmspellsdb[numericID].tracked))
+
+        if GUI.RefreshTrackedSpellTabList then
+          GUI:RefreshTrackedSpellTabList()
+        end
+
+        DM:SaveDMSpellsDB()
+      end)
+
+      -- Only increment yOffset if the spell is actually visible (class is expanded)
+      if classFrame.isExpanded then
+        yOffset = yOffset + entryHeight + spacing
+      end
+    end -- End Spell Loop
+
+    -- Class Header Click Handler (Expand/Collapse Spells)
     classFrame:SetScript("OnClick", function(self)
       self.isExpanded = not self.isExpanded
 
@@ -520,51 +428,43 @@ function GUI:RefreshDatabaseTabList(filter)
       self.indicator:SetTexture(self.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
         "Interface\\Buttons\\UI-PlusButton-Up")
 
-      for _, frame in ipairs(self.specFrames) do
+      -- Toggle visibility of spellFrames directly
+      for _, frame in ipairs(self.spellFrames) do
         if self.isExpanded then
           frame:Show()
         else
           frame:Hide()
-        end
-
-        -- If class is collapsed, update spec indicators to match
-        if not self.isExpanded then
-          frame.isExpanded = false
-          frame.indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
-          -- Also hide spells within the spec
-          for _, spellF in ipairs(frame.spellFrames or {}) do spellF:Hide() end
-        else
-          -- When expanding, restore spec's own expanded state
-          frame.isExpanded = true
-          frame.indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
-          -- Show spells within the spec
-          for _, spellF in ipairs(frame.spellFrames or {}) do spellF:Show() end
         end
       end
       GUI:UpdateDatabaseLayout()
     end)
   end -- End Class Loop
 
-  -- Final layout update
+  -- Final layout update (will reposition based on initial visibility)
   GUI:UpdateDatabaseLayout()
   scrollChild:Show()
 end
 
--- Function to recalculate positions after expand/collapse
+-- Function to recalculate positions after expand/collapse (Removed Spec Logic)
 function GUI:UpdateDatabaseLayout()
   local scrollChild = GUI.dbScrollChild
   if not scrollChild then return end
 
   local yOffset = 5
-  local entryHeight = 25 -- Match the increased values from RefreshDatabaseTabList
+  local entryHeight = 25
   local headerHeight = 28
   local spacing = 3
   local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins
 
-  -- Iterate through sorted classes again (ensure consistent order)
+  -- Get player class token
+  local _, playerClassToken = UnitClass("player")
+
+  -- Iterate through sorted classes (Player class first, UNKNOWN last, then alphabetically)
   local sortedClasses = {}
   for className in pairs(GUI.dbClassFrames or {}) do table.insert(sortedClasses, className) end
   table.sort(sortedClasses, function(a, b)
+    if a == playerClassToken and b ~= playerClassToken then return true end
+    if b == playerClassToken and a ~= playerClassToken then return false end
     if a == "UNKNOWN" then return false end
     if b == "UNKNOWN" then return true end
     return a < b
@@ -579,28 +479,13 @@ function GUI:UpdateDatabaseLayout()
       yOffset = yOffset + headerHeight + spacing
 
       if classFrame.isExpanded then
-        -- Iterate through sorted specs again
-        local sortedSpecs = {}
-        for _, specFrame in ipairs(classFrame.specFrames or {}) do
-          table.insert(sortedSpecs, specFrame)
-        end
-
-        for _, specFrame in ipairs(sortedSpecs) do
-          specFrame:ClearAllPoints()
-          specFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 30, -yOffset)
-          specFrame:SetWidth(effectiveWidth - 20)
-          specFrame:Show() -- Ensure visible if class is expanded
-          yOffset = yOffset + headerHeight - 2 + spacing
-
-          if specFrame.isExpanded then
-            for _, spellFrame in ipairs(specFrame.spellFrames or {}) do
-              spellFrame:ClearAllPoints()
-              spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 45, -yOffset)
-              spellFrame:SetWidth(effectiveWidth - 40)
-              spellFrame:Show() -- Ensure visible
-              yOffset = yOffset + entryHeight + spacing
-            end
-          end
+        -- Position spell frames directly under the class
+        for _, spellFrame in ipairs(classFrame.spellFrames or {}) do
+          spellFrame:ClearAllPoints()
+          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+          spellFrame:SetWidth(effectiveWidth)
+          spellFrame:Show()
+          yOffset = yOffset + entryHeight + spacing
         end
       end
     end

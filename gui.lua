@@ -4,38 +4,6 @@
 local DM = DotMaster
 DM.GUI = {}
 
--- Function to refresh the spell list
-function DM.GUI:RefreshSpellList()
-  if not DM.GUI.spellFrames then
-    DM:DebugMsg("spellFrames not found in RefreshSpellList")
-    return
-  end
-
-  for _, frame in ipairs(DM.GUI.spellFrames) do
-    frame:Hide()
-  end
-
-  DM.GUI.spellFrames = {}
-  local yOffset = 40 -- Start after header with more space
-  local index = 0
-
-  -- Add all spells from dmspellsdb that are tracked
-  for spellID, config in pairs(DM.dmspellsdb) do
-    -- Only display tracked spells (tracked = 1)
-    if config.tracked == 1 then
-      index = index + 1
-      DM:CreateSpellConfigRow(spellID, index, yOffset)
-      yOffset = yOffset + 36 -- More space between rows
-    end
-  end
-
-  if DM.GUI.scrollChild and DM.GUI.scrollFrame then
-    DM.GUI.scrollChild:SetHeight(math.max(yOffset + 10, DM.GUI.scrollFrame:GetHeight()))
-  else
-    DM:DebugMsg("scrollChild or scrollFrame not found in RefreshSpellList")
-  end
-end
-
 -- Helper function to check if a spell ID already exists
 function DM:SpellExists(spellID)
   -- Convert to number for comparison if needed

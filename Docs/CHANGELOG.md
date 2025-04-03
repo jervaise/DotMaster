@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Changelog
+
+### Version 0.8.0 (YYYY-MM-DD)
+
+- **Tracked Spells Tab Enhancements:**
+  - Redesigned spell rows to include enable checkbox, color picker swatch, and priority arrows.
+  - Removed spec grouping; spells now listed directly under class headers.
+  - Removed search functionality.
+  - Removed indentation for a cleaner look.
+  - Implemented mouse wheel scrolling and removed visual scrollbar.
+  - Player's current class is now displayed first.
+  - Class headers (except player's) default to collapsed state.
+  - Adjusted row/header heights and alternating background color contrast.
+- **Database Tab:**
+  - Mirrored Tracked Spells tab UI changes: removed spec grouping, removed search, removed indentation, implemented mouse wheel scrolling, player class first, initial collapse state.
+- **Bug Fixes:**
+  - Fixed layout issues causing elements to overflow or disappear.
+  - Corrected errors related to color picker integration and nil values.
+  - Fixed `OnClick` script errors on non-button frames.
+  - Resolved issue where scrolling caused horizontal shifting.
+- **Code Quality:**
+  - Centralized version number definition.
+  - Integrated temporary debug prints into the addon's debug console system.
+
+---
+
+### Version 0.7.2 (YYYY-MM-DD)
+
+- Added a new "Tracked Spells" tab to the GUI.
+- This tab displays only spells marked as tracked in the database.
+- Included an "Untrack" button on each spell row in the new tab.
+- Updated Database tab logic to refresh Tracked Spells tab on changes.
+- Updated spell selection dialog to refresh Tracked Spells tab.
+- Fixed class collapsing functionality in Tracked Spells tab.
+
+---
+
+### Version 0.7.1 (YYYY-MM-DD)
+
+- Initial setup with basic features.
+- Nameplate coloring.
+- Find My Dots window.
+- Spell Database tab.
+- Configuration UI.
+- Debug Console.
+
+---
+
 ## Version 0.7.2
 - Fixed UI alignment issues in the tracked spells tab
 - Improved header and content alignment in tracked spells list

@@ -34,6 +34,11 @@ if not DM.DEBUG_CATEGORIES.performance then
   DM.DEBUG_CATEGORIES.performance = false
 end
 
+-- Create Components namespace if it doesn't exist
+if not DotMaster_Components then
+  DotMaster_Components = {}
+end
+
 -- Legacy initialization function (now coordinated via the bootstrap events)
 function DM:Initialize()
   DM:DebugMsg("Legacy Initialize() called - this is now managed by bootstrap.lua")

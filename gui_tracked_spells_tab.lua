@@ -1,1213 +1,610 @@
 -- DotMaster gui_tracked_spells_tab.lua
--- Contains the Tracked Spells tab functionality for the GUI
+-- Content for the Tracked Spells Tab
 
 local DM = DotMaster
+local Components = DotMaster_Components -- Reuse existing component namespace if applicable
+local GUI = DM.GUI                      -- Alias for convenience
 
--- Create Tracked Spells tab content
-function DM:CreateTrackedSpellsTab(parent)
-  DM:DebugMsg("Creating Tracked Spells Tab") -- Updated debug message
+-- Function to create the Tracked Spells tab content
+function Components.CreateTrackedSpellsTab(parentFrame)
+  DM:DatabaseDebug("Creating Tracked Spells Tab Content...")
 
-  -- Constants for professional layout
-  local PADDING = {
-    OUTER = 5,  -- Outside frame padding (base padding value X)
-    INNER = 10, -- Inner content padding
-    COLUMN = 15 -- Space between columns
-  }
+  -- Button container at the bottom
+  local buttonContainer = CreateFrame("Frame", nil, parentFrame)
+  buttonContainer:SetSize(parentFrame:GetWidth() - 20, 50)
+  buttonContainer:SetPoint("BOTTOM", 0, 10) -- Position at bottom
 
-  -- Percentage-based column widths - keeping row elements exactly as they are
-  local COLUMN_WIDTH_PCT = {
-    ON = 0.06,    -- 6% Checkbox
-    ID = 0.13,    -- 13% Icon area
-    NAME = 0.45,  -- 45% Name area (increased from 42% for more width)
-    COLOR = 0.09, -- 9% Color
-    ORDER = 0.11, -- 11% Order buttons
-    DEL = 0.14    -- 14% Tracking button
-  }
-
-  -- Add another 50px to the entire width (total 150px added from original)
-  local frameWidth = 700    -- Increased from 650 to 700
-  local scrollBarWidth = 20 -- Standard WoW scrollbar width
-
-  -- Create UpdateLayout function with adjusted right spacing
-  local function UpdateColumnPositions(width)
-    -- Calculate available width for content - keeping proportions the same
-    local contentWidth = width - (PADDING.OUTER * 9) - scrollBarWidth
-    width = math.min(contentWidth, 600) -- Keep this the same to maintain element sizing
-
-    local positions = {}
-    local widths = {}
-
-    -- Calculate inner padding needed on each side for symmetry
-    local innerLeftPadding = 10   -- Increased left padding (was 5)
-    local innerRightPadding = 10  -- Equal right padding for symmetry
-
-    local xPos = innerLeftPadding -- Start content with symmetrical inner padding
-
-    -- Calculate positions
-    positions.ON = xPos
-    widths.ON = width * COLUMN_WIDTH_PCT.ON
-    xPos = xPos + widths.ON
-
-    positions.ID = xPos + 12
-    widths.ID = width * COLUMN_WIDTH_PCT.ID
-    xPos = xPos + widths.ID + 12
-
-    positions.NAME = xPos
-    widths.NAME = width * COLUMN_WIDTH_PCT.NAME
-    xPos = xPos + widths.NAME
-
-    positions.COLOR = xPos
-    widths.COLOR = width * COLUMN_WIDTH_PCT.COLOR
-    xPos = xPos + widths.COLOR + PADDING.COLUMN
-
-    positions.UP = xPos
-    widths.UP = (width * COLUMN_WIDTH_PCT.ORDER) / 2
-    xPos = xPos + widths.UP
-
-    positions.DOWN = xPos
-    widths.DOWN = (width * COLUMN_WIDTH_PCT.ORDER) / 2
-    xPos = xPos + widths.DOWN + PADDING.COLUMN
-
-    positions.DEL = xPos
-    widths.DEL = width * COLUMN_WIDTH_PCT.DEL
-
-    -- Return both positions and widths
-    return positions, widths
-  end
-
-  -- Calculate initial positions
-  local COLUMN_POSITIONS, COLUMN_WIDTHS = UpdateColumnPositions(frameWidth)
-
-  -- Set the parent frame size - increase by another 50px width
-  if parent.SetSize then
-    local currentWidth, currentHeight = parent:GetSize()
-    parent:SetSize(currentWidth + 50, currentHeight)
-  end
-
-  -- Spells Tab Header - move down slightly within its space
-  local spellTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  spellTitle:SetPoint("TOP", 0, -25) -- Changed from -15 to -25 to move title down
-  spellTitle:SetText("Configure Spell Tracking")
-
-  -- Instructions - maintain same spacing from title
-  local instructions = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  instructions:SetPoint("TOP", spellTitle, "BOTTOM", 0, -5)
-  instructions:SetText("Configure your spell tracking settings")
-  instructions:SetTextColor(1, 0.82, 0)
-
-  -- Fix the background extending issue once and for all
-  -- Make margins exactly the same on both sides
-  local backgroundPadding = 15                     -- Equal padding for both left and right sides
-  local backgroundPaddingLeft = backgroundPadding  -- Set left padding
-  local backgroundPaddingRight = backgroundPadding -- Set right padding (same as left)
-
-  -- Create the background texture first - it should extend fully with specified padding
-  local spellListBg = parent:CreateTexture(nil, "BACKGROUND")
-  -- Position relative to parent frame edges with adjusted padding
-  spellListBg:SetPoint("TOPLEFT", parent, "TOPLEFT", backgroundPaddingLeft, -80)
-  spellListBg:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -backgroundPaddingRight, 80)
-  spellListBg:SetColorTexture(0, 0, 0, 0.5)
-
-  -- Scrollframe positioned ON TOP of background with adjusted inset
-  local scrollFrame = CreateFrame("ScrollFrame", "DotMasterSpellScrollFrame", parent, "UIPanelScrollFrameTemplate")
-  -- Position scrollframe with equal padding on both sides - extend all the way to the right
-  scrollFrame:SetPoint("TOPLEFT", spellListBg, "TOPLEFT", 10, -10)
-  -- Use full width since we're hiding the scrollbar
-  scrollFrame:SetPoint("BOTTOMRIGHT", spellListBg, "BOTTOMRIGHT", -10, 5)
-
-  -- Hide scrollbar and enable mouse wheel scrolling
-  local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
-  if scrollBar then
-    -- Always hide the scrollbar
-    scrollBar:Hide()
-    scrollFrame.ScrollBar = scrollBar
-
-    -- Set up mouse wheel scrolling for the parent frame
-    parent:EnableMouseWheel(true)
-    parent:SetScript("OnMouseWheel", function(self, delta)
-      if delta > 0 then
-        -- Scroll up (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        scrollBar:SetValue(math.max(currentValue - 38, 0))
-      else
-        -- Scroll down (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        local maxValue = scrollBar:GetRange()
-        scrollBar:SetValue(math.min(currentValue + 38, maxValue))
-      end
-    end)
-
-    -- Set up mouse wheel scrolling for the scroll frame itself
-    scrollFrame:EnableMouseWheel(true)
-    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
-      if delta > 0 then
-        -- Scroll up (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        scrollBar:SetValue(math.max(currentValue - 38, 0))
-      else
-        -- Scroll down (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        local maxValue = scrollBar:GetRange()
-        scrollBar:SetValue(math.min(currentValue + 38, maxValue))
-      end
-    end)
-  end
-
-  -- Modify the OnScrollRangeChanged to not show scrollbar anymore
-  scrollFrame:HookScript("OnScrollRangeChanged", function(self, xrange, yrange)
-    -- Even if there's scroll range, we keep the scrollbar hidden
-    if scrollBar then
-      scrollBar:Hide()
-    end
-  end)
-
-  local scrollChild = CreateFrame("Frame")
-  scrollFrame:SetScrollChild(scrollChild)
-
-  -- Enable mouse wheel on scroll child as well
-  scrollChild:EnableMouseWheel(true)
-  scrollChild:SetScript("OnMouseWheel", function(self, delta)
-    if scrollBar then
-      if delta > 0 then
-        -- Scroll up (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        scrollBar:SetValue(math.max(currentValue - 38, 0))
-      else
-        -- Scroll down (one row per wheel click)
-        local currentValue = scrollBar:GetValue()
-        local maxValue = scrollBar:GetRange()
-        scrollBar:SetValue(math.min(currentValue + 38, maxValue))
-      end
-    end
-  end)
-
-  -- Set content width to match the scrollframe width
-  scrollChild:SetWidth(scrollFrame:GetWidth())
-  scrollChild:SetHeight(500) -- Extra height for content
-
-  -- Store references in GUI namespace
-  DM.GUI.scrollFrame = scrollFrame
-  DM.GUI.scrollChild = scrollChild
-  DM.GUI.spellFrames = {}
-
-  -- Save layout constants for spell row creation
-  DM.GUI.layout = {
-    padding = PADDING,
-    columns = COLUMN_POSITIONS,
-    widths = COLUMN_WIDTHS
-  }
-
-  -- Create header row with professional styling
-  local headerFrame = CreateFrame("Frame", nil, scrollChild)
-  -- Set width to match the content width with adjusted inner padding
-  headerFrame:SetSize(scrollChild:GetWidth(), 30)
-  headerFrame:SetPoint("TOPLEFT", 0, -PADDING.INNER)
-
-  -- Header background
-  local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-  headerBg:SetAllPoints()
-  -- Replace with sleeker, more transparent dark background
-  headerBg:SetColorTexture(0.1, 0.1, 0.12, 0.9)
-
-  -- Kolon başlıkları
-  local headerTexts = {}
-
-  -- Helper function for creating column headers
-  local function CreateHeaderText(name, position, width)
-    local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    headerText:SetPoint("LEFT", position, 0)
-    headerText:SetWidth(width)
-    headerText:SetJustifyH("LEFT")
-    headerText:SetText(name)
-    headerText:SetTextColor(1, 0.82, 0)
-    return headerText
-  end
-
-  -- Create column headers with precise positioning
-  -- Center the "On" header over the checkbox
-  headerTexts.ON = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  headerTexts.ON:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2), 0)
-  headerTexts.ON:SetText("On")
-  headerTexts.ON:SetTextColor(1, 0.82, 0)
-
-  -- Position Spell header where the spell icon starts
-  headerTexts.SPELL = CreateHeaderText("Spell", COLUMN_POSITIONS.ID, COLUMN_WIDTHS.ID + COLUMN_WIDTHS.NAME)
-
-  headerTexts.COLOR = CreateHeaderText("Color", COLUMN_POSITIONS.COLOR, COLUMN_WIDTHS.COLOR)
-
-  -- Order header should be centered over the two arrows
-  local orderText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  local orderX = COLUMN_POSITIONS.UP + (COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN) / 2
-  orderText:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
-  orderText:SetText("Order")
-  orderText:SetTextColor(1, 0.82, 0)
-  headerTexts.ORDER = orderText
-
-  -- Align Tracking header with the Remove button - centered
-  headerTexts.UNTRACK = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  headerTexts.UNTRACK:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.DEL + (COLUMN_WIDTHS.DEL / 2) + 3, 0)
-  headerTexts.UNTRACK:SetWidth(COLUMN_WIDTHS.DEL) -- Set exact width
-  headerTexts.UNTRACK:SetJustifyH("CENTER")       -- Center the text over the Remove buttons
-  headerTexts.UNTRACK:SetText("Tracking")
-  headerTexts.UNTRACK:SetTextColor(1, 0.82, 0)
-
-  -- Update header positions when size changes
-  local function UpdateHeaderPositions()
-    -- Use content width without scrollbar
-    local width = scrollChild:GetWidth()
-    local positions, widths = UpdateColumnPositions(width)
-
-    -- Center the "On" header over the checkbox position
-    headerTexts.ON:SetPoint("CENTER", headerFrame, "LEFT", positions.ON + (widths.ON / 2), 0)
-
-    -- Align Spell header with the spell icon
-    headerTexts.SPELL:SetPoint("LEFT", positions.ID, 0)
-    headerTexts.SPELL:SetWidth(widths.ID + widths.NAME)
-
-    headerTexts.COLOR:SetPoint("LEFT", positions.COLOR, 0)
-    headerTexts.COLOR:SetWidth(widths.COLOR)
-
-    -- Center Order header over the two arrows
-    local orderX = positions.UP + (widths.UP + widths.DOWN) / 2
-    headerTexts.ORDER:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
-
-    -- Align Tracking header with the Remove button - centered
-    headerTexts.UNTRACK:SetPoint("CENTER", headerFrame, "LEFT", positions.DEL + (widths.DEL / 2) + 3, 0)
-    headerTexts.UNTRACK:SetWidth(widths.DEL)
-    headerTexts.UNTRACK:SetJustifyH("CENTER") -- Ensure justification is maintained
-
-    -- Update frame sizes
-    headerFrame:SetWidth(width)
-
-    -- Save and transmit to rows
-    DM.GUI.layout.columns = positions
-    DM.GUI.layout.widths = widths
-
-    -- Update existing rows
-    for _, frame in ipairs(DM.GUI.spellFrames) do
-      if frame.UpdatePositions then
-        frame.UpdatePositions(positions, widths)
-      end
-    end
-  end
-
-  headerFrame.UpdatePositions = UpdateHeaderPositions
-
-  -- Button container frame - move up for more space above buttons
-  local buttonContainer = CreateFrame("Frame", nil, parent)
-  buttonContainer:SetSize(320, 40)
-  buttonContainer:SetPoint("BOTTOM", 0, 15) -- Changed from 5 to 15 to move buttons up
-
-  -- Find My Dots button with improved styling
-  local findDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-  findDotsButton:SetSize(150, 30)
-  findDotsButton:SetPoint("LEFT", 0, 0)
-  findDotsButton:SetText("Find My Dots")
-
-  -- Enhance button visual appearance
-  findDotsButton:SetNormalFontObject("GameFontNormal")
-  findDotsButton:SetHighlightFontObject("GameFontHighlight")
-
-  -- Add tooltip
-  findDotsButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Find My Dots", 1, 1, 1)
-    GameTooltip:AddLine("Cast spells on enemies to automatically detect your dots.", 1, 0.82, 0, true)
-    GameTooltip:Show()
-  end)
-
-  findDotsButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
-
-  findDotsButton:SetScript("OnClick", function()
-    -- Check if already in recording mode
-    if DM.recordingDots then
-      DM:StopFindMyDots()
-      return
-    end
-
-    -- Start dot recording mode
+  -- Find My Dots button
+  local findMyDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  findMyDotsButton:SetSize(150, 30)
+  findMyDotsButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
+  findMyDotsButton:SetText("Find My Dots")
+  findMyDotsButton:SetScript("OnClick", function()
     DM:StartFindMyDots()
   end)
 
-  -- Add From Database button with improved styling
-  local addButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-  addButton:SetSize(150, 30)
-  addButton:SetPoint("RIGHT", 0, 0)
-  addButton:SetText("Add From Database")
+  -- Untrack All button
+  local untrackAllButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  untrackAllButton:SetSize(150, 30)
+  untrackAllButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
+  untrackAllButton:SetText("Untrack All")
 
   -- Add tooltip
-  addButton:SetScript("OnEnter", function(self)
+  untrackAllButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Add From Database", 1, 1, 1)
-    GameTooltip:AddLine("Add spells from your detected spell database.", 1, 0.82, 0, true)
-    GameTooltip:AddLine("Use Find My Dots first to detect your spells.", 0.7, 0.7, 0.7, true)
+    GameTooltip:SetText("Untrack All Spells", 1, 1, 1)
+    GameTooltip:AddLine("Remove all spells from the tracked list", 1, 0.3, 0.3, true)
     GameTooltip:Show()
   end)
 
-  addButton:SetScript("OnLeave", function(self)
+  untrackAllButton:SetScript("OnLeave", function(self)
     GameTooltip:Hide()
   end)
 
-  -- Enhance button visual appearance
-  addButton:SetNormalFontObject("GameFontNormal")
-  addButton:SetHighlightFontObject("GameFontHighlight")
+  untrackAllButton:SetScript("OnClick", function()
+    -- Confirmation prompt
+    StaticPopupDialogs["DOTMASTER_UNTRACK_ALL_CONFIRM"] = {
+      text = "Are you sure you want to untrack all spells?\nThis will remove all spells from tracking.",
+      button1 = "Yes, Untrack All",
+      button2 = "Cancel",
+      OnAccept = function()
+        -- Set tracked=0 for all spells
+        for spellID, config in pairs(DM.dmspellsdb) do
+          config.tracked = 0
+        end
 
-  addButton:SetScript("OnClick", function()
-    local count = DM:TableCount(DM.spellConfig)
+        DM:SaveDMSpellsDB()
 
-    if count >= DM.MAX_CUSTOM_SPELLS then
-      DM:PrintMessage("Maximum spells reached (" .. DM.MAX_CUSTOM_SPELLS .. ").")
-      return
+        -- Refresh the tracked spells tab
+        GUI:RefreshTrackedSpellTabList()
+
+        DM:DatabaseDebug("All spells have been untracked.")
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("DOTMASTER_UNTRACK_ALL_CONFIRM")
+  end)
+
+  -- Main scroll frame for the spell list (properly constrained within the parent)
+  local scrollFrame = CreateFrame("ScrollFrame", "DotMasterTrackedScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
+  -- Anchor scroll frame to the top of the parent frame now
+  scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 15, -15)
+  scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted right offset: -23 -> -5
+
+  -- Forcefully hide the default scroll bar elements
+  if scrollFrame.ScrollBar then
+    scrollFrame.ScrollBar:Hide()
+    scrollFrame.ScrollBar:SetAlpha(0)
+    if scrollFrame.ScrollBar.ScrollUpButton then
+      scrollFrame.ScrollBar.ScrollUpButton:Hide()
+      scrollFrame.ScrollBar.ScrollUpButton:SetAlpha(0)
     end
+    if scrollFrame.ScrollBar.ScrollDownButton then
+      scrollFrame.ScrollBar.ScrollDownButton:Hide()
+      scrollFrame.ScrollBar.ScrollDownButton:SetAlpha(0)
+    end
+  end
 
-    -- Check if we have spells in database
-    if not DM.spellDatabase or DM:TableCount(DM.spellDatabase) == 0 then
-      -- No spells detected yet, show prompt
-      DM:ShowFindMyDotsPrompt()
-    else
-      -- Show spell selection dialog
-      DM:ShowSpellSelectionDialog()
+  -- Enable mouse wheel scrolling
+  scrollFrame:EnableMouseWheel(true)
+  scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+    local scrollStep = 25 -- Use entryHeight as a base scroll step
+    local currentScroll = self:GetVerticalScroll()
+    local maxScroll = self:GetVerticalScrollRange()
+    local newScroll = currentScroll - (delta * scrollStep) -- delta > 0 for wheel up, < 0 for down
+
+    -- Clamp the new scroll value
+    newScroll = math.max(0, math.min(newScroll, maxScroll))
+
+    if newScroll ~= currentScroll then
+      self:SetVerticalScroll(newScroll)
     end
   end)
 
-  -- Make sure background maintains position on resize
-  parent:HookScript("OnSizeChanged", function()
-    -- Re-anchor background with adjusted padding
-    spellListBg:ClearAllPoints()
-    spellListBg:SetPoint("TOPLEFT", parent, "TOPLEFT", backgroundPaddingLeft, -80)
-    spellListBg:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -backgroundPaddingRight, 80)
+  -- Create the scroll child (content container)
+  local scrollChild = CreateFrame("Frame", "DotMasterTrackedScrollChild")
+  scrollChild:SetWidth(scrollFrame:GetWidth() - 10) -- Adjusted width for no scrollbar, slight padding
+  scrollChild:SetHeight(200)                        -- Give it an initial height
+  scrollFrame:SetScrollChild(scrollChild)
 
-    -- Update scrollframe and content
-    scrollChild:SetWidth(scrollFrame:GetWidth())
-    UpdateHeaderPositions()
+  -- Anchor scrollChild TOPLEFT to scrollFrame TOPLEFT
+  scrollChild:ClearAllPoints()
+  scrollChild:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
+  -- Width is set below based on scrollFrame width
+
+  -- Simplified handling for fixed-size window
+  parentFrame:HookScript("OnSizeChanged", function(self, width, height)
+    -- Update container sizes with fixed width
+    buttonContainer:SetWidth(width - 20)
+    scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted right offset
+
+    -- Update scrollChild width based on scrollFrame's potentially changed width
+    scrollChild:SetWidth(scrollFrame:GetWidth() - 10)
+
+    -- Force layout update
+    GUI:UpdateTrackedSpellsLayout()
   end)
-
-  -- Handle scrollChild resize events
-  scrollChild:HookScript("OnSizeChanged", function()
-    UpdateHeaderPositions()
-  end)
-end
-
--- Create a header row for a class
-function DM:CreateClassHeaderRow(className, yOffset)
-  -- Ensure we have a valid class name
-  if not className then className = "UNKNOWN" end
-
-  DM:DebugMsg("Creating class header for class: " .. tostring(className) .. " at offset " .. tostring(yOffset))
-
-  -- Check if this is the current player's class
-  local playerClass = select(1, DM:GetPlayerClassAndSpec()) or "UNKNOWN"
-  local isCurrentClass = (className == playerClass)
-
-  -- Get class color or default to gray if not found
-  local classColor = DM.classColors[className] or DM.classColors["UNKNOWN"]
-
-  -- Create the header frame
-  local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
-  -- Set exact width to match the background/container
-  local parentWidth = DM.GUI.scrollChild:GetWidth()
-  headerFrame:SetSize(parentWidth, 38) -- Match the height of spell rows (38px)
-  -- Consistent spacing - no extra padding
-  headerFrame:SetPoint("TOPLEFT", 0, -yOffset)
-
-  -- Header background with subtle class color tint
-  local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-  headerBg:SetAllPoints()
-  -- Dark background with a subtle class color tint (10% class color)
-  headerBg:SetColorTexture(
-    0.1 + (classColor.r * 0.1),
-    0.1 + (classColor.g * 0.1),
-    0.12 + (classColor.b * 0.1),
-    0.9
-  )
-
-  -- Add bottom border
-  local headerBorder = headerFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
-  headerBorder:SetPoint("BOTTOMLEFT", 0, 0)
-  headerBorder:SetPoint("BOTTOMRIGHT", 0, 0)
-  headerBorder:SetColorTexture(0.2, 0.2, 0.22, 0.9)
-  headerBorder:SetHeight(1)
-
-  -- Add highlight effect on hover (just like in the database tab)
-  local highlight = headerFrame:CreateTexture(nil, "HIGHLIGHT")
-  highlight:SetAllPoints()
-  highlight:SetColorTexture(0.3, 0.3, 0.3, 0.3)
-  highlight:SetBlendMode("ADD")
-
-  -- Make the header clickable to trigger the collapse/expand
-  headerFrame:EnableMouse(true)
-
-  -- Get localized class name
-  local displayName = className
-
-  -- Map of class names to class IDs
-  local classNameToID = {
-    ["WARRIOR"] = 1,
-    ["PALADIN"] = 2,
-    ["HUNTER"] = 3,
-    ["ROGUE"] = 4,
-    ["PRIEST"] = 5,
-    ["DEATHKNIGHT"] = 6,
-    ["SHAMAN"] = 7,
-    ["MAGE"] = 8,
-    ["WARLOCK"] = 9,
-    ["MONK"] = 10,
-    ["DRUID"] = 11,
-    ["DEMONHUNTER"] = 12,
-    ["EVOKER"] = 13
-  }
-
-  -- Get class ID from name and use GetClassInfo if possible
-  local classID = classNameToID[className]
-
-  if classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
-    DM:DebugMsg("Attempting to get class info for ID: " .. tostring(classID))
-    local classInfo = C_CreatureInfo.GetClassInfo(classID)
-    if classInfo and classInfo.className then
-      displayName = classInfo.className
-      DM:DebugMsg("Got localized class name: " .. displayName)
-    else
-      DM:DebugMsg("Failed to get class info for ID: " .. tostring(classID))
-    end
-  else
-    -- Fallback formatting if GetClassInfo isn't available or class not recognized
-    if className ~= "UNKNOWN" then
-      displayName = className:sub(1, 1) .. className:sub(2):lower()
-      DM:DebugMsg("Using fallback class name formatting: " .. displayName)
-    end
-  end
-
-  -- Set the initial collapsed state - player class is never collapsed
-  if not DM.GUI.classCollapseState then DM.GUI.classCollapseState = {} end
-
-  -- Determine collapsed state - always showing player class
-  if isCurrentClass then
-    DM.GUI.classCollapseState[className] = false
-  elseif DM.GUI.classCollapseState[className] == nil then
-    DM.GUI.classCollapseState[className] = true -- Default collapsed for non-player classes
-  end
-
-  local collapsed = DM.GUI.classCollapseState[className]
-  DM:DebugMsg("Initial collapse state for " .. className .. ": " .. (collapsed and "collapsed" or "expanded"))
-
-  -- Toggle button for collapse/expand - align with checkboxes
-  local toggleButton = CreateFrame("Button", nil, headerFrame)
-  toggleButton:SetSize(16, 16)
-  -- Center the button in the same position as the checkbox column
-  local COLUMN_POSITIONS = DM.GUI.layout.columns
-  local COLUMN_WIDTHS = DM.GUI.layout.widths
-  toggleButton:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2), 0)
-
-  -- Set appropriate texture
-  local toggleTexture = toggleButton:CreateTexture(nil, "ARTWORK")
-  toggleTexture:SetAllPoints()
-  toggleTexture:SetTexture(collapsed and "Interface\\Buttons\\UI-PlusButton-Up" or
-    "Interface\\Buttons\\UI-MinusButton-Up")
-
-  -- For non-current classes, desaturate the button
-  if not isCurrentClass then
-    toggleTexture:SetDesaturated(true)
-    toggleButton:SetEnabled(false)
-  end
-
-  toggleButton.texture = toggleTexture
-
-  -- Class name text - align with spell icon position
-  local nameText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  nameText:SetPoint("LEFT", COLUMN_POSITIONS.ID, 0) -- Align with the spell icon position
-  nameText:SetText(displayName)
-
-  -- Always use the class color for text, but adjust brightness
-  if isCurrentClass then
-    nameText:SetTextColor(classColor.r, classColor.g, classColor.b)
-  else
-    nameText:SetTextColor(classColor.r * 0.7, classColor.g * 0.7, classColor.b * 0.7)
-  end
-
-  -- Spell count text - centered exactly over the Remove button
-  local countText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  countText:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.DEL + (COLUMN_WIDTHS.DEL / 2) + 3, 0)
-  countText:SetWidth(COLUMN_WIDTHS.DEL)
-  countText:SetJustifyH("CENTER")    -- Center the text over the Remove button
-  countText:SetText("")
-  countText:SetTextColor(1, 0.82, 0) -- Match the gold color of column headers
-  headerFrame.countText = countText
-
-  -- Toggle function to be used by both the button and the header click
-  local function ToggleCollapseState()
-    if isCurrentClass then
-      -- Get current collapse state
-      local currentState = DM.GUI.classCollapseState[className]
-      DM:DebugMsg("Toggle for class " .. className .. " - Current state: " ..
-        (currentState and "collapsed" or "expanded"))
-
-      -- Toggle the state - true means collapsed
-      DM.GUI.classCollapseState[className] = not currentState
-
-      -- Update button texture immediately
-      toggleTexture:SetTexture(DM.GUI.classCollapseState[className] and
-        "Interface\\Buttons\\UI-PlusButton-Up" or
-        "Interface\\Buttons\\UI-MinusButton-Up")
-
-      -- Save the settings immediately
-      DM:SaveSettings()
-
-      -- Call simplified refresh with just the toggle state (no full rebuild)
-      DM.GUI:ToggleClassSpells(className, DM.GUI.classCollapseState[className])
-    end
-  end
-
-  -- Set click handlers for both the button and the header
-  toggleButton:SetScript("OnClick", ToggleCollapseState)
-
-  -- Make the entire header clickable to toggle collapse state
-  -- Check if SetScript is supported
-  if headerFrame.SetScript then
-    -- Create a click handler for the header
-    headerFrame:SetScript("OnMouseDown", function(self, button)
-      if button == "LeftButton" then
-        ToggleCollapseState()
-      end
-    end)
-  end
-
-  -- Highlight on hover for current class only
-  if isCurrentClass then
-    toggleButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-  end
 
   -- Store references
-  headerFrame.toggleButton = toggleButton
-  headerFrame.className = className
-  headerFrame.isCurrentClass = isCurrentClass
+  GUI.trackedScrollFrame = scrollFrame
+  GUI.trackedScrollChild = scrollChild
+  GUI.trackedClassFrames = {} -- To hold references for expand/collapse
 
-  -- Return the header and the new offset - use exact consistent spacing (38px) to match spell rows
-  return headerFrame, yOffset + 38
+  -- Initial population - use C_Timer to ensure UI is fully initialized
+  C_Timer.After(0.2, function()
+    GUI:RefreshTrackedSpellTabList()
+    DM:DatabaseDebug("Initial tracked spells list refresh completed")
+  end)
 end
 
--- Create a header row for a spec
-function DM:CreateSpecHeaderRow(specName, className, yOffset, indent)
-  -- Ensure we have valid names
-  if not specName then specName = "General" end
-  if not className then className = "UNKNOWN" end
+-- Helper to group tracked spells by Class -> ID
+function GUI:GetGroupedTrackedSpells()
+  local grouped = {}
 
-  DM:DebugMsg("Creating spec header for spec: " ..
-    tostring(specName) .. " in class: " .. tostring(className) .. " at offset " .. tostring(yOffset))
-
-  -- Get class color or default to gray if not found
-  local classColor = DM.classColors[className] or DM.classColors["UNKNOWN"]
-
-  -- Create the header frame
-  local headerFrame = CreateFrame("Frame", nil, DM.GUI.scrollChild)
-  -- Make the header slightly smaller than class headers
-  headerFrame:SetSize(DM.GUI.scrollChild:GetWidth() - (DM.GUI.layout.padding.INNER) - indent, 25)
-  headerFrame:SetPoint("TOPLEFT", DM.GUI.scrollChild, "TOPLEFT", indent, -yOffset)
-
-  -- Header background with lighter class color
-  local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-  headerBg:SetAllPoints()
-  -- Use class color with 15% opacity (lighter than class header)
-  headerBg:SetColorTexture(classColor.r, classColor.g, classColor.b, 0.15)
-
-  -- Add bottom border
-  local headerBorder = headerFrame:CreateTexture(nil, "BACKGROUND")
-  headerBorder:SetPoint("BOTTOMLEFT", 0, 0)
-  headerBorder:SetPoint("BOTTOMRIGHT", 0, 0)
-  headerBorder:SetColorTexture(classColor.r * 0.5, classColor.g * 0.5, classColor.b * 0.5, 0.5)
-  headerBorder:SetHeight(1)
-
-  -- Format spec name nicely
-  local displayName = specName
-  if specName == "General" then
-    displayName = "General Spells"
+  -- Use dmspellsdb but filter for tracked spells only
+  if not DM.dmspellsdb then
+    DM:DatabaseDebug("dmspellsdb is nil or empty")
+    return grouped
   end
 
-  DM:DebugMsg("Using display name for spec: " .. displayName)
+  local count = 0
+  for idStr, data in pairs(DM.dmspellsdb) do
+    -- Only include tracked spells (using tonumber for robustness)
+    if tonumber(data.tracked) == 1 then
+      -- Convert string ID to number if needed
+      local id = tonumber(idStr)
+      count = count + 1
 
-  -- Spec name text
-  local nameText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  nameText:SetPoint("LEFT", 10, 0) -- Indented from left
-  nameText:SetText(displayName)
-  -- Slightly darker than the bg but still clearly colored
-  nameText:SetTextColor(classColor.r * 0.9, classColor.g * 0.9, classColor.b * 0.9)
-
-  -- Spell count text (will be set later)
-  local countText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  countText:SetPoint("RIGHT", -10, 0) -- Indented from right
-  countText:SetText("")
-  headerFrame.countText = countText
-
-  -- Store references
-  headerFrame.specName = specName
-  headerFrame.className = className
-
-  -- Return the header and the new offset
-  return headerFrame, yOffset + 30
-end
-
--- New function to just toggle the visibility of spell rows for a class
--- This avoids the expensive full refresh process
-function DM.GUI:ToggleClassSpells(className, isCollapsed)
-  DM:DebugMsg("ToggleClassSpells for " .. className .. ": " .. (isCollapsed and "Hiding" or "Showing") .. " spells")
-
-  -- Find all spell rows for this class and toggle visibility
-  for _, frame in ipairs(DM.GUI.spellFrames) do
-    if frame.class == className then
-      if isCollapsed then
-        frame:Hide()
+      if not id then
+        DM:DatabaseDebug(string.format("WARNING: Invalid spell ID in dmspellsdb: %s", tostring(idStr)))
+        -- Skip this entry
       else
-        frame:Show()
+        local className = data.wowclass or "UNKNOWN"
+
+        if not grouped[className] then grouped[className] = {} end
+        grouped[className][id] = data
       end
     end
   end
+
+  DM:DatabaseDebug("GetGroupedTrackedSpells processed " .. count .. " tracked entries")
+  return grouped
 end
 
--- Function to refresh the tracked spells list with class/spec grouping
-function DM.GUI:RefreshTrackedSpellList()
-  -- Ensure the necessary GUI elements exist
-  if not DM.GUI.scrollChild or not DM.GUI.scrollFrame then
-    DM:DatabaseDebug("Required GUI elements (scrollChild or scrollFrame) not found in RefreshTrackedSpellList")
+-- Function to refresh the tracked spells list UI (no filter parameter needed)
+function GUI:RefreshTrackedSpellTabList()
+  DM:DatabaseDebug("Refreshing Tracked Spells Tab List.")
+
+  local scrollChild = GUI.trackedScrollChild
+  if not scrollChild then
+    DM:DatabaseDebug("ERROR: trackedScrollChild is nil in RefreshTrackedSpellTabList")
     return
   end
 
-  DM:DebugMsg("RefreshTrackedSpellList started")
-
-  -- Clear existing frames
-  if not DM.GUI.spellFrames then DM.GUI.spellFrames = {} end
-  for _, frame in ipairs(DM.GUI.spellFrames) do
-    frame:Hide()
-  end
-  DM.GUI.spellFrames = {}
-
-  -- Also clear class header frames if they exist
-  if DM.GUI.classHeaderFrames then
-    for _, frame in ipairs(DM.GUI.classHeaderFrames) do
-      frame:Hide()
+  -- Clear existing content completely
+  for _, child in pairs({ scrollChild:GetChildren() }) do
+    if child and child.Hide then
+      child:Hide()
+    end
+    if child and child.SetParent then
+      child:SetParent(nil)
     end
   end
-  DM.GUI.classHeaderFrames = {}
+  wipe(GUI.trackedClassFrames)
 
-  local yOffset = 40 -- Start after header
-  local index = 0
+  -- Set scroll child height to ensure visibility
+  scrollChild:SetHeight(400)
 
-  -- Ensure DM.dmspellsdb exists and has data
-  if not DM.dmspellsdb or not next(DM.dmspellsdb) then
-    DM:DatabaseDebug("dmspellsdb is empty or nil, nothing to display in Tracked Spells.")
-    DM.GUI.scrollChild:SetHeight(DM.GUI.scrollFrame:GetHeight()) -- Set height to default if empty
+  local groupedData = self:GetGroupedTrackedSpells()
+
+  -- Log tracked spells stats
+  local classCount, spellCount = 0, 0
+  for className, classData in pairs(groupedData) do
+    classCount = classCount + 1
+    for _ in pairs(classData) do
+      spellCount = spellCount + 1
+    end
+  end
+  DM:DatabaseDebug(string.format("Tracked spells structure: %d classes, %d spells", classCount, spellCount))
+
+  if spellCount == 0 then
+    -- Create a "no spells found" message
+    local noSpellsText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    noSpellsText:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
+    noSpellsText:SetText("No tracked spells found. Use the Database tab to track spells.")
+    noSpellsText:SetTextColor(1, 0.82, 0)
+    scrollChild:SetHeight(200) -- Ensure there's space for the message
+    scrollChild:Show()
     return
   end
 
-  -- Initialize collapse state table if needed
-  if not DM.GUI.classCollapseState then
-    DM:DebugMsg("Class collapse state table was nil - initializing empty table")
-    DM.GUI.classCollapseState = {}
-  end
+  local yOffset = 5
+  local entryHeight = 40
+  local headerHeight = 40
+  local spacing = 3
+  local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins (10px left, 10px right)
 
-  -- Group spells by class from dmspellsdb
-  local spellsByClass = {}
-  local playerClass, playerSpec = DM:GetPlayerClassAndSpec()
-  playerClass = playerClass or "UNKNOWN"
-  playerSpec = playerSpec or "General"
+  -- Get player class token
+  local _, playerClassToken = UnitClass("player")
 
-  DM:DebugMsg("Player class: " .. playerClass .. ", spec: " .. playerSpec)
-
-  -- Always create entry for player's class to ensure it appears first
-  spellsByClass[playerClass] = {}
-
-  local trackedCount = 0
-
-  -- Iterate through dmspellsdb and filter for tracked spells
-  for spellIDStr, config in pairs(DM.dmspellsdb) do
-    -- IMPORTANT: Filter for tracked spells
-    if config.tracked and tonumber(config.tracked) == 1 then
-      trackedCount = trackedCount + 1
-      local class = config.wowclass or "Unknown"
-
-      DM:DebugMsg("Found tracked spell: " ..
-        tostring(spellIDStr) .. " (" .. (config.spellname or "Unknown") .. ") - Class: " .. class)
-
-      -- Initialize tables if needed
-      spellsByClass[class] = spellsByClass[class] or {}
-
-      -- Add spell to appropriate group
-      table.insert(spellsByClass[class], {
-        id = spellIDStr, -- Keep ID as string from dmspellsdb
-        priority = config.priority or 999,
-        config = config  -- Pass the full config from dmspellsdb
-      })
-    end
-  end
-
-  DM:DebugMsg("Found " .. trackedCount .. " total tracked spells")
-
-  -- Sort all spell groups by priority
-  for class, spells in pairs(spellsByClass) do
-    table.sort(spells, function(a, b) return (a.priority or 999) < (b.priority or 999) end)
-  end
-
-  -- Create a sorted list of classes
+  -- Sort Classes (Player class first, then UNKNOWN last, then alphabetically)
   local sortedClasses = {}
-  for class, _ in pairs(spellsByClass) do
-    table.insert(sortedClasses, class)
-  end
-
-  DM:DebugMsg("Found " .. #sortedClasses .. " classes with tracked spells")
-
-  -- Always put player class first, then sort others alphabetically
+  for className in pairs(groupedData) do table.insert(sortedClasses, className) end
   table.sort(sortedClasses, function(a, b)
-    if a == playerClass then return true end
-    if b == playerClass then return false end
+    if a == playerClassToken and b ~= playerClassToken then return true end
+    if b == playerClassToken and a ~= playerClassToken then return false end
+    if a == "UNKNOWN" then return false end
+    if b == "UNKNOWN" then return true end
     return a < b
   end)
 
-  -- Current player class should always be expanded
-  DM.GUI.classCollapseState[playerClass] = false
-
-  -- Clear the scroll child before adding new content
-  DM.GUI.scrollChild:Hide()
-
-  -- Use local reference to PADDING to avoid nil reference error
-  local PADDING = DM.GUI.layout.padding
-
-  -- Function to create and add rows for a given list of spells
-  local function addSpellRows(spellList, class, isCurrentClass)
-    local totalSpells = #spellList
-
-    DM:DebugMsg("Adding " .. totalSpells .. " spell rows for class " .. class)
-
-    for i, spellData in ipairs(spellList) do
-      index = index + 1
-      -- Call the row creation function
-      DM:DebugMsg("Creating row " .. i .. " for spell ID " .. tostring(spellData.id))
-
-      local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
-      if row then
-        row.spellID = spellData.id            -- Store spellID (string) in the frame
-        row.class = class                     -- Store class name for filtering
-        table.insert(DM.GUI.spellFrames, row) -- Keep track of the created frame
-        yOffset = yOffset + 38                -- Consistent spacing exactly matching the row height
-
-        -- If this is not the current class, desaturate and disable all buttons
-        if not isCurrentClass then
-          -- Desaturate row elements
-          for _, texture in pairs(row.textures or {}) do
-            if texture.SetDesaturated then
-              texture:SetDesaturated(true)
-            end
-          end
-
-          -- Disable color swatch
-          if row.colorSwatch and row.colorSwatch.SetEnabled then
-            row.colorSwatch:SetEnabled(false)
-          end
-
-          -- Disable checkbox
-          if row.enableCheckbox and row.enableCheckbox.SetEnabled then
-            row.enableCheckbox:SetEnabled(false)
-          end
-
-          -- Disable buttons
-          if row.removeButton and row.removeButton.SetEnabled then
-            row.removeButton:SetEnabled(false)
-            row.removeButton:GetNormalTexture():SetDesaturated(true)
-            row.removeButton:GetPushedTexture():SetDesaturated(true)
-          end
-
-          -- Disable up/down buttons
-          if row.upButton then
-            row.upButton:Disable()
-            row.upButton:GetNormalTexture():SetDesaturated(true)
-            row.upButton:GetPushedTexture():SetDesaturated(true)
-          end
-
-          if row.downButton then
-            row.downButton:Disable()
-            row.downButton:GetNormalTexture():SetDesaturated(true)
-            row.downButton:GetPushedTexture():SetDesaturated(true)
-          end
-
-          -- Add desaturated overlay
-          if not row.desaturatedOverlay then
-            local overlay = row:CreateTexture(nil, "OVERLAY")
-            overlay:SetAllPoints()
-            overlay:SetColorTexture(0.3, 0.3, 0.3, 0.3)
-            overlay:SetBlendMode("MOD")
-            row.desaturatedOverlay = overlay
-          end
-        else
-          -- Disable up button for first spell in the group
-          if i == 1 and row.upButton then
-            row.upButton:Disable()
-            row.upButton:GetNormalTexture():SetDesaturated(true)
-            row.upButton:GetPushedTexture():SetDesaturated(true)
-          end
-
-          -- Disable down button for last spell in the group
-          if i == totalSpells and row.downButton then
-            row.downButton:Disable()
-            row.downButton:GetNormalTexture():SetDesaturated(true)
-            row.downButton:GetPushedTexture():SetDesaturated(true)
-          end
-        end
-
-        -- Initially hide if collapsed
-        if DM.GUI.classCollapseState[class] then
-          row:Hide()
-        end
-      else
-        DM:DebugMsg("Error: Failed to create row for spell " .. spellData.id)
-      end
-    end
-
-    return totalSpells
+  -- Create expand/collapse indicators
+  local function CreateIndicator(parent, expanded)
+    local indicator = parent:CreateTexture(nil, "OVERLAY")
+    indicator:SetSize(16, 16)
+    indicator:SetPoint("RIGHT", parent, "RIGHT", -10, 0)
+    indicator:SetTexture(expanded and "Interface\\Buttons\\UI-MinusButton-Up" or "Interface\\Buttons\\UI-PlusButton-Up")
+    return indicator
   end
 
-  -- Process each class and create headers/rows
-  for _, class in ipairs(sortedClasses) do
-    -- Count total spells for this class
-    local classSpellCount = #spellsByClass[class]
-    local isCurrentClass = (class == playerClass)
+  -- Highlight on mouseover
+  local function AddMouseoverHighlight(frame)
+    frame:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    local highlight = frame:GetHighlightTexture()
+    highlight:SetAlpha(0.7)
+  end
 
-    DM:DebugMsg("Processing class " .. class .. " with " .. classSpellCount .. " spells")
+  for _, className in ipairs(sortedClasses) do
+    local classData = groupedData[className]
+    local classFrame = CreateFrame("Button", nil, scrollChild)
+    classFrame:SetSize(effectiveWidth, headerHeight)
+    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset) -- Same overall position
+    classFrame.isExpanded = (className == playerClassToken)
+    classFrame.spellFrames = {}
+    classFrame:Show()
+    GUI.trackedClassFrames[className] = classFrame
 
-    -- Skip empty classes
-    if classSpellCount > 0 then
-      -- Get collapse state for this class
-      local isCollapsed = DM.GUI.classCollapseState[class]
+    AddMouseoverHighlight(classFrame)
 
-      -- If nil, default to expanded for player class, collapsed for others
-      if isCollapsed == nil then
-        isCollapsed = not isCurrentClass
-        DM.GUI.classCollapseState[class] = isCollapsed
+    -- Background remains the same
+    local bg = classFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.8)
+    if DM.classColors[className] then
+      local color = DM.classColors[className]
+      bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8)
+    end
+
+    -- Define layout constants (updated for swatch size)
+    local padding = 5 -- General padding between elements
+    local checkboxWidth = 20
+    local iconSize = 25
+    local colorSwatchSize = 24 -- Swatch size from gui_colorpicker.lua
+    local arrowSize = 20
+    local untrackWidth = 70
+    local untrackHeight = 25
+
+    -- 1. Collapse/Expand Indicator (Aligned with Checkbox)
+    local indicator = classFrame:CreateTexture(nil, "OVERLAY")
+    indicator:SetSize(16, 16)
+    -- Align left edge like the checkbox (padding from frame start)
+    indicator:SetPoint("LEFT", classFrame, "LEFT", padding, 0)
+    indicator:SetTexture(classFrame.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
+      "Interface\\Buttons\\UI-PlusButton-Up")
+    classFrame.indicator = indicator -- Store reference
+
+    -- 3. Tracked Spell Count (Aligned Right with Untrack Button)
+    local numSpells = 0
+    for _ in pairs(classData) do numSpells = numSpells + 1 end
+    local countText = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    -- Align right edge like the untrack button (padding from frame end)
+    countText:SetPoint("RIGHT", classFrame, "RIGHT", -padding, 0)
+    countText:SetText(string.format("(%d Spells)", numSpells))
+    countText:SetTextColor(0.8, 0.8, 0.8) -- Greyish color
+    countText:SetJustifyH("RIGHT")
+    classFrame.countText = countText      -- Store reference if needed later
+
+    -- 2. Class Name (Between Indicator and Count Text)
+    local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    -- Align left edge like the spell icon (padding + checkboxWidth + padding)
+    local classNameLeftOffset = padding + checkboxWidth + padding
+    text:SetPoint("LEFT", classFrame, "LEFT", classNameLeftOffset, 0)
+    -- Align right edge to the left of the count text
+    text:SetPoint("RIGHT", countText, "LEFT", -padding, 0)
+    local displayName = DM:GetClassDisplayName(className) or className
+    text:SetText(displayName)
+    text:SetJustifyH("LEFT")
+    if DM.classColors[className] then
+      local color = DM.classColors[className]
+      text:SetTextColor(color.r, color.g, color.b)
+    end
+
+    yOffset = yOffset + headerHeight + spacing
+
+    -- Priority reassignment logic (Fixing the debug message syntax error)
+    local spellsInClassByPriority = {}
+    for id, spellData in pairs(classData) do
+      if not spellData.priority then
+        DM.dmspellsdb[id].priority = 999
+        DM:DatabaseDebug(string.format("Assigned default priority 999 to spell %d", id))
       end
+      table.insert(spellsInClassByPriority, { id = id, priority = spellData.priority })
+    end
+    table.sort(spellsInClassByPriority, function(a, b)
+      if a.priority == b.priority then return a.id < b.id end
+      return a.priority < b.priority
+    end)
+    local prioritiesChanged = false
+    local uniquePriorityCounter = 1
+    for _, entry in ipairs(spellsInClassByPriority) do
+      -- Check if priority needs reassignment
+      if not DM.dmspellsdb[entry.id] or DM.dmspellsdb[entry.id].priority ~= uniquePriorityCounter then
+        -- Ensure spell entry exists before modification (safety check)
+        if DM.dmspellsdb[entry.id] then
+          DM.dmspellsdb[entry.id].priority = uniquePriorityCounter
+          DM:DatabaseDebug(string.format("Reassigned priority %d to spell %d for class %s", uniquePriorityCounter,
+            entry.id, className))
+          prioritiesChanged = true
+        else
+          DM:DatabaseDebug(string.format("WARNING: Tried to reassign priority for non-existent spell %d in dmspellsdb",
+            entry.id))
+        end
+      end
+      uniquePriorityCounter = uniquePriorityCounter + 1
+    end
+    if prioritiesChanged then DM:SaveDMSpellsDB() end
 
-      -- Add additional spacing above class headers (5px of extra space - reduced from 10px)
-      yOffset = yOffset + 5
+    -- Re-sort spells for display based on potentially updated priorities
+    local sortedSpells = {}
+    for id in pairs(classData) do table.insert(sortedSpells, id) end
+    table.sort(sortedSpells, function(a, b)
+      local spellA = classData[a]
+      local spellB = classData[b]
+      if spellA.priority and spellB.priority then
+        if spellA.priority == spellB.priority then return (spellA.spellname or "") < (spellB.spellname or "") end
+        return spellA.priority < spellB.priority
+      elseif spellA.priority then
+        return true
+      elseif spellB.priority then
+        return false
+      else
+        return (spellA.spellname or "") < (spellB.spellname or "")
+      end
+    end)
 
-      -- Create class header
-      local headerFrame, newOffset = DM:CreateClassHeaderRow(class, yOffset)
-      yOffset = newOffset
+    local visibleSpellCount = 0
 
-      -- Add additional spacing below class headers (5px of extra space)
-      yOffset = yOffset + 5
+    for spellIndex, spellID in ipairs(sortedSpells) do
+      local spellData = classData[spellID]
+      visibleSpellCount = visibleSpellCount + 1
+      local spellFrame = CreateFrame("Frame", nil, scrollChild)
+      spellFrame:SetSize(effectiveWidth, entryHeight)
+      spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+      if not classFrame.isExpanded then spellFrame:Hide() else spellFrame:Show() end
 
-      table.insert(DM.GUI.classHeaderFrames, headerFrame)
+      local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
+      rowBg:SetAllPoints()
+      if (visibleSpellCount % 2 == 0) then rowBg:SetColorTexture(0, 0, 0, 0.4) else rowBg:SetColorTexture(0, 0, 0, 0.2) end
 
-      -- Enable mouse wheel scrolling on the header frame
-      headerFrame:EnableMouseWheel(true)
-      headerFrame:SetScript("OnMouseWheel", function(self, delta)
-        -- Pass mouse wheel event to the parent scroll frame
-        if scrollFrame and scrollFrame:GetScript("OnMouseWheel") then
-          scrollFrame:GetScript("OnMouseWheel")(scrollFrame, delta)
+      table.insert(classFrame.spellFrames, spellFrame)
+
+      -- --- Layout using Anchors from Both Ends ---
+
+      -- Left-Anchored Elements
+      local currentLeftAnchor = spellFrame
+      local currentLeftOffset = padding
+
+      -- 1. Enabled Checkbox
+      local enabledCheckbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
+      enabledCheckbox:SetSize(checkboxWidth, checkboxWidth)
+      enabledCheckbox:SetPoint("LEFT", currentLeftAnchor, "LEFT", currentLeftOffset, 0)
+      if spellData.enabled == nil then DM.dmspellsdb[spellID].enabled = 1 end
+      enabledCheckbox:SetChecked(DM.dmspellsdb[spellID].enabled == 1)
+      enabledCheckbox:SetScript("OnClick", function(self)
+        DM.dmspellsdb[spellID].enabled = self:GetChecked() and 1 or 0
+        DM:SaveDMSpellsDB()
+        DM:DatabaseDebug(string.format("Spell %d enabled status set to %d", spellID, DM.dmspellsdb[spellID].enabled))
+      end)
+      currentLeftAnchor = enabledCheckbox
+      currentLeftOffset = padding
+
+      -- 2. Spell Icon
+      local icon = spellFrame:CreateTexture(nil, "ARTWORK")
+      icon:SetSize(iconSize, iconSize)
+      icon:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
+      local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
+      icon:SetTexture(iconPath)
+      icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+      currentLeftAnchor = icon
+      currentLeftOffset = padding + 3
+
+      -- Right-Anchored Elements (Reverse Order: Untrack -> Up -> Down -> Swatch)
+      local currentRightAnchor = spellFrame
+      local currentRightOffset = -padding
+
+      -- 7. Untrack Button
+      DM:DatabaseDebug(string.format("Before SetSize for UntrackButton (Spell %d): untrackWidth=%s, untrackHeight=%s",
+        spellID, tostring(untrackWidth), tostring(untrackHeight)))
+      local untrackButton = CreateFrame("Button", nil, spellFrame, "UIPanelButtonTemplate")
+      untrackButton:SetSize(untrackWidth, untrackHeight)
+      untrackButton:SetPoint("RIGHT", currentRightAnchor, "RIGHT", currentRightOffset, 0)
+      untrackButton:SetText("Untrack")
+      untrackButton:SetScript("OnClick", function()
+        DM.dmspellsdb[spellID].tracked = 0
+        DM:DatabaseDebug(string.format("Spell %d untracked", spellID))
+        DM:SaveDMSpellsDB()
+        GUI:RefreshTrackedSpellTabList()
+      end)
+      currentRightAnchor = untrackButton
+      currentRightOffset = -padding
+
+      -- 6. Up Arrow Button
+      local upArrow = CreateFrame("Button", nil, spellFrame)
+      upArrow:SetSize(arrowSize, arrowSize)
+      upArrow:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+      upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
+      upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
+      upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+      if spellIndex == 1 then
+        upArrow:Disable()
+        upArrow:SetAlpha(0.5)
+      else
+        upArrow:Enable()
+        upArrow:SetAlpha(1.0)
+      end
+      upArrow:SetScript("OnClick", function()
+        if spellIndex > 1 then
+          local prevSpellID = sortedSpells[spellIndex - 1]
+          local currentPriority = DM.dmspellsdb[spellID].priority
+          local prevPriority = DM.dmspellsdb[prevSpellID].priority
+          DM.dmspellsdb[spellID].priority = prevPriority
+          DM.dmspellsdb[prevSpellID].priority = currentPriority
+          DM:DatabaseDebug(string.format("Swapped priority for %d (now %d) and %d (now %d)", spellID, prevPriority,
+            prevSpellID, currentPriority))
+          DM:SaveDMSpellsDB()
+          GUI:RefreshTrackedSpellTabList()
         end
       end)
+      currentRightAnchor = upArrow
+      currentRightOffset = -padding
 
-      -- Set spell count on header
-      headerFrame.countText:SetText(classSpellCount .. " " .. (classSpellCount == 1 and "spell" or "spells"))
+      -- 5. Down Arrow Button
+      local downArrow = CreateFrame("Button", nil, spellFrame)
+      downArrow:SetSize(arrowSize, arrowSize)
+      downArrow:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+      downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+      downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+      downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+      if spellIndex == #sortedSpells then
+        downArrow:Disable()
+        downArrow:SetAlpha(0.5)
+      else
+        downArrow:Enable()
+        downArrow:SetAlpha(1.0)
+      end
+      downArrow:SetScript("OnClick", function()
+        if spellIndex < #sortedSpells then
+          local nextSpellID = sortedSpells[spellIndex + 1]
+          local currentPriority = DM.dmspellsdb[spellID].priority
+          local nextPriority = DM.dmspellsdb[nextSpellID].priority
+          DM.dmspellsdb[spellID].priority = nextPriority
+          DM.dmspellsdb[nextSpellID].priority = currentPriority
+          DM:DatabaseDebug(string.format("Swapped priority for %d (now %d) and %d (now %d)", spellID, nextPriority,
+            nextSpellID, currentPriority))
+          DM:SaveDMSpellsDB()
+          GUI:RefreshTrackedSpellTabList()
+        end
+      end)
+      currentRightAnchor = downArrow
+      currentRightOffset = -padding
 
-      -- Update toggle button texture to match current state
-      if headerFrame.toggleButton and headerFrame.toggleButton.texture then
-        headerFrame.toggleButton.texture:SetTexture(isCollapsed and
-          "Interface\\Buttons\\UI-PlusButton-Up" or
-          "Interface\\Buttons\\UI-MinusButton-Up")
+      -- 4. Color Swatch (Using DotMaster_CreateColorSwatch)
+      local initialColor
+      if spellData.color and type(spellData.color) == "table" and #spellData.color >= 3 then
+        local r_check = tonumber(spellData.color[1]) or 1
+        local g_check = tonumber(spellData.color[2]) or 1
+        local b_check = tonumber(spellData.color[3]) or 1
+        initialColor = { r_check, g_check, b_check }
+      else
+        DM:DatabaseDebug(string.format("Spell %d using default color (invalid/missing data: %s)", spellID,
+          tostring(spellData.color)))
+        initialColor = { 1, 1, 1 } -- Default to white
       end
 
-      -- If non-player class, ensure toggle button is disabled
-      if not isCurrentClass and headerFrame.toggleButton then
-        headerFrame.toggleButton:SetEnabled(false)
-        headerFrame.toggleButton.texture:SetDesaturated(true)
+      -- *** MODIFIED DEBUG: Use DM:DebugMsg with LAYOUT category ***
+      local r_pre, g_pre, b_pre = unpack(initialColor)
+      DM:DebugMsg("LAYOUT", string.format("Pre-Call Spell %d - initialColor: {%s,%s,%s} - unpacked: r=%s, g=%s, b=%s",
+        spellID,
+        tostring(initialColor[1]), tostring(initialColor[2]), tostring(initialColor[3]),
+        tostring(r_pre), tostring(g_pre), tostring(b_pre)))
+
+      local colorSwatch = DotMaster_CreateColorSwatch(spellFrame, r_pre, g_pre, b_pre,
+        function(newR, newG, newB) -- Callback function for the custom picker
+          if DM.dmspellsdb[spellID] then
+            DM.dmspellsdb[spellID].color = { newR, newG, newB }
+            DM:DatabaseDebug(string.format("Updated color for spell %d via custom picker", spellID))
+          end
+        end
+      )
+      -- We still need to position the swatch returned by the function
+      colorSwatch:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+      spellFrame.colorSwatch = colorSwatch -- Store reference if needed
+      currentRightAnchor = colorSwatch     -- Name anchors to this swatch now
+      currentRightOffset = -padding
+
+      -- 3. Spell Name & ID (Anchored between Icon and Color Swatch)
+      local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+      nameText:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
+      nameText:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+      nameText:SetHeight(entryHeight)
+      nameText:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
+      nameText:SetJustifyH("LEFT")
+      nameText:SetJustifyV("MIDDLE")
+
+      if classFrame.isExpanded then yOffset = yOffset + entryHeight + spacing end
+    end -- End Spell Loop
+
+    -- Class Header Click Handler
+    classFrame:SetScript("OnClick", function(self)
+      self.isExpanded = not self.isExpanded
+      self.indicator:SetTexture(self.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
+        "Interface\\Buttons\\UI-PlusButton-Up")
+      for _, frame in ipairs(self.spellFrames) do
+        if self.isExpanded then frame:Show() else frame:Hide() end
       end
+      GUI:UpdateTrackedSpellsLayout()
+    end)
+  end -- End Class Loop
 
-      -- Add spells (always create them but hide if collapsed)
-      addSpellRows(spellsByClass[class], class, isCurrentClass)
-    end
-  end
-
-  -- Show the scroll child again with new content
-  DM.GUI.scrollChild:Show()
-
-  -- Update scroll child height for scrolling - add a little more bottom padding
-  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 30, DM.GUI.scrollFrame:GetHeight()))
-
-  -- Debug log of tracked spells count
-  DM:DatabaseDebug(string.format("RefreshTrackedSpellList: displayed %d tracked spells", index))
-  DM:DebugMsg("RefreshTrackedSpellList complete with yOffset = " .. yOffset)
+  GUI:UpdateTrackedSpellsLayout()
+  scrollChild:Show()
 end
 
--- Create a row for spell configuration
-function DM:CreateSpellConfigRow(spellID, index, yOffset)
-  -- Ensure scroll child exists
-  if not DM.GUI.scrollChild then
-    DM:GUIDebug("scrollChild not found in CreateSpellConfigRow")
-    return nil
-  end
+-- Function to recalculate positions after expand/collapse
+function GUI:UpdateTrackedSpellsLayout()
+  local scrollChild = GUI.trackedScrollChild
+  if not scrollChild then return end
 
-  -- Make sure spellID is numeric
-  local numericID = tonumber(spellID)
-  if not numericID then
-    DM:DatabaseDebug(string.format("Invalid non-numeric spell ID: %s", tostring(spellID)))
-    return nil
-  end
+  local yOffset = 5
+  local entryHeight = 40                             -- Set to 40
+  local headerHeight = 40                            -- Set to 40
+  local spacing = 3
+  local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins
 
-  -- Fetch the config from dmspellsdb
-  local config = DM.dmspellsdb and DM.dmspellsdb[numericID]
-  if not config then
-    DM:DatabaseDebug(string.format("Config not found in dmspellsdb for spell ID: %d", numericID))
-    return nil
-  end
+  local _, playerClassToken = UnitClass("player")
 
-  -- Get layout info
-  local LAYOUT = DM.GUI.layout
-  if not LAYOUT then
-    DM:GUIDebug("Layout information not found in CreateSpellConfigRow")
-    return nil
-  end
+  local sortedClasses = {}
+  for className in pairs(GUI.trackedClassFrames or {}) do table.insert(sortedClasses, className) end
+  table.sort(sortedClasses, function(a, b)
+    if a == playerClassToken and b ~= playerClassToken then return true end
+    if b == playerClassToken and a ~= playerClassToken then return false end
+    if a == "UNKNOWN" then return false end
+    if b == "UNKNOWN" then return true end
+    return a < b
+  end)
 
-  local COLUMN_POSITIONS = LAYOUT.columns
-  local COLUMN_WIDTHS = LAYOUT.widths
-  local PADDING = LAYOUT.padding
+  for _, className in ipairs(sortedClasses) do
+    local classFrame = GUI.trackedClassFrames[className]
+    if classFrame then
+      classFrame:ClearAllPoints()
+      classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+      classFrame:SetWidth(effectiveWidth)
+      yOffset = yOffset + headerHeight + spacing
 
-  -- Basic frame creation
-  local scrollChild = DM.GUI.scrollChild
-  local spellRow = CreateFrame("Frame", "DotMasterSpellRow" .. index, scrollChild)
-
-  -- Calculate row width to match exactly the scrollChild width
-  local rowWidth = scrollChild:GetWidth()
-  local rowHeight = 38 -- Define row height to match class headers
-
-  -- Set the row size and position with consistent spacing
-  spellRow:SetSize(rowWidth, rowHeight)
-  spellRow:SetPoint("TOPLEFT", 0, -yOffset)
-  spellRow.spellID = numericID -- Store the spellID (numeric) reference
-
-  -- Create background for the row - full width
-  local bg = spellRow:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints(spellRow)
-  if index % 2 == 0 then
-    bg:SetColorTexture(0.15, 0.15, 0.15, 0.5) -- Darker
-  else
-    bg:SetColorTexture(0.2, 0.2, 0.2, 0.3)    -- Lighter
-  end
-
-  -- Highlight effect on hover
-  local highlight = spellRow:CreateTexture(nil, "HIGHLIGHT")
-  highlight:SetAllPoints(spellRow)
-  highlight:SetColorTexture(0.3, 0.3, 0.3, 0.3)
-  highlight:SetBlendMode("ADD")
-
-  -- Enable mouse interaction for highlight effect
-  spellRow:EnableMouse(true)
-
-  -- Enable mouse wheel scrolling on the spell row
-  spellRow:EnableMouseWheel(true)
-  spellRow:SetScript("OnMouseWheel", function(self, delta)
-    -- Pass mouse wheel event to the parent scroll frame
-    local scrollFrame = DM.GUI.scrollFrame
-    if scrollFrame and scrollFrame:GetScript("OnMouseWheel") then
-      scrollFrame:GetScript("OnMouseWheel")(scrollFrame, delta)
+      if classFrame.isExpanded then
+        for _, spellFrame in ipairs(classFrame.spellFrames or {}) do
+          spellFrame:ClearAllPoints()
+          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+          spellFrame:SetWidth(effectiveWidth)
+          spellFrame:Show()
+          yOffset = yOffset + entryHeight + spacing
+        end
+      end
     end
-  end)
-
-  -- ON: Enable/Disable Checkbox
-  local enableCheckbox = CreateFrame("CheckButton", nil, spellRow, "UICheckButtonTemplate")
-  enableCheckbox:SetSize(24, 24)
-  -- Center the checkbox in its column for better alignment
-  enableCheckbox:SetPoint("CENTER", spellRow, "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2), 0)
-  enableCheckbox:SetChecked(config.enabled == 1)
-
-  enableCheckbox:SetScript("OnClick", function(self)
-    local isChecked = self:GetChecked()
-    DM:DatabaseDebug(string.format("Updating enabled status for %d to %s", numericID, tostring(isChecked)))
-    DM.dmspellsdb[numericID].enabled = isChecked and 1 or 0
-
-    -- Save the changes
-    DM:SaveDMSpellsDB()
-  end)
-
-  -- SPELL: Combined spell icon, name and ID in a single section
-  local spellContainer = CreateFrame("Frame", nil, spellRow)
-  spellContainer:SetPoint("LEFT", COLUMN_POSITIONS.ID, 0)
-  spellContainer:SetSize(COLUMN_WIDTHS.ID + COLUMN_WIDTHS.NAME, rowHeight)
-
-  -- Spell Icon
-  local iconSize = 24
-  local icon = spellContainer:CreateTexture(nil, "ARTWORK")
-  icon:SetSize(iconSize, iconSize)
-  icon:SetPoint("LEFT", 0, 0)
-  icon:SetTexture(config.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark")
-  icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Crop out the border
-
-  -- Create a frame for the icon border
-  local iconBorder = CreateFrame("Frame", nil, spellContainer, "BackdropTemplate")
-  iconBorder:SetSize(iconSize + 2, iconSize + 2)
-  iconBorder:SetPoint("CENTER", icon, "CENTER", 0, 0)
-  iconBorder:SetBackdrop({
-    edgeFile = "Interface\\Buttons\\WHITE8x8",
-    edgeSize = 1,
-  })
-  iconBorder:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
-
-  -- Spell Name and ID Text
-  local nameText = spellContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-  -- Allow more space for name by using most of the available width
-  nameText:SetWidth(COLUMN_WIDTHS.NAME + COLUMN_WIDTHS.ID - iconSize - 20)
-  nameText:SetJustifyH("LEFT")
-  local spellName = config.spellname or "Unknown Name"
-  nameText:SetText(string.format("%s (%d)", spellName, numericID))
-
-  -- COLOR: Color Picker button using the colorpicker module
-  local r, g, b = 1, 0, 0 -- Default red
-  if config.color and config.color[1] and config.color[2] and config.color[3] then
-    r, g, b = config.color[1], config.color[2], config.color[3]
   end
 
-  -- Create color swatch using DotMaster_CreateColorSwatch
-  local colorSwatch = DotMaster_CreateColorSwatch(spellRow, r, g, b, function(newR, newG, newB)
-    -- Update color in database
-    DM.dmspellsdb[numericID].color = { newR, newG, newB }
-
-    -- Save changes immediately
-    DM:SaveDMSpellsDB()
-
-    DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
-      numericID, newR, newG, newB))
-  end)
-  colorSwatch:SetPoint("LEFT", COLUMN_POSITIONS.COLOR, 0)
-
-  -- ORDER: Up/Down buttons for priority
-  local orderContainer = CreateFrame("Frame", nil, spellRow)
-  orderContainer:SetSize(COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN, rowHeight)
-  orderContainer:SetPoint("LEFT", COLUMN_POSITIONS.UP, 0)
-
-  -- Calculate centered position for the buttons with reduced spacing
-  local buttonAreaWidth = COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN
-  local buttonsWidth = 24 + 2 + 24 -- button + spacing + button
-  local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
-
-  -- Down Button (left) - Standard WoW arrow
-  local downButton = CreateFrame("Button", nil, orderContainer)
-  downButton:SetSize(24, 24)
-  downButton:SetPoint("LEFT", leftPadding, 0)
-  downButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
-  downButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
-  downButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-
-  -- UP Button (right) - Standard WoW arrow - reduced spacing
-  local upButton = CreateFrame("Button", nil, orderContainer)
-  upButton:SetSize(24, 24)
-  upButton:SetPoint("LEFT", downButton, "RIGHT", 2, 0) -- Reduced from 5px to 2px
-  upButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
-  upButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
-  upButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-
-  -- Store reference to buttons in the row for later access
-  spellRow.upButton = upButton
-  spellRow.downButton = downButton
-  spellRow.index = index -- Store index for checking first/last position
-
-  -- Store references to UI elements for desaturation
-  spellRow.icon = icon
-  spellRow.colorSwatch = colorSwatch
-  spellRow.enableCheckbox = enableCheckbox
-  spellRow.textures = {
-    icon = icon,
-    bg = bg,
-    highlight = highlight
-  }
-
-  upButton:SetScript("OnClick", function()
-    local currentPriority = DM.dmspellsdb[numericID].priority or 999
-    local newPriority = math.max(1, currentPriority - 10)
-
-    if newPriority ~= currentPriority then
-      DM:DatabaseDebug(string.format("Changing priority for %d from %d to %d",
-        numericID, currentPriority, newPriority))
-
-      DM.dmspellsdb[numericID].priority = newPriority
-
-      -- Save and refresh
-      DM:SaveDMSpellsDB()
-      DM.GUI:RefreshTrackedSpellList()
-    end
-  end)
-
-  downButton:SetScript("OnClick", function()
-    local currentPriority = DM.dmspellsdb[numericID].priority or 999
-    local newPriority = currentPriority + 10
-
-    DM:DatabaseDebug(string.format("Changing priority for %d from %d to %d",
-      numericID, currentPriority, newPriority))
-
-    DM.dmspellsdb[numericID].priority = newPriority
-
-    -- Save and refresh
-    DM:SaveDMSpellsDB()
-    DM.GUI:RefreshTrackedSpellList()
-  end)
-
-  -- Create UNTRACK/Remove button with proper spacing and sizing
-  local untrackButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
-  untrackButton:SetSize(60, 24) -- Maintain size for consistency
-  untrackButton:SetPoint("CENTER", spellRow, "LEFT", COLUMN_POSITIONS.DEL + (COLUMN_WIDTHS.DEL / 2), 0)
-  untrackButton:SetText("Remove")
-
-  -- Make button red to stand out
-  untrackButton.Left:SetVertexColor(0.8, 0.2, 0.2)
-  untrackButton.Middle:SetVertexColor(0.8, 0.2, 0.2)
-  untrackButton.Right:SetVertexColor(0.8, 0.2, 0.2)
-
-  -- Store reference to untrack button
-  spellRow.removeButton = untrackButton
-
-  untrackButton:SetScript("OnClick", function()
-    -- Update tracked flag to 0 to "remove" from tracking
-    DM:DatabaseDebug(string.format("Removing %d from tracked spells", numericID))
-
-    if DM.dmspellsdb[numericID] then
-      DM.dmspellsdb[numericID].tracked = 0
-    end
-
-    -- Save and refresh
-    DM:SaveDMSpellsDB()
-    DM.GUI:RefreshTrackedSpellList()
-  end)
-
-  -- Update positions when resize happens
-  function spellRow.UpdatePositions(positions, widths)
-    if not positions or not widths then return end
-
-    -- Update row width to match content area
-    spellRow:SetWidth(scrollChild:GetWidth())
-
-    -- Update positioned elements
-    enableCheckbox:SetPoint("CENTER", spellRow, "LEFT", positions.ON + (widths.ON / 2), 0)
-
-    spellContainer:SetPoint("LEFT", positions.ID, 0)
-    spellContainer:SetSize(widths.ID + widths.NAME, rowHeight)
-
-    -- Update nameText width
-    nameText:SetWidth(widths.NAME + widths.ID - iconSize - 20)
-
-    colorSwatch:SetPoint("LEFT", positions.COLOR, 0)
-
-    orderContainer:SetPoint("LEFT", positions.UP, 0)
-    orderContainer:SetSize(widths.UP + widths.DOWN, rowHeight)
-
-    -- Update arrow buttons position
-    local buttonAreaWidth = widths.UP + widths.DOWN
-    local buttonsWidth = 24 + 2 + 24 -- button + spacing + button
-    local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
-    downButton:SetPoint("LEFT", leftPadding, 0)
-    upButton:SetPoint("LEFT", downButton, "RIGHT", 2, 0)
-
-    -- Position Remove button
-    untrackButton:SetPoint("CENTER", spellRow, "LEFT", positions.DEL + (widths.DEL / 2), 0)
-    -- With increased window width, we can use full button width
-    untrackButton:SetWidth(60)
-  end
-
-  return spellRow
+  scrollChild:SetHeight(math.max(yOffset + 10, 200))
 end
