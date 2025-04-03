@@ -9,45 +9,48 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Constants for professional layout
   local PADDING = {
-    OUTER = 5,  -- Outside frame padding
-    INNER = 8,  -- Inner content padding
-    COLUMN = 12 -- Space between columns
+    OUTER = 5,  -- Outside frame padding (base padding value X)
+    INNER = 10, -- Inner content padding
+    COLUMN = 15 -- Space between columns
   }
 
-  -- Percentage-based column widths
+  -- Percentage-based column widths - keeping row elements exactly as they are
   local COLUMN_WIDTH_PCT = {
-    ON = 0.08,    -- 8% Checkbox (increased from 6%)
-    ID = 0.12,    -- 12% Icon area
-    NAME = 0.46,  -- 46% Name area (decreased from 48%)
-    COLOR = 0.10, -- 10% Color
-    ORDER = 0.10, -- 10% Order buttons (decreased from 12%)
-    DEL = 0.14    -- 14% Tracking button (increased from 12%)
+    ON = 0.06,    -- 6% Checkbox
+    ID = 0.13,    -- 13% Icon area
+    NAME = 0.45,  -- 45% Name area (increased from 42% for more width)
+    COLOR = 0.09, -- 9% Color
+    ORDER = 0.11, -- 11% Order buttons
+    DEL = 0.14    -- 14% Tracking button
   }
 
-  -- Default positioning - increase to 550px
-  local frameWidth = 550
+  -- Add another 50px to the entire width (total 150px added from original)
+  local frameWidth = 700    -- Increased from 650 to 700
+  local scrollBarWidth = 20 -- Standard WoW scrollbar width
 
-  -- Create UpdateLayout function - frame resize olduğunda pozisyonları günceller
+  -- Create UpdateLayout function with adjusted right spacing
   local function UpdateColumnPositions(width)
-    -- Calculate scrollbar width and adjust width to avoid overlap
-    local scrollBarWidth = 20 -- Standard WoW scrollbar width
-
-    -- Use provided width but ensure scrollbar doesn't overlap content
-    -- Account for right padding
-    width = math.min(width, 510) - scrollBarWidth
+    -- Calculate available width for content - keeping proportions the same
+    local contentWidth = width - (PADDING.OUTER * 9) - scrollBarWidth
+    width = math.min(contentWidth, 600) -- Keep this the same to maintain element sizing
 
     local positions = {}
     local widths = {}
-    local xPos = PADDING.INNER
+
+    -- Calculate inner padding needed on each side for symmetry
+    local innerLeftPadding = 10   -- Increased left padding (was 5)
+    local innerRightPadding = 10  -- Equal right padding for symmetry
+
+    local xPos = innerLeftPadding -- Start content with symmetrical inner padding
 
     -- Calculate positions
     positions.ON = xPos
     widths.ON = width * COLUMN_WIDTH_PCT.ON
     xPos = xPos + widths.ON
 
-    positions.ID = xPos
+    positions.ID = xPos + 12
     widths.ID = width * COLUMN_WIDTH_PCT.ID
-    xPos = xPos + widths.ID
+    xPos = xPos + widths.ID + 12
 
     positions.NAME = xPos
     widths.NAME = width * COLUMN_WIDTH_PCT.NAME
@@ -55,7 +58,7 @@ function DM:CreateTrackedSpellsTab(parent)
 
     positions.COLOR = xPos
     widths.COLOR = width * COLUMN_WIDTH_PCT.COLOR
-    xPos = xPos + widths.COLOR
+    xPos = xPos + widths.COLOR + PADDING.COLUMN
 
     positions.UP = xPos
     widths.UP = (width * COLUMN_WIDTH_PCT.ORDER) / 2
@@ -63,7 +66,7 @@ function DM:CreateTrackedSpellsTab(parent)
 
     positions.DOWN = xPos
     widths.DOWN = (width * COLUMN_WIDTH_PCT.ORDER) / 2
-    xPos = xPos + widths.DOWN
+    xPos = xPos + widths.DOWN + PADDING.COLUMN
 
     positions.DEL = xPos
     widths.DEL = width * COLUMN_WIDTH_PCT.DEL
@@ -75,33 +78,65 @@ function DM:CreateTrackedSpellsTab(parent)
   -- Calculate initial positions
   local COLUMN_POSITIONS, COLUMN_WIDTHS = UpdateColumnPositions(frameWidth)
 
-  -- Spells Tab Header
+  -- Set the parent frame size - increase by another 50px width
+  if parent.SetSize then
+    local currentWidth, currentHeight = parent:GetSize()
+    parent:SetSize(currentWidth + 50, currentHeight)
+  end
+
+  -- Spells Tab Header - move down slightly within its space
   local spellTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  spellTitle:SetPoint("TOP", 0, -10)
+  spellTitle:SetPoint("TOP", 0, -25) -- Changed from -15 to -25 to move title down
   spellTitle:SetText("Configure Spell Tracking")
 
-  -- Instructions
+  -- Instructions - maintain same spacing from title
   local instructions = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  instructions:SetPoint("TOP", spellTitle, "BOTTOM", 0, -10)
+  instructions:SetPoint("TOP", spellTitle, "BOTTOM", 0, -5)
   instructions:SetText("Configure your spell tracking settings")
   instructions:SetTextColor(1, 0.82, 0)
 
-  -- Spell list background for better visuals
-  local spellListBg = parent:CreateTexture(nil, "BACKGROUND")
-  spellListBg:SetPoint("TOPLEFT", PADDING.OUTER, -70)
-  spellListBg:SetPoint("BOTTOMRIGHT", -PADDING.OUTER, 40)
-  spellListBg:SetColorTexture(0, 0, 0, 0.5) -- Darker background with better transparency
+  -- Fix the background extending issue once and for all
+  -- Make margins exactly the same on both sides
+  local backgroundPadding = 15                     -- Equal padding for both left and right sides
+  local backgroundPaddingLeft = backgroundPadding  -- Set left padding
+  local backgroundPaddingRight = backgroundPadding -- Set right padding (same as left)
 
-  -- Scrollframe for spell list - adjust width to leave room for scrollbar
+  -- Create the background texture first - it should extend fully with specified padding
+  local spellListBg = parent:CreateTexture(nil, "BACKGROUND")
+  -- Position relative to parent frame edges with adjusted padding
+  spellListBg:SetPoint("TOPLEFT", parent, "TOPLEFT", backgroundPaddingLeft, -80)
+  spellListBg:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -backgroundPaddingRight, 80)
+  spellListBg:SetColorTexture(0, 0, 0, 0.5)
+
+  -- Scrollframe positioned ON TOP of background with adjusted inset
   local scrollFrame = CreateFrame("ScrollFrame", "DotMasterSpellScrollFrame", parent, "UIPanelScrollFrameTemplate")
-  scrollFrame:SetPoint("TOPLEFT", PADDING.OUTER + PADDING.INNER, -80)
-  scrollFrame:SetPoint("BOTTOMRIGHT", -(PADDING.OUTER + 25), 45) -- 25px for scrollbar to avoid overlap
+  -- Position scrollframe with equal padding on both sides
+  scrollFrame:SetPoint("TOPLEFT", spellListBg, "TOPLEFT", 10, -10)
+  -- Ensure scrollbar fits completely inside the gray background with proper spacing
+  scrollFrame:SetPoint("BOTTOMRIGHT", spellListBg, "BOTTOMRIGHT", -2, 5)
+
+  -- Hide scrollbar until needed
+  local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+  if scrollBar then
+    scrollBar:Hide()
+    scrollFrame.ScrollBar = scrollBar
+
+    -- Hook the OnSizeChanged of the scroll child to show/hide scrollbar as needed
+    scrollFrame:HookScript("OnScrollRangeChanged", function(self, xrange, yrange)
+      if yrange > 0 then
+        scrollBar:Show()
+      else
+        scrollBar:Hide()
+      end
+    end)
+  end
 
   local scrollChild = CreateFrame("Frame")
   scrollFrame:SetScrollChild(scrollChild)
-  -- Set size accounting for scrollbar width
-  scrollChild:SetWidth(scrollFrame:GetWidth() - 20) -- Subtract scrollbar width
-  scrollChild:SetHeight(500)                        -- Extra height for content
+
+  -- Set content width to match the scrollframe width
+  scrollChild:SetWidth(scrollFrame:GetWidth())
+  scrollChild:SetHeight(500) -- Extra height for content
 
   -- Store references in GUI namespace
   DM.GUI.scrollFrame = scrollFrame
@@ -117,14 +152,14 @@ function DM:CreateTrackedSpellsTab(parent)
 
   -- Create header row with professional styling
   local headerFrame = CreateFrame("Frame", nil, scrollChild)
-  -- Set width to match the exact width of scrollChild (which already accounts for scrollbar)
+  -- Set width to match the content width with adjusted inner padding
   headerFrame:SetSize(scrollChild:GetWidth() - (PADDING.INNER * 2), 30)
   headerFrame:SetPoint("TOPLEFT", PADDING.INNER, -PADDING.INNER)
 
   -- Header background
   local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
   headerBg:SetAllPoints()
-  headerBg:SetColorTexture(0, 0, 0, 0.8) -- Darker header background with better transparency
+  headerBg:SetColorTexture(0, 0, 0, 0.8)
 
   -- Kolon başlıkları
   local headerTexts = {}
@@ -141,50 +176,58 @@ function DM:CreateTrackedSpellsTab(parent)
   end
 
   -- Create column headers with precise positioning
-  headerTexts.ON = CreateHeaderText("On", COLUMN_POSITIONS.ON, COLUMN_WIDTHS.ON)
+  -- Center the "On" header over the checkbox
+  headerTexts.ON = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  headerTexts.ON:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2), 0)
+  headerTexts.ON:SetText("On")
+  headerTexts.ON:SetTextColor(1, 0.82, 0)
+
+  -- Position Spell header where the spell icon starts
   headerTexts.SPELL = CreateHeaderText("Spell", COLUMN_POSITIONS.ID, COLUMN_WIDTHS.ID + COLUMN_WIDTHS.NAME)
+
   headerTexts.COLOR = CreateHeaderText("Color", COLUMN_POSITIONS.COLOR, COLUMN_WIDTHS.COLOR)
 
-  -- Order başlığını ortala
+  -- Order header should be centered over the two arrows
   local orderText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   local orderX = COLUMN_POSITIONS.UP + (COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN) / 2
-  -- Adjust the order text to be properly centered over the arrows
   orderText:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
   orderText:SetText("Order")
   orderText:SetTextColor(1, 0.82, 0)
   headerTexts.ORDER = orderText
 
-  -- Adjust the Tracking header alignment to better match the button position
-  headerTexts.UNTRACK = CreateHeaderText("Tracking", COLUMN_POSITIONS.DEL + 5, COLUMN_WIDTHS.DEL - 5)
+  -- Align Tracking header with the Remove button
+  headerTexts.UNTRACK = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  headerTexts.UNTRACK:SetPoint("CENTER", headerFrame, "LEFT", COLUMN_POSITIONS.DEL + 30, 0) -- Center over the Remove button
+  headerTexts.UNTRACK:SetText("Tracking")
+  headerTexts.UNTRACK:SetTextColor(1, 0.82, 0)
 
-  -- Update başlık pozisyonlarını güncelleme fonksiyonu
+  -- Update header positions when size changes
   local function UpdateHeaderPositions()
-    -- Use scrollChild width which already accounts for scrollbar
+    -- Use content width without scrollbar
     local width = scrollChild:GetWidth() - (PADDING.INNER * 2)
     local positions, widths = UpdateColumnPositions(width)
 
-    headerTexts.ON:SetPoint("LEFT", positions.ON, 0)
-    headerTexts.ON:SetWidth(widths.ON)
+    -- Center the "On" header over the checkbox position
+    headerTexts.ON:SetPoint("CENTER", headerFrame, "LEFT", positions.ON + (widths.ON / 2), 0)
 
+    -- Align Spell header with the spell icon
     headerTexts.SPELL:SetPoint("LEFT", positions.ID, 0)
     headerTexts.SPELL:SetWidth(widths.ID + widths.NAME)
 
     headerTexts.COLOR:SetPoint("LEFT", positions.COLOR, 0)
     headerTexts.COLOR:SetWidth(widths.COLOR)
 
-    -- Order başlığını ortala
+    -- Center Order header over the two arrows
     local orderX = positions.UP + (widths.UP + widths.DOWN) / 2
-    -- Update the order text to be properly centered over the arrows
     headerTexts.ORDER:SetPoint("CENTER", headerFrame, "LEFT", orderX, 0)
 
-    -- Update Tracking header position to be better aligned with the button
-    headerTexts.UNTRACK:SetPoint("LEFT", positions.DEL + 5, 0)
-    headerTexts.UNTRACK:SetWidth(widths.DEL - 5)
+    -- Align Tracking header with the Remove button (center it over the button)
+    headerTexts.UNTRACK:SetPoint("CENTER", headerFrame, "LEFT", positions.DEL + 30, 0)
 
     -- Update frame sizes
     headerFrame:SetWidth(width)
 
-    -- Kaydet ve satırlara iletin
+    -- Save and transmit to rows
     DM.GUI.layout.columns = positions
     DM.GUI.layout.widths = widths
 
@@ -198,10 +241,10 @@ function DM:CreateTrackedSpellsTab(parent)
 
   headerFrame.UpdatePositions = UpdateHeaderPositions
 
-  -- Button container frame
+  -- Button container frame - move up for more space above buttons
   local buttonContainer = CreateFrame("Frame", nil, parent)
   buttonContainer:SetSize(320, 40)
-  buttonContainer:SetPoint("BOTTOM", 0, 5)
+  buttonContainer:SetPoint("BOTTOM", 0, 15) -- Changed from 5 to 15 to move buttons up
 
   -- Find My Dots button with improved styling
   local findDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
@@ -277,15 +320,19 @@ function DM:CreateTrackedSpellsTab(parent)
     end
   end)
 
-  -- Parent frame'in boyutu değiştiğinde çağrılacak fonksiyon
-  -- Respond to any parent frame size changes (not needed for resize, but kept for compatibility)
+  -- Make sure background maintains position on resize
   parent:HookScript("OnSizeChanged", function()
-    -- Account for scrollbar width when setting the scrollChild width
-    scrollChild:SetWidth(scrollFrame:GetWidth() - 20) -- Subtract scrollbar width
+    -- Re-anchor background with adjusted padding
+    spellListBg:ClearAllPoints()
+    spellListBg:SetPoint("TOPLEFT", parent, "TOPLEFT", backgroundPaddingLeft, -80)
+    spellListBg:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -backgroundPaddingRight, 80)
+
+    -- Update scrollframe and content
+    scrollChild:SetWidth(scrollFrame:GetWidth())
     UpdateHeaderPositions()
   end)
 
-  -- Scrollchild'ın boyutu değiştiğinde çağrılacak fonksiyon
+  -- Handle scrollChild resize events
   scrollChild:HookScript("OnSizeChanged", function()
     UpdateHeaderPositions()
   end)
@@ -410,8 +457,8 @@ function DM.GUI:RefreshTrackedSpellList()
   -- Show the scroll child again with new content
   DM.GUI.scrollChild:Show()
 
-  -- Update scroll child height for scrolling
-  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 20, DM.GUI.scrollFrame:GetHeight()))
+  -- Update scroll child height for scrolling - add a little more bottom padding
+  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 30, DM.GUI.scrollFrame:GetHeight()))
 
   -- Debug log of tracked spells count
   DM:DatabaseDebug(string.format("RefreshTrackedSpellList: displayed %d tracked spells", index))
