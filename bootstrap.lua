@@ -17,7 +17,7 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "0.9.3"
+  version = "0.9.4"
 }
 
 -- Debug categories (minimal initial setup)
@@ -157,6 +157,34 @@ end
 -- CompleteInitialization will be called during PLAYER_ENTERING_WORLD
 function DM:CompleteInitialization()
   DM:DebugMsg("Completing full initialization")
+
+  -- Check for Plater dependency
+  if not _G["Plater"] then
+    DM:DebugMsg("ERROR: Plater is not installed or enabled")
+
+    -- Create an error popup
+    StaticPopupDialogs["DOTMASTER_MISSING_PLATER"] = {
+      text =
+      "|cFFFF0000DotMaster requires Plater Nameplates to function.|r\n\nPlease install and enable Plater from CurseForge, WoWInterface, or Wago.",
+      button1 = "OK",
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = false,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("DOTMASTER_MISSING_PLATER")
+
+    -- Print error message to chat
+    DM:PrintMessage("|cFFFF0000DotMaster requires Plater Nameplates to function.|r")
+    DM:PrintMessage("Please install Plater from CurseForge, WoWInterface, or Wago.")
+
+    -- Disable the addon - don't proceed with initialization
+    DM.enabled = false
+    DM.platerMissing = true
+
+    -- We're done here, don't initialize anything else
+    return
+  end
 
   -- Check if we have database data loaded
   if DM.dmspellsdb then

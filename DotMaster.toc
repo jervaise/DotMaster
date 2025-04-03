@@ -1,11 +1,12 @@
-## Interface: 100200
+## Interface: 110100
 ## Title: DotMaster
 ## Notes: Track your DoTs on enemy nameplates
 ## Author: Your Name
-## Version: 0.9.3
+## Version: 0.9.4
 ## SavedVariables: DotMasterDB
 ## X-Category: Combat
 ## X-License: All Rights Reserved
+## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga
 
 # Libraries
 Libs\LibStub\LibStub.lua

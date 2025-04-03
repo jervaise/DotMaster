@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.4 (2023-04-16)
+
+#### Added
+- Added addon icon to interface list panel
+- Improved dependency handling for Plater requirement
+- Added warning system when Plater is not installed
+
+#### Changed
+- Updated UI title to highlight Plater integration with colored text
+- More robust checkbox text handling for loading screens
+- More efficient class-based filtering for DoT detection
+
 ### Version 0.9.3 (2023-04-15)
 
 #### Added

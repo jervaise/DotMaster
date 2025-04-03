@@ -3,48 +3,136 @@
 
 local DM = DotMaster
 
+-- Helper function to restore checkbox text
+local function RestoreCheckboxTexts()
+  -- With our new implementation using direct font strings,
+  -- restoration should no longer be needed, but we'll keep
+  -- this as a fallback just in case
+  local checkboxes = {
+    "DotMasterEnableCheckbox",
+    "DotMasterMinimapCheckbox",
+    "DotMasterForceColorCheckbox"
+  }
+
+  for _, checkboxName in ipairs(checkboxes) do
+    local checkbox = _G[checkboxName]
+    if checkbox then
+      -- Check if our custom text element exists
+      if checkbox.labelText then
+        if checkboxName == "DotMasterEnableCheckbox" then
+          checkbox.labelText:SetText("Enable DotMaster")
+        elseif checkboxName == "DotMasterMinimapCheckbox" then
+          checkbox.labelText:SetText("Show Minimap Icon")
+        elseif checkboxName == "DotMasterForceColorCheckbox" then
+          checkbox.labelText:SetText("Force Threat Color")
+        end
+      end
+    end
+  end
+end
+
 -- Create General tab content
 function DM:CreateGeneralTab(parent)
   -- Create standardized info area
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     parent,
-    "DotMaster: Your DoT Tracking Companion",
+    "DotMaster: Your DoT Tracking |cFFFF6A00Plater|r Companion",
     "• Highlights enemy nameplates with your active DoTs\n• Tracks all your damage-over-time effects in one place\n• Works with any class and specialization"
   )
 
-  -- Create main content container frame (similar to searchContainer in Database tab)
-  local mainContent = CreateFrame("Frame", nil, parent)
-  mainContent:SetSize(430, 20)
-  mainContent:SetPoint("TOP", infoArea, "BOTTOM", 0, 0)
+  -- ===== NEW MODERN UI DESIGN BEGINS HERE =====
 
-  -- Add panda image below info area - positioned closer
-  local pandaImage = mainContent:CreateTexture(nil, "ARTWORK")
-  pandaImage:SetSize(128, 128)                            -- Reasonable size for the image
-  pandaImage:SetPoint("TOP", mainContent, "BOTTOM", 0, 0) -- Reduced the gap from -10 to 0
+  -- Create a styled content panel with border
+  local contentPanel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+  contentPanel:SetSize(410, 350)
+  contentPanel:SetPoint("TOP", infoArea, "BOTTOM", 0, -15)
+
+  -- Apply a subtle backdrop
+  contentPanel:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 16,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+  })
+  contentPanel:SetBackdropColor(0.1, 0.1, 0.1, 0.7)       -- Slightly transparent dark background
+  contentPanel:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8) -- Subtle border
+
+  -- Get the player's class color for accent elements
+  local playerClass = select(2, UnitClass("player"))
+  local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
+
+  -- Create an image and settings layout with flex positioning
+  local imagePanel = CreateFrame("Frame", nil, contentPanel)
+  imagePanel:SetSize(150, 150)
+  imagePanel:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 30, -25)
+
+  -- Add panda image with a subtle border
+  local imageBorder = CreateFrame("Frame", nil, imagePanel, "BackdropTemplate")
+  imageBorder:SetSize(128, 128)
+  imageBorder:SetPoint("CENTER", imagePanel, "CENTER")
+  imageBorder:SetBackdrop({
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 16,
+    insets = { left = 5, right = 5, top = 5, bottom = 5 },
+  })
+  imageBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.6)
+
+  local pandaImage = imageBorder:CreateTexture(nil, "ARTWORK")
+  pandaImage:SetSize(110, 110)
+  pandaImage:SetPoint("CENTER")
   pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
-  -- General Tab Background (now starts below the content container)
-  local generalBg = parent:CreateTexture(nil, "BACKGROUND")
-  generalBg:SetPoint("TOPLEFT", 5, -95) -- Adjusted to match other tabs
-  generalBg:SetPoint("BOTTOMRIGHT", -5, 5)
-  generalBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+  -- Create settings panel
+  local settingsPanel = CreateFrame("Frame", nil, contentPanel)
+  settingsPanel:SetSize(200, 150)
+  settingsPanel:SetPoint("TOPRIGHT", contentPanel, "TOPRIGHT", -30, -25)
 
-  -- Create a centralized settings container (moved down to account for panda image)
-  local settingsContainer = CreateFrame("Frame", nil, parent)
-  settingsContainer:SetSize(430, 200)
-  settingsContainer:SetPoint("TOP", pandaImage, "BOTTOM", 0, -10) -- Reduced margin from -20 to -10
+  -- Create a title for the settings section
+  local settingsTitle = settingsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  settingsTitle:SetPoint("TOPLEFT", settingsPanel, "TOPLEFT", 0, 10)
+  settingsTitle:SetText("Configuration")
+  settingsTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
 
-  -- Enable checkbox - left aligned with the image's left side
-  local checkBox = CreateFrame("CheckButton", "DotMasterEnableCheckbox", settingsContainer, "UICheckButtonTemplate")
-  checkBox:SetPoint("TOPLEFT", settingsContainer, "TOPLEFT", pandaImage:GetLeft() - settingsContainer:GetLeft(), 0)
-  checkBox:SetSize(26, 26)
+  -- Create a container for the checkboxes with better spacing
+  local checkboxContainer = CreateFrame("Frame", nil, settingsPanel)
+  checkboxContainer:SetSize(200, 140)
+  checkboxContainer:SetPoint("TOPLEFT", settingsTitle, "BOTTOMLEFT", 0, -15)
 
-  local checkBoxText = _G[checkBox:GetName() .. "Text"]
-  checkBoxText:SetText("Enable DotMaster")
-  checkBoxText:SetPoint("LEFT", checkBox, "RIGHT", 2, 0)
+  -- Helper function to create styled checkboxes
+  local function CreateStyledCheckbox(name, parent, anchorFrame, offsetY, label)
+    local checkbox = CreateFrame("CheckButton", name, parent, "UICheckButtonTemplate")
+    checkbox:SetSize(26, 26)
 
-  checkBox:SetChecked(DM.enabled)
-  checkBox:SetScript("OnClick", function(self)
+    if anchorFrame then
+      checkbox:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, offsetY)
+    else
+      checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+    end
+
+    -- Hide the default template text which disappears during zone transitions
+    local defaultText = _G[checkbox:GetName() .. "Text"]
+    if defaultText then
+      defaultText:Hide()
+    end
+
+    -- Create our own text element directly attached to the checkbox
+    -- This is more resilient during zone transitions
+    local text = checkbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    text:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+    text:SetText(label)
+    text:SetTextColor(0.9, 0.9, 0.9) -- Brighter text for better readability
+
+    -- Store the text element reference on the checkbox
+    checkbox.labelText = text
+
+    return checkbox
+  end
+
+  -- Create the main feature checkbox
+  local enableCheckbox = CreateStyledCheckbox("DotMasterEnableCheckbox",
+    checkboxContainer, nil, 0, "Enable DotMaster")
+  enableCheckbox:SetChecked(DM.enabled)
+  enableCheckbox:SetScript("OnClick", function(self)
     DM.enabled = self:GetChecked()
     DM:PrintMessage(DM.enabled and "Enabled" or "Disabled")
     if DM.enabled then
@@ -52,37 +140,19 @@ function DM:CreateGeneralTab(parent)
     else
       DM:ResetAllNameplates()
     end
-    DM:SaveSettings() -- Save settings immediately
+    DM:SaveSettings()
   end)
 
-  -- Minimap checkbox - directly below enable checkbox and left aligned with it
-  local minimapCheckBox = CreateFrame("CheckButton", "DotMasterMinimapCheckbox", settingsContainer,
-    "UICheckButtonTemplate")
-  minimapCheckBox:SetPoint("TOPLEFT", checkBox, "BOTTOMLEFT", 0, -10)
-  minimapCheckBox:SetSize(26, 26)
-
-  local minimapCheckBoxText = _G[minimapCheckBox:GetName() .. "Text"]
-  minimapCheckBoxText:SetText("Show Minimap Icon")
-  minimapCheckBoxText:SetPoint("LEFT", minimapCheckBox, "RIGHT", 2, 0)
-
-  -- Set initial state from saved variables - CORRECTLY
-  -- Checked = Show (hide = false), Unchecked = Hide (hide = true)
-  minimapCheckBox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
-
-  -- Handle clicks
-  minimapCheckBox:SetScript("OnClick", function(self)
+  -- Create minimap checkbox
+  local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
+    checkboxContainer, enableCheckbox, -18, "Show Minimap Icon")
+  minimapCheckbox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
+  minimapCheckbox:SetScript("OnClick", function(self)
     if not DotMasterDB or not DotMasterDB.minimap then return end
-
-    -- Set minimap visibility based on checkbox
-    -- Checked = Show (hide = false), Unchecked = Hide (hide = true)
     DotMasterDB.minimap.hide = not self:GetChecked()
-
-    -- Update the minimap icon with the new setting
     if DM.ToggleMinimapIcon then
-      -- Call our toggle function which reads the .hide value
       DM:ToggleMinimapIcon()
     else
-      -- Fallback direct manipulation if function not available
       local LibDBIcon = LibStub("LibDBIcon-1.0")
       if LibDBIcon then
         if DotMasterDB.minimap.hide then
@@ -94,39 +164,65 @@ function DM:CreateGeneralTab(parent)
     end
   end)
 
-  -- Force Threat Color checkbox - below minimap checkbox
-  local forceColorCheckBox = CreateFrame("CheckButton", "DotMasterForceColorCheckbox", settingsContainer,
-    "UICheckButtonTemplate")
-  forceColorCheckBox:SetPoint("TOPLEFT", minimapCheckBox, "BOTTOMLEFT", 0, -10)
-  forceColorCheckBox:SetSize(26, 26)
-
-  local forceColorCheckBoxText = _G[forceColorCheckBox:GetName() .. "Text"]
-  forceColorCheckBoxText:SetText("Force Threat Color")
-  forceColorCheckBoxText:SetPoint("LEFT", forceColorCheckBox, "RIGHT", 2, 0)
-
-  -- Create a description text below the checkbox
-  local forceColorDesc = settingsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  forceColorDesc:SetPoint("TOPLEFT", forceColorCheckBox, "BOTTOMLEFT", 0, -2)
-  forceColorDesc:SetWidth(300)
-  forceColorDesc:SetText(
-  "Highlight targets with threat colors when they have DoTs (aggro warning for DPS, lost aggro warning for tanks)")
-  forceColorDesc:SetJustifyH("LEFT")
-  forceColorDesc:SetTextColor(0.7, 0.7, 0.7)
-
-  -- Set initial state from saved variables
+  -- Create force threat color checkbox
+  local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
+    checkboxContainer, minimapCheckbox, -18, "Force Threat Color")
   if DM.settings == nil then DM.settings = {} end
   if DM.settings.forceColor == nil then DM.settings.forceColor = false end
-  forceColorCheckBox:SetChecked(DM.settings.forceColor)
-
-  -- Handle clicks
-  forceColorCheckBox:SetScript("OnClick", function(self)
+  forceColorCheckbox:SetChecked(DM.settings.forceColor)
+  forceColorCheckbox:SetScript("OnClick", function(self)
     DM.settings.forceColor = self:GetChecked()
     DM:PrintMessage("Force Threat Color " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
     if DM.enabled then
       DM:UpdateAllNameplates()
     end
-    DM:SaveSettings() -- Save settings immediately
+    DM:SaveSettings()
   end)
+
+  -- Create info section below the checkboxes
+  local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
+  infoSection:SetSize(350, 100)
+  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -190)
+  infoSection:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+  })
+  infoSection:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
+  infoSection:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+
+  -- Add a title for the info section
+  local infoTitle = infoSection:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  infoTitle:SetPoint("TOPLEFT", infoSection, "TOPLEFT", 12, -10)
+  infoTitle:SetText("Threat Color Information")
+  infoTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
+
+  -- Add explanatory text with better formatting
+  local infoText = infoSection:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  infoText:SetPoint("TOPLEFT", infoTitle, "BOTTOMLEFT", 0, -8)
+  infoText:SetPoint("BOTTOMRIGHT", infoSection, "BOTTOMRIGHT", -12, 10)
+  infoText:SetText(
+    "Highlight targets with threat colors when they have DoTs (aggro warning for DPS, lost aggro warning for tanks)")
+  infoText:SetJustifyH("LEFT")
+  infoText:SetJustifyV("TOP")
+  infoText:SetTextColor(0.8, 0.8, 0.8)
+  infoText:SetSpacing(2) -- Add some line spacing for readability
+
+  -- Register for PLAYER_ENTERING_WORLD to restore checkbox texts after loading screens
+  local restoreTextFrame = CreateFrame("Frame")
+  restoreTextFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+  restoreTextFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+  restoreTextFrame:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_ENTERING_WORLD" or event == "LOADING_SCREEN_DISABLED" then
+      C_Timer.After(0.1, function()
+        RestoreCheckboxTexts()
+      end)
+    end
+  end)
+
+  -- Store the function to allow manual restoration
+  DM.RestoreCheckboxTexts = RestoreCheckboxTexts
 
   -- Container for bottom buttons
   local bottomButtonContainer = CreateFrame("Frame", nil, parent)

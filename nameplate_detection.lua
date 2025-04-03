@@ -3,6 +3,12 @@
 
 local DM = DotMaster
 
+-- Function to get the player's current class
+local function GetPlayerClass()
+  local _, class = UnitClass("player")
+  return class
+end
+
 -- Checks for tracked debuffs on a unit
 function DM:CheckForTrackedDebuffs(unitToken)
   if not unitToken or not UnitExists(unitToken) then return nil end
@@ -12,13 +18,29 @@ function DM:CheckForTrackedDebuffs(unitToken)
   -- If no spell database is present, early return
   if not self.dmspellsdb or not next(self.dmspellsdb) then return nil end
 
+  -- Get current player class
+  local playerClass = GetPlayerClass()
+
   -- Check each spell config in priority order (if available)
   local sortedConfigs = {}
   for spellID, config in pairs(self.dmspellsdb) do
-    -- Check if spell is enabled (1 = enabled, 0 = disabled) and tracked (1 = tracked, 0 = not tracked)
-    if config.enabled == 1 and config.tracked == 1 then
+    -- Only include spells that are:
+    -- 1. Enabled (for nameplate coloring)
+    -- 2. Tracked (for display)
+    -- 3. Belong to the player's current class
+    if config.enabled == 1 and
+        config.tracked == 1 and
+        config.wowclass == playerClass then
       table.insert(sortedConfigs, { id = spellID, priority = config.priority or 999, config = config })
+      DM:NameplateDebug("Added spell to check list: %d (%s) for class %s",
+        spellID, config.spellname or "Unknown", playerClass)
     end
+  end
+
+  -- If no applicable spells found, return early
+  if #sortedConfigs == 0 then
+    DM:NameplateDebug("No matching spells found for player class: %s", playerClass)
+    return nil
   end
 
   -- Sort by priority (lower numbers = higher priority)
