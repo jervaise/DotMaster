@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changelog
 
+### Version 0.9.1 (2023-04-10)
+
+- **Bug Fixes:**
+  - Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
+  - Improved integration with Plater's color system for more reliable behavior
+  - Enhanced nameplate color restoration when DoTs expire
+  - Added additional debug logging for nameplate color changes
+
 ### Version 0.9.0 (2023-04-03)
 
 - **Major Enhancements:**

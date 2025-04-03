@@ -6,17 +6,17 @@ This document outlines the current development status of the DotMaster addon. It
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 0.9.0
+- **Current Version**: 0.9.1
 - **Status**: Active Development
-- **Last Updated**: April 3, 2023
+- **Last Updated**: April 10, 2023
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 0.9.0
+- **Current Version**: 0.9.1
 - **Branch Status**:
   - **main**: Contains the latest stable release (v0.8.0)
-  - **develop**: Active development branch (v0.9.0)
+  - **develop**: Active development branch (v0.9.1)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -33,6 +33,7 @@ This document outlines the current development status of the DotMaster addon. It
 | API Compatibility | ⚠️ NEEDS REVIEW | Critical API changes still need implementation |
 | Pre-Game Validation | ✅ MAINTAINED | Preserved dmcheck tool for validation |
 | Documentation | ✅ UPDATED | Consolidated documentation structure |
+| Plater Integration | ✅ FIXED | Fixed color restore functionality with Plater |
 
 ## Current Development Focus
 
@@ -61,6 +62,7 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Plater Integration**: Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
 - ✅ **Color Picker Functionality**: Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
 - ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks
 - ✅ **Debug System Improvements**: Added color picker debug category with dedicated debug function

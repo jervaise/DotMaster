@@ -13,10 +13,13 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
 
   -- Check if Plater is available and handle it specially
   if _G["Plater"] then
+    local Plater = _G["Plater"]
     DM:NameplateDebug("Plater detected")
     local unitFrame = nameplate.unitFrame
     if unitFrame and unitFrame.healthBar then
-      unitFrame.healthBar:SetStatusBarColor(unpack(color))
+      -- Use Plater's API instead of direct color setting
+      Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+      self.coloredPlates[unitToken] = true
       return true
     else
       DM:NameplateDebug("Plater unitFrame or healthBar not found")
@@ -61,20 +64,30 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
     if not unitFrame or not unitFrame.healthBar then return end
     healthBar = unitFrame.healthBar
 
-    if self.originalColors[unitToken] then
-      healthBar:SetStatusBarColor(unpack(self.originalColors[unitToken]))
-    else
-      if unitFrame.RefreshHealthbarColor then
-        unitFrame:RefreshHealthbarColor()
-      elseif Plater.ForceRefreshNameplateColor then
-        Plater.ForceRefreshNameplateColor(unitFrame)
-      end
+    -- Log for debugging
+    DM:NameplateDebug("RestoreDefaultColor for Plater nameplate: %s", nameplate:GetName() or "unnamed")
+
+    -- Reset Plater's color control flags - this is critical
+    unitFrame.UsingCustomColor = nil
+    unitFrame.DenyColorChange = nil
+
+    -- Reset the healthBar color variables to ensure Plater recalculates them
+    healthBar.R, healthBar.G, healthBar.B, healthBar.A = nil, nil, nil, nil
+
+    -- Call Plater's color refresh function - this is the core method in the mod example
+    Plater.RefreshNameplateColor(unitFrame)
+
+    -- This will force Plater to immediately update nameplate colors based on threat/reaction
+    if Plater.UpdateAllNameplateColors then
+      Plater.UpdateAllNameplateColors()
     end
 
-    if unitFrame.PlateFrame and unitFrame.PlateFrame.UpdatePlateFrame then
-      unitFrame.PlateFrame.UpdatePlateFrame()
+    -- Force a tick to ensure threat colors are updated - key part of Plater's color system
+    if Plater.ForceTickOnAllNameplates then
+      Plater.ForceTickOnAllNameplates()
     end
   else
+    -- Standard nameplate handling (non-Plater)
     healthBar = self:GetHealthBar(nameplate)
     if not healthBar then return end
 
