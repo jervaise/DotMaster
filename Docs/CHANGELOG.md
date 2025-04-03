@@ -256,5 +256,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved layout with optimized column widths for better readability
 - Fixed Remove button positioning and alignment
 - Optimized content layout for visual balance
+- Added collapsible class-based grouping for spells with class-colored headers
+- Implemented expand/collapse functionality for each class group
+- Added class icons for better visual identification
+- Maintained ordering by priority within each class group
 
 // ... existing code ... 
