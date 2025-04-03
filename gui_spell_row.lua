@@ -156,16 +156,34 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   b = tonumber(b) or 1
 
   -- Create color swatch using DotMaster_CreateColorSwatch
-  local colorSwatch = DotMaster_CreateColorSwatch(spellRow, r, g, b, function(newR, newG, newB)
-    -- Update color in database
-    DM.dmspellsdb[numericID].color = { newR, newG, newB }
+  local colorSwatchFunc = _G["DotMaster_CreateColorSwatch"]
+  if not colorSwatchFunc then
+    DM:DatabaseDebug(
+      "ERROR: DotMaster_CreateColorSwatch function not available, trying to get from DotMaster_ColorPicker")
+    colorSwatchFunc = DotMaster_ColorPicker and DotMaster_ColorPicker.CreateColorSwatch
+  end
 
-    -- Save changes immediately (SaveDMSpellsDB handles saving)
-    -- DM:SaveDMSpellsDB() -- Already called within the swatch callback logic
+  local colorSwatch
+  if colorSwatchFunc then
+    colorSwatch = colorSwatchFunc(spellRow, r, g, b, function(newR, newG, newB)
+      -- Update color in database
+      DM.dmspellsdb[numericID].color = { newR, newG, newB }
 
-    DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
-      numericID, newR, newG, newB))
-  end)
+      -- Save changes immediately (SaveDMSpellsDB handles saving)
+      -- DM:SaveDMSpellsDB() -- Already called within the swatch callback logic
+
+      DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
+        numericID, newR, newG, newB))
+    end)
+  else
+    -- Fallback if function doesn't exist
+    DM:DatabaseDebug("Creating fallback color swatch (colorpicker function not found)")
+    colorSwatch = CreateFrame("Button", nil, spellRow)
+    colorSwatch:SetSize(24, 24)
+    local texture = colorSwatch:CreateTexture(nil, "OVERLAY")
+    texture:SetAllPoints()
+    texture:SetColorTexture(r, g, b)
+  end
   colorSwatch:SetPoint("LEFT", COLUMN_POSITIONS.COLOR, 0)
 
   -- ORDER: Up/Down buttons for priority

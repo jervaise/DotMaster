@@ -16,7 +16,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  version = "0.8.5"
+  version = "0.9.0"
 }
 
 -- Debug categories (minimal initial setup)
@@ -90,16 +90,20 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       DM:CompleteInitialization()
     end
 
+    -- Make sure database is fully loaded before creating GUI
+    if DM.LoadDMSpellsDB and (not DM.dmspellsdb or next(DM.dmspellsdb) == nil) then
+      DM:DatabaseDebug("Ensuring database is loaded before GUI creation")
+      DM:LoadDMSpellsDB()
+    end
+
     -- Create GUI if available
     if DM.CreateGUI then
       DM:CreateGUI()
       DM:DebugMsg("GUI created")
     end
 
-    -- Initialize nameplate systems (currently disabled)
-    wipe(DM.activePlates or {})
-    wipe(DM.coloredPlates or {})
-    wipe(DM.originalColors or {})
+    -- Initialize nameplate systems (now enabled in CompleteInitialization)
+    -- The initialization is now handled in CompleteInitialization
 
     -- Print final initialization message
     DM:DebugMsg("Initialization complete - v" .. (DM.defaults and DM.defaults.version or "unknown"))
@@ -162,7 +166,43 @@ function DM:CompleteInitialization()
     DM:DebugMsg("Database contains " .. count .. " spells")
   else
     DM:DebugMsg("WARNING: Database not loaded or empty")
+
+    -- Try loading the database again if it's empty
+    if DM.LoadDMSpellsDB then
+      DM:LoadDMSpellsDB()
+      DM:DebugMsg("Attempted to reload database")
+    end
   end
+
+  -- Initialize nameplate tables properly
+  DM.activePlates = DM.activePlates or {}
+  DM.coloredPlates = DM.coloredPlates or {}
+  DM.originalColors = DM.originalColors or {}
+
+  -- Register nameplate related events
+  DM:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+  DM:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+  DM:RegisterEvent("UNIT_AURA")
+
+  -- Hook our OnEvent handler to handle nameplate events
+  local existingOnEvent = DM:GetScript("OnEvent")
+  DM:SetScript("OnEvent", function(self, event, arg1, ...)
+    -- Call the existing event handler for all events first
+    if existingOnEvent then
+      existingOnEvent(self, event, arg1, ...)
+    end
+
+    -- Handle nameplate events after other handlers
+    if event == "NAME_PLATE_UNIT_ADDED" and self.NameplateAdded then
+      self:NameplateAdded(arg1)
+    elseif event == "NAME_PLATE_UNIT_REMOVED" and self.NameplateRemoved then
+      self:NameplateRemoved(arg1)
+    elseif event == "UNIT_AURA" and self.UnitAuraChanged then
+      self:UnitAuraChanged(arg1)
+    end
+  end)
+
+  DM:DebugMsg("Nameplate events registered successfully")
 
   -- At this point we would initialize everything else
   DM:DebugMsg("Addon fully initialized")

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changelog
 
+### Version 0.9.0 (2023-04-03)
+
+- **Major Enhancements:**
+  - Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
+  - Added debug category for color picker module with dedicated ColorPickerDebug function
+  - Updated nameplate detection to use modern C_UnitAuras API with fallbacks for compatibility
+  - Improved error handling throughout the addon
+
+- **Bug Fixes:**
+  - Fixed bug with color swatch not working in the Tracked Spells tab
+  - Fixed initialization error in gui_debug.lua with local DeepCopy implementation
+  - Fixed "attempt to call global 'UnitAura'" error by modernizing aura detection code
+  - Ensured the color picker functionality is properly accessible from all tabs
+
+- **Code Quality:**
+  - Added robust fallbacks for aura detection using AuraUtil.ForEachAura
+  - Improved module loading by using _G table for global function exports
+  - Enhanced debugging with the new colorpicker category
+
 ### Version 0.8.7 (YYYY-MM-DD)
 
 - **Bug Fixes:**

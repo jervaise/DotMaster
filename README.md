@@ -2,7 +2,7 @@
 
 An addon for World of Warcraft that helps track your DoTs (Damage over Time effects).
 
-**Current Version: 0.8.7**
+**Current Version: 0.9.0**
 **Compatible with World of Warcraft: The War Within (11.1.0)**
 
 ## Features

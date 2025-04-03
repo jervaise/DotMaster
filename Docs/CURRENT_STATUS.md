@@ -6,17 +6,17 @@ This document outlines the current development status of the DotMaster addon. It
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 0.8.5
+- **Current Version**: 0.9.0
 - **Status**: Active Development
-- **Last Updated**: April 10, 2024
+- **Last Updated**: April 3, 2023
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 0.8.5
+- **Current Version**: 0.9.0
 - **Branch Status**:
   - **main**: Contains the latest stable release (v0.8.0)
-  - **develop**: Active development branch (v0.8.5)
+  - **develop**: Active development branch (v0.9.0)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -61,18 +61,16 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Color Picker Functionality**: Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
+- ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks
+- ✅ **Debug System Improvements**: Added color picker debug category with dedicated debug function
+- ✅ **Error Handling Improvements**: Fixed "attempt to call global 'UnitAura'" and DeepCopy errors
+
+Prior to that:
 - ✅ **Tracked Spells UI Redesign**: Completely redesigned the tracked spells interface with improved usability, better layout, and immediate save functionality
 - ✅ **WoW 11.1.0 Update**: Started compatibility updates for The War Within expansion
 - ✅ **TOC Update**: Updated Interface version to 110100 for The War Within
 - ✅ **Initialization System Refactoring**: Implemented bootstrap.lua for proper SavedVariables loading sequence
-- ✅ **Database Handling Enhancement**: Fixed issues with saved database loading and persistence
-- ✅ **UI Improvements**: Fixed various UI issues in the database tab
-- ✅ **Debug Console Enhancements**: Added database-specific debug categories
-
-Prior to that:
-- ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
-- ✅ **Added dmcheck Tool**: Created validation tools to catch common errors before in-game testing
-- ✅ **Enhanced Development Process**: Improved code validation workflows
 
 Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 

@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Track your DoTs on enemy nameplates
 ## Author: Your Name
-## Version: 0.8.7
+## Version: 0.9.0
 ## SavedVariables: DotMasterDB
 ## X-Category: Combat
 ## X-License: All Rights Reserved
@@ -30,6 +30,7 @@ gui_common.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
 gui_database_tab.lua
+gui_colorpicker.lua
 gui_spell_row.lua
 gui_spell_selection.lua
 

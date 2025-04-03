@@ -17,10 +17,28 @@ local debugCategories = {
   database = true,    -- Database-related debug
 }
 
+-- Local implementation of DeepCopy to avoid dependency on utils.lua loading order
+local function DeepCopy(original)
+  local copy
+  if type(original) == "table" then
+    copy = {}
+    for k, v in pairs(original) do
+      if type(v) == "table" then
+        copy[k] = DeepCopy(v)
+      else
+        copy[k] = v
+      end
+    end
+  else
+    copy = original
+  end
+  return copy
+end
+
 -- Initialize debug system
 function DM.Debug:Init()
   -- Set default debug state from saved variables
-  DM.DEBUG_CATEGORIES = (DotMasterDB and DotMasterDB.debugCategories) or DM:DeepCopy(debugCategories)
+  DM.DEBUG_CATEGORIES = (DotMasterDB and DotMasterDB.debugCategories) or DeepCopy(debugCategories)
 
   -- Migrate old debug messages if present
   if DM.oldDebugMessages and #DM.oldDebugMessages > 0 then
@@ -79,6 +97,11 @@ function DM.Debug:HookDebugFunctions()
 
   DM.DatabaseDebug = function(self, message, ...)
     DM.Debug:Log("database", message, ...)
+  end
+
+  -- Add missing ColorPickerDebug function
+  DM.ColorPickerDebug = function(self, message, ...)
+    DM.Debug:Log("colorpicker", message, ...)
   end
 end
 

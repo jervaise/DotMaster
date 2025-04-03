@@ -9,6 +9,14 @@ local GUI = DM.GUI                      -- Alias for convenience
 function Components.CreateTrackedSpellsTab(parentFrame)
   DM:DatabaseDebug("Creating Tracked Spells Tab Content...")
 
+  -- Make sure database is loaded
+  if not DM.dmspellsdb or next(DM.dmspellsdb) == nil then
+    DM:DatabaseDebug("Database empty or not loaded, attempting to load it now")
+    if DM.LoadDMSpellsDB then
+      DM:LoadDMSpellsDB()
+    end
+  end
+
   -- Define layout constants for this tab (should match gui_spell_row.lua usage)
   -- Ensure DM.GUI exists
   DM.GUI = DM.GUI or {}
@@ -232,16 +240,39 @@ end
 function GUI:GetGroupedTrackedSpells()
   local grouped = {}
 
-  -- Use dmspellsdb but filter for tracked spells only
+  -- Make sure we have access to the database
   if not DM.dmspellsdb then
-    DM:DatabaseDebug("dmspellsdb is nil or empty")
+    DM:DatabaseDebug("dmspellsdb is nil - attempting to load")
+
+    -- Try to load database if it's missing
+    if DM.LoadDMSpellsDB then
+      DM:LoadDMSpellsDB()
+    end
+
+    -- If still missing, return empty results
+    if not DM.dmspellsdb then
+      DM:DatabaseDebug("Failed to load dmspellsdb")
+      return grouped
+    end
+  end
+
+  -- Check if database is empty
+  local isEmpty = true
+  for _ in pairs(DM.dmspellsdb) do
+    isEmpty = false
+    break
+  end
+
+  if isEmpty then
+    DM:DatabaseDebug("dmspellsdb is empty")
     return grouped
   end
 
   local count = 0
   for idStr, data in pairs(DM.dmspellsdb) do
     -- Only include tracked spells (using tonumber for robustness)
-    if tonumber(data.tracked) == 1 then
+    local tracked = tonumber(data.tracked)
+    if tracked == 1 then
       -- Convert string ID to number if needed
       local id = tonumber(idStr)
       count = count + 1
@@ -270,6 +301,26 @@ function GUI:RefreshTrackedSpellTabList()
   if not scrollChild then
     DM:DatabaseDebug("ERROR: trackedScrollChild is nil in RefreshTrackedSpellTabList")
     return
+  end
+
+  -- Debug the database state
+  if not DM.dmspellsdb then
+    DM:DatabaseDebug("ERROR: dmspellsdb is nil when refreshing Tracked Spells tab")
+  else
+    local count = 0
+    local trackedCount = 0
+    for spellID, data in pairs(DM.dmspellsdb) do
+      count = count + 1
+      if data.tracked == 1 then
+        trackedCount = trackedCount + 1
+        -- Show some sample data for debugging
+        if trackedCount <= 3 then
+          DM:DatabaseDebug(string.format("Sample tracked spell: ID=%s, Name=%s, Class=%s",
+            tostring(spellID), tostring(data.spellname), tostring(data.wowclass)))
+        end
+      end
+    end
+    DM:DatabaseDebug(string.format("Database has %d spells, %d are tracked", count, trackedCount))
   end
 
   -- Clear existing content completely
@@ -302,7 +353,7 @@ function GUI:RefreshTrackedSpellTabList()
       scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       scrollChild.friendlyMessage:SetPoint("TOP", scrollChild, "TOP", 0, -50)
       scrollChild.friendlyMessage:SetText(
-      "No spells are currently being tracked.\nUse the 'Add from Database' button to start tracking spells.")
+        "No spells are currently being tracked.\nUse the 'Add from Database' button to start tracking spells.")
       scrollChild.friendlyMessage:SetJustifyH("CENTER")
       scrollChild.friendlyMessage:SetTextColor(0.7, 0.7, 0.7)
     else
@@ -624,34 +675,76 @@ function GUI:RefreshTrackedSpellTabList()
       local initialColor
       if spellData.color and type(spellData.color) == "table" and #spellData.color >= 3 then
         local r_check = tonumber(spellData.color[1]) or 1
-        local g_check = tonumber(spellData.color[2]) or 1
-        local b_check = tonumber(spellData.color[3]) or 1
+        local g_check = tonumber(spellData.color[2]) or 0
+        local b_check = tonumber(spellData.color[3]) or 0
         initialColor = { r_check, g_check, b_check }
       else
         DM:DatabaseDebug(string.format("Spell %d using default color (invalid/missing data: %s)", spellID,
           tostring(spellData.color)))
-        initialColor = { 1, 1, 1 } -- Default to white
+        initialColor = { 1, 0, 0 } -- Default to red
       end
 
-      -- *** MODIFIED DEBUG: Use DM:DebugMsg with LAYOUT category ***
-      local r_pre, g_pre, b_pre = unpack(initialColor)
-      DM:DebugMsg("LAYOUT", string.format("Pre-Call Spell %d - initialColor: {%s,%s,%s} - unpacked: r=%s, g=%s, b=%s",
-        spellID,
-        tostring(initialColor[1]), tostring(initialColor[2]), tostring(initialColor[3]),
-        tostring(r_pre), tostring(g_pre), tostring(b_pre)))
+      -- Debug the state of the color data and colorpicker function
+      DM:DatabaseDebug(string.format("Creating color swatch for spell %d with color: R=%.2f, G=%.2f, B=%.2f",
+        spellID, initialColor[1], initialColor[2], initialColor[3]))
 
-      local colorSwatch = DotMaster_CreateColorSwatch(spellFrame, r_pre, g_pre, b_pre,
-        function(newR, newG, newB) -- Callback function for the custom picker
-          if DM.dmspellsdb[spellID] then
-            DM.dmspellsdb[spellID].color = { newR, newG, newB }
-            DM:DatabaseDebug(string.format("Updated color for spell %d via custom picker", spellID))
-          end
+      -- Get reference to the colorpicker function directly from DotMaster_ColorPicker
+      local colorSwatchFunc = _G["DotMaster_CreateColorSwatch"]
+      if not colorSwatchFunc then
+        DM:DatabaseDebug(
+          "ERROR: DotMaster_CreateColorSwatch function not available, trying to get from DotMaster_ColorPicker")
+        colorSwatchFunc = DotMaster_ColorPicker and DotMaster_ColorPicker.CreateColorSwatch
+      end
+
+      -- Create the color swatch with proper error handling
+      local colorSwatch
+      if colorSwatchFunc then
+        -- Call with pcall to catch any errors
+        local success, result = pcall(function()
+          return colorSwatchFunc(
+            spellFrame,
+            initialColor[1],
+            initialColor[2],
+            initialColor[3],
+            function(newR, newG, newB) -- Callback for when color changes
+              DM:DatabaseDebug(string.format("Color changed for spell %d: R=%.2f, G=%.2f, B=%.2f",
+                spellID, newR, newG, newB))
+
+              if DM.dmspellsdb[spellID] then
+                DM.dmspellsdb[spellID].color = { newR, newG, newB }
+                DM:SaveDMSpellsDB() -- Make sure to save the database
+                DM:DatabaseDebug(string.format("Updated color for spell %d in database", spellID))
+              end
+            end
+          )
+        end)
+
+        if success and result then
+          colorSwatch = result
+          DM:DatabaseDebug(string.format("Successfully created color swatch for spell %d", spellID))
+        else
+          DM:DatabaseDebug(string.format("Error creating color swatch: %s", tostring(result)))
+          -- Create fallback if function call failed
+          colorSwatch = CreateFrame("Button", nil, spellFrame)
         end
-      )
-      -- We still need to position the swatch returned by the function
+      else
+        -- Create a basic fallback swatch if the function doesn't exist
+        DM:DatabaseDebug("Creating fallback color swatch (colorpicker function not found)")
+        colorSwatch = CreateFrame("Button", nil, spellFrame)
+      end
+
+      -- Set up the fallback appearance if needed
+      if not colorSwatchFunc or not colorSwatch.GetColor then
+        colorSwatch:SetSize(24, 24)
+        local texture = colorSwatch:CreateTexture(nil, "OVERLAY")
+        texture:SetAllPoints()
+        texture:SetColorTexture(initialColor[1], initialColor[2], initialColor[3])
+      end
+
+      -- Position the swatch
       colorSwatch:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
-      spellFrame.colorSwatch = colorSwatch -- Store reference if needed
-      currentRightAnchor = colorSwatch     -- Name anchors to this swatch now
+      spellFrame.colorSwatch = colorSwatch
+      currentRightAnchor = colorSwatch
       currentRightOffset = -padding
 
       -- 3. Spell Name & ID (Anchored between Icon and Color Swatch)
