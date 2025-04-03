@@ -330,14 +330,8 @@ function DM:ShowCombinationDialog(comboID)
     local dialog = CreateFrame("Frame", "DotMasterCombinationDialog", UIParent, "BackdropTemplate")
     dialog:SetSize(400, 400)
 
-    -- Find main GUI frame - first try the addon's main frame, then fall back to center
-    local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
-    if mainGUI and mainGUI:IsShown() then
-      dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
-    else
-      dialog:SetPoint("CENTER")
-    end
-
+    -- Set initial position to a reliable location on the right side of the screen
+    dialog:SetPoint("CENTER", UIParent, "CENTER", 250, 100)
     dialog:SetFrameStrata("DIALOG")
     dialog:SetMovable(true)
     dialog:EnableMouse(true)
@@ -602,14 +596,9 @@ function DM:ShowCombinationDialog(comboID)
   -- Show the dialog
   dialog:Show()
 
-  -- Reposition in case the main UI has moved
+  -- Position dialog in a reliable location
   dialog:ClearAllPoints()
-  local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
-  if mainGUI and mainGUI:IsShown() then
-    dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
-  else
-    dialog:SetPoint("CENTER")
-  end
+  dialog:SetPoint("CENTER", UIParent, "CENTER", 250, 100)
 end
 
 -- Function to update the spell list in the combination dialog
@@ -1032,23 +1021,13 @@ function DM:ShowSpellSelectionForCombo(parent)
   -- Show the frame
   frame:Show()
 
-  -- Position relative to parent dialog
+  -- Position relative to parent dialog or in a fixed location
+  frame:ClearAllPoints()
   if parent and parent:IsShown() then
-    frame:ClearAllPoints()
-    frame:SetPoint("TOPLEFT", parent, "TOPRIGHT", 5, 0)
+    frame:SetPoint("LEFT", parent, "RIGHT", 5, 0)
   else
-    -- Fallback if parent not available
-    frame:ClearAllPoints()
-
-    -- Try to get main GUI frame
-    local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
-    if mainGUI and mainGUI:IsShown() then
-      -- Position after where the combination dialog would be
-      frame:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 410, 0) -- 400px (dialog width) + 5px + 5px
-    else
-      -- Last resort, center on screen
-      frame:SetPoint("CENTER")
-    end
+    -- Fallback - position on the far right of the screen
+    frame:SetPoint("CENTER", UIParent, "CENTER", 500, 100)
   end
 end
 
