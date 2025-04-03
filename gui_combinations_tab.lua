@@ -842,8 +842,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     local frame = CreateFrame("Frame", "DotMasterComboSpellSelection", UIParent, "BackdropTemplate")
     frame:SetSize(350, 450)
 
-    -- Position to be set when shown (will be right of the combination dialog)
-    frame:SetPoint("CENTER", UIParent, "CENTER")
+    -- Don't position here, it will be positioned before being shown
 
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
@@ -1125,10 +1124,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     frame.UpdateSpellList("")
   end
 
-  -- Show the frame
-  frame:Show()
-
-  -- Position relative to parent dialog (combination dialog)
+  -- IMPORTANT: Position the frame BEFORE showing it
   frame:ClearAllPoints()
 
   if parent and parent:IsShown() then
@@ -1144,6 +1140,9 @@ function DM:ShowSpellSelectionForCombo(parent)
       frame:SetPoint("CENTER", UIParent, "CENTER")
     end
   end
+
+  -- Show the frame AFTER positioning is set
+  frame:Show()
 end
 
 -- Helper function to set up mouse wheel scrolling and hide scrollbars
