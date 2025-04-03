@@ -25,6 +25,7 @@ minimap.lua
 # Database and spells
 spell_database.lua
 spell_utils.lua
+combinations_db.lua
 
 # GUI
 gui.lua

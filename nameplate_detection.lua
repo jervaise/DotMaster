@@ -9,11 +9,81 @@ local function GetPlayerClass()
   return class
 end
 
+-- Helper function to check if a specific DoT is on a unit
+function DM:HasPlayerDotOnUnit(unitToken, spellID)
+  if not unitToken or not UnitExists(unitToken) or not spellID then return false end
+
+  DM:NameplateDebug("HasPlayerDotOnUnit called: %s, SpellID: %d", unitToken, spellID)
+
+  -- Check if we can use the C_UnitAuras API (newer clients)
+  if C_UnitAuras and C_UnitAuras.GetAuraDataByUnit then
+    -- Get all auras on the unit and check for our spell
+    local auras = C_UnitAuras.GetAuraDataByUnit(unitToken, "HARMFUL")
+    if auras then
+      for _, auraData in ipairs(auras) do
+        if auraData.spellId == spellID and auraData.sourceUnit == "player" then
+          return true
+        end
+      end
+    end
+  elseif AuraUtil and AuraUtil.ForEachAura then
+    -- Use AuraUtil.ForEachAura which works on all client versions
+    local found = false
+    AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, caster, _, _, id)
+      if id == spellID and caster == "player" then
+        found = true
+        return true -- Stop iteration
+      end
+    end)
+
+    if found then
+      return true
+    end
+  else
+    -- Fallback to UnitAura for legacy support
+    local success, result = pcall(function()
+      for i = 1, 40 do
+        local name, _, _, _, _, _, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
+        if not name then break end
+
+        if auraSpellID == spellID and source == "player" then
+          return true
+        end
+      end
+      return false
+    end)
+
+    if success and result then
+      return true
+    end
+  end
+
+  return false
+end
+
 -- Checks for tracked debuffs on a unit
 function DM:CheckForTrackedDebuffs(unitToken)
   if not unitToken or not UnitExists(unitToken) then return nil end
 
   DM:NameplateDebug("CheckForTrackedDebuffs called: %s", unitToken)
+
+  -- First, check for combinations if the feature is enabled
+  if DM.combinations and DM.combinations.settings.enabled then
+    local comboID, comboData = self:CheckCombinationsOnUnit(unitToken)
+
+    if comboID and comboData and comboData.color then
+      DM:NameplateDebug("Found active combination: %s", comboData.name or comboID)
+
+      -- Format the color to work with the nameplate system
+      local comboColor = {
+        comboData.color.r or comboData.color[1] or 1,
+        comboData.color.g or comboData.color[2] or 0,
+        comboData.color.b or comboData.color[3] or 0
+      }
+
+      return "combo_" .. comboID, comboColor
+    end
+  end
 
   -- If no spell database is present, early return
   if not self.dmspellsdb or not next(self.dmspellsdb) then return nil end
@@ -53,57 +123,10 @@ function DM:CheckForTrackedDebuffs(unitToken)
 
     DM:NameplateDebug("Checking SpellID: %d, Priority: %s", spellID, tostring(config.priority or "none"))
 
-    -- Check if we can use the C_UnitAuras API (newer clients)
-    if C_UnitAuras and C_UnitAuras.GetAuraDataByUnit then
-      DM:NameplateDebug("Using C_UnitAuras API")
-
-      -- Get all auras on the unit and check for our spell
-      local auras = C_UnitAuras.GetAuraDataByUnit(unitToken, "HARMFUL")
-      if auras then
-        for _, auraData in ipairs(auras) do
-          if auraData.spellId == spellID and auraData.sourceUnit == "player" then
-            DM:NameplateDebug("Found debuff using C_UnitAuras: %d", spellID)
-            return spellID, config.color
-          end
-        end
-      end
-    elseif AuraUtil and AuraUtil.ForEachAura then
-      DM:NameplateDebug("Using AuraUtil.ForEachAura API")
-
-      -- Use AuraUtil.ForEachAura which works on all client versions
-      local found = false
-      AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, caster, _, _, id)
-        if id == spellID and caster == "player" then
-          found = true
-          return true -- Stop iteration
-        end
-      end)
-
-      if found then
-        DM:NameplateDebug("Found debuff using AuraUtil: %d", spellID)
-        return spellID, config.color
-      end
-    else
-      -- Fallback to UnitAura for legacy support (this branch should not be needed)
-      DM:NameplateDebug("Using legacy UnitAura API")
-
-      -- Use pcall to avoid errors if UnitAura doesn't exist
-      local success, result = pcall(function()
-        for i = 1, 40 do
-          local name, _, _, _, _, _, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
-          if not name then break end
-
-          if auraSpellID == spellID and source == "player" then
-            return true
-          end
-        end
-        return false
-      end)
-
-      if success and result then
-        DM:NameplateDebug("Found debuff using legacy UnitAura: %d", spellID)
-        return spellID, config.color
-      end
+    -- Check if the spell is active using our helper function
+    if self:HasPlayerDotOnUnit(unitToken, spellID) then
+      DM:NameplateDebug("Found debuff: %d", spellID)
+      return spellID, config.color
     end
   end
 

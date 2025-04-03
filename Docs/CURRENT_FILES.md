@@ -13,47 +13,48 @@ This document provides an overview of all files in the DotMaster addon and their
 6. **gui_debug.lua** - Debug console implementation
 
 ### Database Files
-7. **spell_database.lua** - DoT spell database management
-8. **spell_utils.lua** - Spell manipulation utilities
+7. **spell_database.lua** - Default spell database and management
+8. **spell_utils.lua** - Spell utility functions
+9. **combinations_db.lua** - DoT combinations database and functions
 
 ### GUI Files
-9. **gui.lua** - Core GUI functions
-10. **gui_common.lua** - Shared GUI components
-11. **gui_general_tab.lua** - General tab interface
-12. **gui_tracked_spells_tab.lua** - Tracked spells tab interface
-13. **gui_combinations_tab.lua** - Dot combinations tab interface
-14. **gui_database_tab.lua** - Database management tab interface
-15. **gui_colorpicker.lua** - Color picker functionality
-16. **gui_spell_row.lua** - Spell list row component
-17. **gui_spell_selection.lua** - Spell selection interface
+10. **gui.lua** - Core GUI functions
+11. **gui_common.lua** - Shared GUI components
+12. **gui_general_tab.lua** - General tab interface
+13. **gui_tracked_spells_tab.lua** - Tracked spells tab interface
+14. **gui_combinations_tab.lua** - Dot combinations tab interface
+15. **gui_database_tab.lua** - Database management tab interface
+16. **gui_colorpicker.lua** - Color picker functionality
+17. **gui_spell_row.lua** - Spell list row component
+18. **gui_spell_selection.lua** - Spell selection interface
 
 ### Nameplate Files
-18. **nameplate_core.lua** - Core nameplate functionality
-19. **nameplate_detection.lua** - Nameplate detection and tracking
-20. **nameplate_coloring.lua** - Nameplate color manipulation
+19. **nameplate_core.lua** - Core nameplate functionality
+20. **nameplate_detection.lua** - Nameplate detection and tracking
+21. **nameplate_coloring.lua** - Nameplate color manipulation
 
 ### Feature Files
-21. **find_my_dots.lua** - Implementation of "Find My Dots" feature
-22. **minimap.lua** - Minimap button functionality
+22. **find_my_dots.lua** - Implementation of "Find My Dots" feature
+23. **minimap.lua** - Minimap button functionality
 
 ### Asset Files
-23. **Media/dotmaster-icon.tga** - Addon icon
-24. **Media/dotmaster-main-icon.tga** - Main interface icon
+24. **Media/dotmaster-icon.tga** - Addon icon
+25. **Media/dotmaster-main-icon.tga** - Main interface icon
 
 ### Library Files (in Libs/ directory)
-25. **LibStub** - Library management
-26. **CallbackHandler-1.0** - Event handling
-27. **LibDataBroker-1.1** - Data broker functionality
-28. **LibDBIcon-1.0** - Minimap icon support
+26. **LibStub** - Library management
+27. **CallbackHandler-1.0** - Event handling
+28. **LibDataBroker-1.1** - Data broker functionality
+29. **LibDBIcon-1.0** - Minimap icon support
 
 ### Documentation Files (in Docs/ directory)
-29. **CHANGELOG.md** - Version changelog
-30. **CODE_STRUCTURE.md** - Code organization overview
-31. **CURRENT_FILES.md** - This file
-32. **CURRENT_STATUS.md** - Development status
-33. **DEBUG_SYSTEM.md** - Debug system documentation
-34. **DEVELOPER_GUIDE.md** - Guide for developers
-35. **PROJECT_SCOPE.md** - Project scope and goals
+30. **CHANGELOG.md** - Version changelog
+31. **CODE_STRUCTURE.md** - Code organization overview
+32. **CURRENT_FILES.md** - This file
+33. **CURRENT_STATUS.md** - Development status
+34. **DEBUG_SYSTEM.md** - Debug system documentation
+35. **DEVELOPER_GUIDE.md** - Guide for developers
+36. **PROJECT_SCOPE.md** - Project scope and goals
 
 ## Changed in v0.5.1
 - Restructured documentation to be more user-friendly
