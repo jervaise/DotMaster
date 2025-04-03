@@ -3,6 +3,63 @@
 
 local DM = DotMaster
 
+-- Function to check if combinations database is initialized
+function DM:IsCombinationsInitialized()
+  if not DM.combinations then
+    DM:DebugMsg("Combinations database is not initialized (DM.combinations is nil)")
+    return false
+  end
+
+  if not DM.combinations.data then
+    DM:DebugMsg("Combinations database is not initialized (DM.combinations.data is nil)")
+    return false
+  end
+
+  if not DM.combinations.settings then
+    DM:DebugMsg("Combinations database is not initialized (DM.combinations.settings is nil)")
+    return false
+  end
+
+  return true
+end
+
+-- Function to force initialization of combinations database
+function DM:ForceCombinationsInitialization()
+  if DM:IsCombinationsInitialized() then
+    DM:DebugMsg("Combinations database already initialized")
+    return true
+  end
+
+  DM:DebugMsg("Forcing combinations database initialization...")
+
+  -- Create a minimal valid structure
+  if not DM.combinations then
+    DM.combinations = {}
+  end
+
+  if not DM.combinations.settings then
+    DM.combinations.settings = {
+      enabled = true,
+      priorityOverIndividual = true,
+    }
+  end
+
+  if not DM.combinations.data then
+    DM.combinations.data = {}
+  end
+
+  -- Save to permanent storage
+  if not DotMasterDB then
+    DotMasterDB = {}
+  end
+
+  DotMasterDB.combinations = DM.combinations
+
+  -- Announce initialization
+  DM:DebugMsg("Combinations database force-initialized successfully")
+  return true
+end
+
 -- Ensure we have a DeepCopy function (fallback implementation if needed)
 if not DM.DeepCopy then
   DM.DeepCopy = function(orig)
@@ -302,13 +359,17 @@ end
 
 -- Check if a unit has a combination active
 function DM:CheckCombinationsOnUnit(unit)
-  -- Safe early returns if combinations system is not ready
-  if not unit or not UnitExists(unit) then
-    return nil
+  -- First try to ensure combinations are initialized
+  if not DM:IsCombinationsInitialized() then
+    -- Try to force initialization if needed
+    if not DM:ForceCombinationsInitialization() then
+      DM:DebugMsg("ERROR: Could not initialize combinations in CheckCombinationsOnUnit")
+      return nil
+    end
   end
 
-  if not DM.combinations then
-    DM:DebugMsg("CheckCombinationsOnUnit: combinations table not initialized")
+  -- Safe early returns if combinations system is not ready
+  if not unit or not UnitExists(unit) then
     return nil
   end
 
@@ -428,12 +489,38 @@ initFrame:SetScript("OnEvent", function(self, event)
     C_Timer.After(0.5, function()
       if DM and DM.InitializeCombinationsDB then
         DM:DebugMsg("Running delayed combinations initialization...")
-        DM:InitializeCombinationsDB()
+        local success = pcall(function()
+          DM:InitializeCombinationsDB()
+        end)
+
+        -- Check if initialization was successful
+        if not success or not DM:IsCombinationsInitialized() then
+          DM:DebugMsg("Initial combination database initialization failed, trying force initialization...")
+          local forceSuccess = pcall(function()
+            DM:ForceCombinationsInitialization()
+          end)
+
+          if forceSuccess and DM:IsCombinationsInitialized() then
+            DM:DebugMsg("Force initialization successful")
+
+            -- Attempt to update/refresh the UI if it exists
+            if DM.GUI and DM.GUI.UpdateCombinationsList then
+              DM:DebugMsg("Refreshing combinations UI after initialization")
+              DM.GUI.UpdateCombinationsList()
+            end
+          else
+            -- Log visible error message
+            if _G.DEFAULT_CHAT_FRAME then
+              _G.DEFAULT_CHAT_FRAME:AddMessage(
+                "|cFFFF0000DotMaster combinations database initialization failed. Try reloading UI.|r")
+            end
+          end
+        end
       else
         -- Log error if DM is not ready
         if _G.DEFAULT_CHAT_FRAME then
           _G.DEFAULT_CHAT_FRAME:AddMessage(
-          "|cFFFF0000DotMaster combinations module could not initialize - addon not ready|r")
+            "|cFFFF0000DotMaster combinations module could not initialize - addon not ready|r")
         end
       end
     end)

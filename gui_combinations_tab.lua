@@ -4,6 +4,16 @@
 local DM = DotMaster
 
 function DM:CreateCombinationsTab(parent)
+  -- Ensure combinations are initialized
+  if not DM:IsCombinationsInitialized() then
+    local success = DM:ForceCombinationsInitialization()
+    if success then
+      DM:DebugMsg("Successfully initialized combinations database in CreateCombinationsTab")
+    else
+      DM:DebugMsg("WARNING: Failed to initialize combinations in CreateCombinationsTab")
+    end
+  end
+
   -- Create a container frame for all content in this tab
   local container = CreateFrame("Frame", nil, parent)
   container:SetAllPoints(parent)
@@ -100,12 +110,39 @@ function DM:CreateCombinationsTab(parent)
     -- Reset scroll content height
     scrollContent:SetHeight(10)
 
-    -- If database isn't initialized, show a message
-    if not DM.combinations or not DM.combinations.data then
-      local messageText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-      messageText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
+    -- If database isn't initialized, try to force initialize it
+    if not DM:IsCombinationsInitialized() then
+      -- Create error message
+      local messageFrame = CreateFrame("Frame", nil, scrollContent)
+      messageFrame:SetSize(scrollContent:GetWidth(), 80)
+      messageFrame:SetPoint("CENTER", scrollContent, "CENTER")
+
+      local messageBg = messageFrame:CreateTexture(nil, "BACKGROUND")
+      messageBg:SetAllPoints()
+      messageBg:SetColorTexture(0.1, 0, 0, 0.5)
+
+      local messageText = messageFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      messageText:SetPoint("CENTER", messageFrame, "CENTER", 0, 10)
       messageText:SetText("Combinations database not initialized")
       messageText:SetTextColor(1, 0.3, 0.3)
+
+      -- Add a button to force initialization
+      local initButton = CreateFrame("Button", nil, messageFrame, "UIPanelButtonTemplate")
+      initButton:SetSize(200, 24)
+      initButton:SetPoint("CENTER", messageFrame, "CENTER", 0, -15)
+      initButton:SetText("Initialize Combinations Database")
+
+      initButton:SetScript("OnClick", function()
+        -- Try to force initialization
+        if DM:ForceCombinationsInitialization() then
+          -- Refresh the list if successful
+          UpdateCombinationsList()
+        else
+          -- Show error if failed
+          messageText:SetText("Failed to initialize database. See chat for details.")
+        end
+      end)
+
       return
     end
 
