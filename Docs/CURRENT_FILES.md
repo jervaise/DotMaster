@@ -1,14 +1,16 @@
-# Current File Structure - DotMaster v0.5.1
+# Current File Structure - DotMaster v0.9.1
 
 This document tracks the current file structure of the DotMaster addon. It is updated with each version to serve as a reference for developers.
 
-## Active Files (v0.5.1)
+## Active Files (v0.9.1)
 
 ### Core Files
-- **init.lua** - Main initialization
-- **utils.lua** - Utility functions
+- **bootstrap.lua** - Initialization bootstrap to ensure proper loading sequence
+- **core.lua** - Core functionality and final initialization
 - **settings.lua** - Settings management
-- **core.lua** - Final initialization sequence
+- **utils.lua** - Utility functions
+- **gui_debug.lua** - Debug console and logging system
+- **minimap.lua** - Minimap icon functionality
 
 ### Spell System
 - **spell_database.lua** - Spell database and management
@@ -24,7 +26,8 @@ This document tracks the current file structure of the DotMaster addon. It is up
 - **gui_common.lua** - Common UI components
 - **gui_colorpicker.lua** - Color picker component
 - **gui_general_tab.lua** - General settings panel
-- **gui_spells_tab.lua** - Spells configuration panel
+- **gui_tracked_spells_tab.lua** - Tracked spells configuration panel
+- **gui_database_tab.lua** - Database tab implementation
 - **gui_spell_row.lua** - Spell row UI component
 - **gui_spell_selection.lua** - Spell selection dialog
 

@@ -8,12 +8,12 @@ DotMaster_Components = {}
 local function CreateTabInfoArea(parentFrame, titleText, explanationText)
   -- Create info area container
   local infoArea = CreateFrame("Frame", nil, parentFrame)
-  infoArea:SetSize(430, 75) -- 75px height
+  infoArea:SetSize(430, 85) -- Increased height from 75px to 85px to accommodate more spacing
   infoArea:SetPoint("TOP", parentFrame, "TOP", 0, 0)
 
   -- Center container for text elements with equal top/bottom margins
   local textContainer = CreateFrame("Frame", nil, infoArea)
-  textContainer:SetSize(430, 45)                             -- Reduced height to allow for margins
+  textContainer:SetSize(430, 55)                             -- Increased height from 45px to 55px
   textContainer:SetPoint("CENTER", infoArea, "CENTER", 0, 0) -- Centered vertically
 
   -- Info Area Title
@@ -24,7 +24,7 @@ local function CreateTabInfoArea(parentFrame, titleText, explanationText)
 
   -- Info Area Explanation
   local infoExplanation = textContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  infoExplanation:SetPoint("TOP", infoTitle, "BOTTOM", 0, -2)
+  infoExplanation:SetPoint("TOP", infoTitle, "BOTTOM", 0, -10) -- Increased spacing from -2 to -10
   infoExplanation:SetWidth(300)
   infoExplanation:SetJustifyH("CENTER")
   infoExplanation:SetText(explanationText)
@@ -54,6 +54,11 @@ DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 function DM:CreateGUI()
   DM:DebugMsg("Creating GUI...")
 
+  -- Get the player's class color
+  local playerClass = select(2, UnitClass("player"))
+  local classColor = RAID_CLASS_COLORS[playerClass] or
+  { r = 0.6, g = 0.2, b = 1.0 }                                                      -- Default to purple if no class color found
+
   -- Main frame
   local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
   frame:SetSize(500, 650) -- Increased frame size for better content display
@@ -74,8 +79,8 @@ function DM:CreateGUI()
     edgeSize = 16,
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
   })
-  frame:SetBackdropColor(0, 0, 0, 0.8)             -- Darker background with better transparency
-  frame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Keep the purple border
+  frame:SetBackdropColor(0, 0, 0, 0.8)                                        -- Darker background with better transparency
+  frame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.8) -- Use class color for border
   frame:Hide()
 
   -- Define size constraints as fixed values now (no resizing)
@@ -96,7 +101,11 @@ function DM:CreateGUI()
   -- Title
   local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
   title:SetPoint("TOP", 0, -16)
-  title:SetText("|cFFCC00FFDotMaster|r")
+  -- Use class color for the title text
+  title:SetText(string.format("|cFF%02x%02x%02xDotMaster|r",
+    classColor.r * 255,
+    classColor.g * 255,
+    classColor.b * 255))
 
   -- Close Button
   local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")

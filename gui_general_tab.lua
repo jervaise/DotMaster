@@ -5,34 +5,38 @@ local DM = DotMaster
 
 -- Create General tab content
 function DM:CreateGeneralTab(parent)
-  -- Temporary Disable Notice
-  local disableNotice = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  disableNotice:SetPoint("TOP", 0, -10)
-  disableNotice:SetText("NAMEPLATE FEATURES TEMPORARILY DISABLED")
-  disableNotice:SetTextColor(1, 0.3, 0.3)
+  -- Create standardized info area
+  local infoArea = DotMaster_Components.CreateTabInfoArea(
+    parent,
+    "DotMaster",
+    "Track your DoTs on enemy nameplates with visual indicators. Use the Find My Dots feature to discover and manage your damage-over-time effects for any class or specialization."
+  )
 
-  -- Disable explanation
-  local disableExplanation = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  disableExplanation:SetPoint("TOP", disableNotice, "BOTTOM", 0, -5)
-  disableExplanation:SetWidth(350)
-  disableExplanation:SetText(
-    "Nameplate coloring has been temporarily disabled during development. These features will be re-enabled in a future update.")
-  disableExplanation:SetTextColor(1, 0.8, 0.3)
+  -- Create main content container frame (similar to searchContainer in Database tab)
+  local mainContent = CreateFrame("Frame", nil, parent)
+  mainContent:SetSize(430, 20)
+  mainContent:SetPoint("TOP", infoArea, "BOTTOM", 0, 0)
 
-  -- General Tab Header (moved down)
-  local generalHeader = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  generalHeader:SetPoint("TOP", disableExplanation, "BOTTOM", 0, -20)
-  generalHeader:SetText("Debuff nameplate coloring")
+  -- Add panda image below info area - positioned closer
+  local pandaImage = mainContent:CreateTexture(nil, "ARTWORK")
+  pandaImage:SetSize(128, 128)                            -- Reasonable size for the image
+  pandaImage:SetPoint("TOP", mainContent, "BOTTOM", 0, 0) -- Reduced the gap from -10 to 0
+  pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
-  -- General Tab Background
+  -- General Tab Background (now starts below the content container)
   local generalBg = parent:CreateTexture(nil, "BACKGROUND")
-  generalBg:SetPoint("TOPLEFT", 5, -95) -- Adjusted for the warning message
+  generalBg:SetPoint("TOPLEFT", 5, -95) -- Adjusted to match other tabs
   generalBg:SetPoint("BOTTOMRIGHT", -5, 5)
   generalBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
 
-  -- Enable checkbox - left aligned
-  local checkBox = CreateFrame("CheckButton", "DotMasterEnableCheckbox", parent, "UICheckButtonTemplate")
-  checkBox:SetPoint("TOPLEFT", 20, -110) -- Adjusted position
+  -- Create a centralized settings container (moved down to account for panda image)
+  local settingsContainer = CreateFrame("Frame", nil, parent)
+  settingsContainer:SetSize(430, 200)
+  settingsContainer:SetPoint("TOP", pandaImage, "BOTTOM", 0, -10) -- Reduced margin from -20 to -10
+
+  -- Enable checkbox - centered horizontally
+  local checkBox = CreateFrame("CheckButton", "DotMasterEnableCheckbox", settingsContainer, "UICheckButtonTemplate")
+  checkBox:SetPoint("TOP", settingsContainer, "TOP", 0, 0) -- Center aligned (changed from -80,0 to 0,0)
   checkBox:SetSize(26, 26)
 
   local checkBoxText = _G[checkBox:GetName() .. "Text"]
@@ -51,34 +55,77 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings() -- Save settings immediately
   end)
 
-  -- Debug Console Button
-  local debugConsoleButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  debugConsoleButton:SetSize(120, 22)
-  debugConsoleButton:SetPoint("LEFT", checkBoxText, "RIGHT", 20, 0)
-  debugConsoleButton:SetText("Debug Console")
-  debugConsoleButton:SetScript("OnClick", function()
-    -- Toggle debug window visibility
-    DM.Debug:ToggleWindow()
-  end)
+  -- Minimap checkbox - directly below enable checkbox and center aligned
+  local minimapCheckBox = CreateFrame("CheckButton", "DotMasterMinimapCheckbox", settingsContainer,
+    "UICheckButtonTemplate")
+  minimapCheckBox:SetPoint("TOP", checkBox, "BOTTOM", 0, -10)
+  minimapCheckBox:SetSize(26, 26)
 
-  -- Add help text for debug command
-  local debugHelpText = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-  debugHelpText:SetPoint("TOPLEFT", checkBox, "BOTTOMLEFT", 0, -5)
-  debugHelpText:SetWidth(350)
-  debugHelpText:SetJustifyH("LEFT")
-  debugHelpText:SetText("Type |cFFFFD100/dmdebug|r for quick access to debug options")
-  debugHelpText:SetTextColor(0.7, 0.7, 0.7)
+  local minimapCheckBoxText = _G[minimapCheckBox:GetName() .. "Text"]
+  minimapCheckBoxText:SetText("Show Minimap Icon")
+  minimapCheckBoxText:SetPoint("LEFT", minimapCheckBox, "RIGHT", 2, 0)
+
+  -- Set initial state from saved variables - CORRECTLY
+  -- Checked = Show (hide = false), Unchecked = Hide (hide = true)
+  minimapCheckBox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
+
+  -- Handle clicks
+  minimapCheckBox:SetScript("OnClick", function(self)
+    if not DotMasterDB or not DotMasterDB.minimap then return end
+
+    -- Set minimap visibility based on checkbox
+    -- Checked = Show (hide = false), Unchecked = Hide (hide = true)
+    DotMasterDB.minimap.hide = not self:GetChecked()
+
+    -- Update the minimap icon with the new setting
+    if DM.ToggleMinimapIcon then
+      -- Call our toggle function which reads the .hide value
+      DM:ToggleMinimapIcon()
+    else
+      -- Fallback direct manipulation if function not available
+      local LibDBIcon = LibStub("LibDBIcon-1.0")
+      if LibDBIcon then
+        if DotMasterDB.minimap.hide then
+          LibDBIcon:Hide("DotMaster")
+        else
+          LibDBIcon:Show("DotMaster")
+        end
+      end
+    end
+  end)
 
   -- Container for bottom buttons
   local bottomButtonContainer = CreateFrame("Frame", nil, parent)
   bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
   bottomButtonContainer:SetPoint("BOTTOM", 0, 10)
 
-  -- Reset Database Button (Moved from Database Tab)
+  -- Reset Database Button (left side)
   local resetDbButton = CreateFrame("Button", nil, bottomButtonContainer, "UIPanelButtonTemplate")
   resetDbButton:SetSize(150, 30)
-  resetDbButton:SetPoint("CENTER", 0, 0) -- Center it in the container
+  resetDbButton:SetPoint("RIGHT", bottomButtonContainer, "CENTER", -5, 0)
   resetDbButton:SetText("Reset Database")
+
+  -- Debug Console Button (right side)
+  local debugConsoleButton = CreateFrame("Button", nil, bottomButtonContainer, "UIPanelButtonTemplate")
+  debugConsoleButton:SetSize(150, 30)
+  debugConsoleButton:SetPoint("LEFT", bottomButtonContainer, "CENTER", 5, 0)
+  debugConsoleButton:SetText("Debug Console")
+  debugConsoleButton:SetScript("OnClick", function()
+    -- Toggle debug window visibility
+    DM.Debug:ToggleWindow()
+
+    -- Position the debug window next to the main UI if it's visible
+    if DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown() then
+      -- Get the parent frame (DotMasterOptionsFrame)
+      local optionsFrame = parent:GetParent()
+      if optionsFrame then
+        -- Clear any previous anchor points
+        DM.GUI.debugFrame:ClearAllPoints()
+        -- Anchor the debug window's top right to the main UI's top left
+        DM.GUI.debugFrame:SetPoint("TOPRIGHT", optionsFrame, "TOPLEFT", -5, 0)
+      end
+    end
+  end)
 
   -- Add tooltip
   resetDbButton:SetScript("OnEnter", function(self)

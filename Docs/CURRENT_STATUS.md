@@ -62,6 +62,11 @@ This document outlines the current development status of the DotMaster addon. It
 
 The most significant recent changes include:
 
+- ✅ **Minimap Icon**: Added minimap icon functionality for quick access to DotMaster and Find My Dots
+- ✅ **UI Improvements**: Redesigned General tab with better layout, spacing, and center-aligned elements
+- ✅ **Player Class Coloring**: Main UI now uses player's class color for border and title text
+- ✅ **Enhanced Search**: Improved database tab search to include class and spec names
+- ✅ **Development Features**: Added auto-opening debug console option in development environment
 - ✅ **Plater Integration**: Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
 - ✅ **Color Picker Functionality**: Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
 - ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks

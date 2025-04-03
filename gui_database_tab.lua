@@ -272,13 +272,18 @@ function GUI:RefreshDatabaseTabList(query)
       local filteredSpells = {}
       -- Check if class name matches the query
       local displayName = (DM:GetClassDisplayName(className) or className):lower()
-      local classNameMatches = displayName:find(query)
+      local classNameMatches = displayName:find(query, 1, true)
 
       for spellID, spellData in pairs(classSpells) do
-        -- Search in spell name and ID
+        -- Search in spell name, ID, class name, and spec name
         local spellName = (spellData.spellname or ""):lower()
         local spellIDStr = tostring(spellID)
-        if spellName:find(query) or spellIDStr:find(query) or classNameMatches then
+        local specName = (spellData.wowspec or ""):lower()
+        local nameMatch = spellName:find(query, 1, true)
+        local idMatch = spellIDStr:find(query, 1, true)
+        local specMatch = specName:find(query, 1, true)
+
+        if nameMatch or idMatch or classNameMatches or specMatch then
           filteredSpells[spellID] = spellData
         end
       end
@@ -401,8 +406,11 @@ function GUI:RefreshDatabaseTabList(query)
       -- Filter based on query (match name or ID)
       local nameMatch = spellData.spellname and spellData.spellname:lower():find(query, 1, true)
       local idMatch = tostring(spellID):find(query, 1, true)
+      local displayName = DM:GetClassDisplayName(className) or className
+      local classMatch = displayName:lower():find(query, 1, true)
+      local specMatch = spellData.wowspec and spellData.wowspec:lower():find(query, 1, true)
 
-      if query == "" or nameMatch or idMatch then
+      if query == "" or nameMatch or idMatch or classMatch or specMatch then
         visibleSpellCount = visibleSpellCount + 1
         local spellFrame = CreateFrame("Frame", nil, scrollChild)
         -- Align spell frame with class frame

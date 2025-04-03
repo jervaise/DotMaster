@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Version 0.9.1 (2023-04-10)
 
+- **New Features:**
+  - Added minimap icon for quick access to DotMaster and Find My Dots
+  - Implemented class-colored UI borders that match player's class
+  - Improved database tab search to include class and spec name searches
+  - Auto-opening debug console option for development environment
+
+- **User Interface Improvements:**
+  - Redesigned General tab with cleaner layout and improved spacing
+  - Added option to toggle minimap icon visibility in General settings
+  - Added main addon icon to the General tab
+  - Improved spacing between title and description text in all tabs
+  - Centered UI elements for better visual consistency
+
 - **Bug Fixes:**
   - Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
   - Improved integration with Plater's color system for more reliable behavior

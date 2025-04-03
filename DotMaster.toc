@@ -19,6 +19,7 @@ core.lua
 settings.lua
 gui_debug.lua
 utils.lua
+minimap.lua
 
 # Database and spells
 spell_database.lua
