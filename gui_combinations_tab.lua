@@ -83,7 +83,19 @@ function DM:CreateCombinationsTab(parent)
   scrollFrame:SetPoint("BOTTOM", listFrame, "BOTTOM", 0, 0)
 
   -- Hide scrollbar
-  local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+  local scrollBar = nil
+  if scrollFrame:GetName() then
+    scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+  else
+    -- For frames without names, try to get scrollbar directly from children
+    for _, child in pairs({ scrollFrame:GetChildren() }) do
+      if child:IsObjectType("Slider") then
+        scrollBar = child
+        break
+      end
+    end
+  end
+
   if scrollBar then
     scrollBar:SetWidth(0)
     scrollBar:SetAlpha(0)
@@ -427,7 +439,19 @@ function DM:ShowCombinationDialog(comboID)
     spellsScroll:SetPoint("BOTTOMRIGHT", -20, 0)
 
     -- Hide scrollbar
-    local scrollBar = _G[spellsScroll:GetName() .. "ScrollBar"]
+    local scrollBar = nil
+    if spellsScroll:GetName() then
+      scrollBar = _G[spellsScroll:GetName() .. "ScrollBar"]
+    else
+      -- For frames without names, try to get scrollbar directly from children
+      for _, child in pairs({ spellsScroll:GetChildren() }) do
+        if child:IsObjectType("Slider") then
+          scrollBar = child
+          break
+        end
+      end
+    end
+
     if scrollBar then
       scrollBar:SetWidth(0)
       scrollBar:SetAlpha(0)
@@ -651,7 +675,19 @@ function DM:ShowSpellSelectionForCombo(parent)
     scrollFrame:SetPoint("BOTTOM", frame, "BOTTOM", 0, 45)
 
     -- Hide scrollbar
-    local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+    local scrollBar = nil
+    if scrollFrame:GetName() then
+      scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+    else
+      -- For frames without names, try to get scrollbar directly from children
+      for _, child in pairs({ scrollFrame:GetChildren() }) do
+        if child:IsObjectType("Slider") then
+          scrollBar = child
+          break
+        end
+      end
+    end
+
     if scrollBar then
       scrollBar:SetWidth(0)
       scrollBar:SetAlpha(0)
@@ -867,7 +903,19 @@ local function SetupScrollFrames(frame)
     -- Direct scrollframes
     if child:IsObjectType("ScrollFrame") then
       -- Hide scrollbar
-      local scrollBar = _G[child:GetName() .. "ScrollBar"]
+      local scrollBar = nil
+      if child:GetName() then
+        scrollBar = _G[child:GetName() .. "ScrollBar"]
+      else
+        -- For frames without names, try to get scrollbar directly from children
+        for _, subchild in pairs({ child:GetChildren() }) do
+          if subchild:IsObjectType("Slider") then
+            scrollBar = subchild
+            break
+          end
+        end
+      end
+
       if scrollBar then
         scrollBar:SetWidth(0)
         scrollBar:SetAlpha(0)
