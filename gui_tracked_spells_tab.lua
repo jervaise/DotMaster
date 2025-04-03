@@ -9,24 +9,66 @@ local GUI = DM.GUI                      -- Alias for convenience
 function Components.CreateTrackedSpellsTab(parentFrame)
   DM:DatabaseDebug("Creating Tracked Spells Tab Content...")
 
+  -- Define layout constants for this tab (should match gui_spell_row.lua usage)
+  -- Ensure DM.GUI exists
+  DM.GUI = DM.GUI or {}
+  -- Define layout if not already defined
+  DM.GUI.layout = DM.GUI.layout or {
+    padding = 5,
+    columns = {
+      ON = 10,
+      ID = 40,     -- Start of Icon/Name
+      NAME = 70,   -- Not directly used for start, combined with ID
+      COLOR = 230, -- Moved left
+      UP = 275,    -- Moved left (approx center of arrows)
+      DOWN = 305,  -- Moved left
+      DEL = 355    -- Moved left
+    },
+    widths = {
+      ON = 24,
+      ID = 24,    -- Icon width approx
+      NAME = 160, -- Width for name text
+      COLOR = 30,
+      UP = 24,
+      DOWN = 24,
+      DEL = 70 -- Increased width slightly for Untrack
+    }
+  }
+  local LAYOUT = DM.GUI.layout
+  local COLUMN_POSITIONS = LAYOUT.columns
+  local COLUMN_WIDTHS = LAYOUT.widths
+
+  -- Create standardized info area
+  local infoArea = DotMaster_Components.CreateTabInfoArea(
+    parentFrame,
+    "Tracked Spells",
+    "Enable/disable spells for tracking and nameplate coloring."
+  )
+
   -- Button container at the bottom
   local buttonContainer = CreateFrame("Frame", nil, parentFrame)
   buttonContainer:SetSize(parentFrame:GetWidth() - 20, 50)
-  buttonContainer:SetPoint("BOTTOM", 0, 10) -- Position at bottom
+  buttonContainer:SetPoint("BOTTOM", 0, 10)
 
-  -- Find My Dots button
-  local findMyDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-  findMyDotsButton:SetSize(150, 30)
-  findMyDotsButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
-  findMyDotsButton:SetText("Find My Dots")
-  findMyDotsButton:SetScript("OnClick", function()
-    DM:StartFindMyDots()
+  -- Add from Database button (formerly Find My Dots)
+  local addFromDatabaseButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  addFromDatabaseButton:SetSize(150, 30)
+  addFromDatabaseButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
+  addFromDatabaseButton:SetText("Add from Database")
+  addFromDatabaseButton:SetScript("OnClick", function()
+    -- Simulate clicking the Database tab (ID 3)
+    if _G["DotMasterTab3"] then
+      _G["DotMasterTab3"]:Click()
+      DM:GUIDebug("Switched to Database tab via 'Add from Database' button")
+    else
+      DM:GUIDebug("ERROR: Could not find Database tab button (DotMasterTab3)")
+    end
   end)
 
   -- Untrack All button
   local untrackAllButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
   untrackAllButton:SetSize(150, 30)
-  untrackAllButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
+  untrackAllButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
   untrackAllButton:SetText("Untrack All")
 
   -- Add tooltip
@@ -68,11 +110,56 @@ function Components.CreateTrackedSpellsTab(parentFrame)
     StaticPopup_Show("DOTMASTER_UNTRACK_ALL_CONFIRM")
   end)
 
-  -- Main scroll frame for the spell list (properly constrained within the parent)
-  local scrollFrame = CreateFrame("ScrollFrame", "DotMasterTrackedScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
-  -- Anchor scroll frame to the top of the parent frame now
-  scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 15, -15)
-  scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted right offset: -23 -> -5
+  -- Create Header Frame (Centered, Fixed Width 430px)
+  local headerFrame = CreateFrame("Frame", nil, parentFrame)
+  headerFrame:SetSize(430, 20)                          -- Fixed width, Adjusted height to 20px
+  headerFrame:SetPoint("TOP", infoArea, "BOTTOM", 0, 0) -- No top margin
+
+  -- Add dark background to header
+  local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
+  headerBg:SetAllPoints(headerFrame)
+  headerBg:SetColorTexture(0, 0, 0, 0.6) -- Dark semi-transparent background
+
+  -- Calculate positions for right-aligned elements
+  local padding = LAYOUT.padding or 5
+  local untrackWidth = 70                           -- Width of untrack button
+  local untrackStart = 430 - padding - untrackWidth -- Right edge minus padding minus button width
+  local arrowWidth = 20
+  local arrowGap = 2
+  local swatchWidth = 24
+
+  -- Calculate positions from right to left
+  local upArrowStart = untrackStart - 5 - arrowWidth                                      -- 5px gap from untrack button
+  local downArrowStart = upArrowStart - arrowGap - arrowWidth                             -- 2px gap between arrows
+  local arrowCenter = downArrowStart + ((upArrowStart + arrowWidth) - downArrowStart) / 2 -- Center between arrows
+  local colorSwatchStart = downArrowStart - 10 - swatchWidth                              -- 10px gap from arrows
+
+  -- Create header labels
+  local function CreateHeaderLabel(text, justify, xOffset, yOffset)
+    local label = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetText(text)
+    if justify == "RIGHT" then
+      label:SetPoint("RIGHT", headerFrame, "RIGHT", xOffset, yOffset or 0)
+    elseif justify == "CENTER" then
+      label:SetPoint("CENTER", headerFrame, "LEFT", xOffset, yOffset or 0)
+    else
+      label:SetPoint("LEFT", headerFrame, "LEFT", xOffset, yOffset or 0)
+    end
+    return label
+  end
+
+  -- Create labels in order from left to right
+  CreateHeaderLabel("ON", "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2) - 16)
+  CreateHeaderLabel("SPELL", "LEFT", COLUMN_POSITIONS.ID - 10)
+  CreateHeaderLabel("COLOR", "LEFT", colorSwatchStart + (swatchWidth / 2) - 15) -- Center with color swatch
+  CreateHeaderLabel("ORDER", "CENTER", arrowCenter + 5)                       -- Center with arrows, moved slightly right
+  CreateHeaderLabel("TRACKED", "CENTER", untrackStart + (untrackWidth / 2) - 2) -- Center with untrack button, moved slightly left
+
+  -- Main scroll frame setup
+  local scrollFrame = CreateFrame("ScrollFrame", nil, parentFrame, "UIPanelScrollFrameTemplate")
+  scrollFrame:SetSize(430, 0)
+  scrollFrame:SetPoint("TOP", headerFrame, "BOTTOM", 0, -2) -- Match database tab's 2px margin
+  scrollFrame:SetPoint("BOTTOM", buttonContainer, "TOP", 0, 10)
 
   -- Forcefully hide the default scroll bar elements
   if scrollFrame.ScrollBar then
@@ -106,8 +193,9 @@ function Components.CreateTrackedSpellsTab(parentFrame)
 
   -- Create the scroll child (content container)
   local scrollChild = CreateFrame("Frame", "DotMasterTrackedScrollChild")
-  scrollChild:SetWidth(scrollFrame:GetWidth() - 10) -- Adjusted width for no scrollbar, slight padding
-  scrollChild:SetHeight(200)                        -- Give it an initial height
+  -- Width matches scrollFrame exactly
+  scrollChild:SetWidth(430)
+  scrollChild:SetHeight(200) -- Give it an initial height
   scrollFrame:SetScrollChild(scrollChild)
 
   -- Anchor scrollChild TOPLEFT to scrollFrame TOPLEFT
@@ -122,7 +210,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
     scrollFrame:SetPoint("BOTTOMRIGHT", buttonContainer, "TOPRIGHT", -5, 10) -- Adjusted right offset
 
     -- Update scrollChild width based on scrollFrame's potentially changed width
-    scrollChild:SetWidth(scrollFrame:GetWidth() - 10)
+    scrollChild:SetWidth(scrollFrame:GetWidth())
 
     -- Force layout update
     GUI:UpdateTrackedSpellsLayout()
@@ -214,18 +302,19 @@ function GUI:RefreshTrackedSpellTabList()
     -- Create a "no spells found" message
     local noSpellsText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     noSpellsText:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
-    noSpellsText:SetText("No tracked spells found. Use the Database tab to track spells.")
+    noSpellsText:SetText("No tracked spells found. Use 'Find My Dots' in the Database tab to add spells.")
     noSpellsText:SetTextColor(1, 0.82, 0)
     scrollChild:SetHeight(200) -- Ensure there's space for the message
     scrollChild:Show()
     return
   end
 
-  local yOffset = 5
+  local yOffset = 2 -- Reduced from 5 to 2 for tighter spacing
   local entryHeight = 40
   local headerHeight = 40
   local spacing = 3
-  local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins (10px left, 10px right)
+  -- Use full scrollChild width for rows now
+  local effectiveWidth = scrollChild:GetWidth() -- 430px
 
   -- Get player class token
   local _, playerClassToken = UnitClass("player")
@@ -261,7 +350,8 @@ function GUI:RefreshTrackedSpellTabList()
     local classData = groupedData[className]
     local classFrame = CreateFrame("Button", nil, scrollChild)
     classFrame:SetSize(effectiveWidth, headerHeight)
-    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset) -- Same overall position
+    -- Position at scrollChild's top-left corner (0 offset)
+    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
     classFrame.isExpanded = (className == playerClassToken)
     classFrame.spellFrames = {}
     classFrame:Show()
@@ -272,19 +362,21 @@ function GUI:RefreshTrackedSpellTabList()
     -- Background remains the same
     local bg = classFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.8)
+    -- bg:SetColorTexture(0, 0, 0, 0.8) -- Original Black Fallback
     if DM.classColors[className] then
       local color = DM.classColors[className]
-      bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8)
+      bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8) -- Dimmed class color
+    else
+      bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)                               -- Neutral Dark Grey Fallback
     end
 
     -- Define layout constants (updated for swatch size)
-    local padding = 5 -- General padding between elements
+    local padding = GUI.layout.padding or 5 -- Access layout via GUI table
     local checkboxWidth = 20
     local iconSize = 25
     local colorSwatchSize = 24 -- Swatch size from gui_colorpicker.lua
     local arrowSize = 20
-    local untrackWidth = 70
+    local untrackWidth = 70    -- Match layout width
     local untrackHeight = 25
 
     -- 1. Collapse/Expand Indicator (Aligned with Checkbox)
@@ -296,24 +388,18 @@ function GUI:RefreshTrackedSpellTabList()
       "Interface\\Buttons\\UI-PlusButton-Up")
     classFrame.indicator = indicator -- Store reference
 
-    -- 3. Tracked Spell Count (Aligned Right with Untrack Button)
-    local numSpells = 0
-    for _ in pairs(classData) do numSpells = numSpells + 1 end
-    local countText = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    -- Align right edge like the untrack button (padding from frame end)
-    countText:SetPoint("RIGHT", classFrame, "RIGHT", -padding, 0)
-    countText:SetText(string.format("(%d Spells)", numSpells))
-    countText:SetTextColor(0.8, 0.8, 0.8) -- Greyish color
-    countText:SetJustifyH("RIGHT")
-    classFrame.countText = countText      -- Store reference if needed later
+    -- 3. Tracked Spell Count (Centered with Untrack Button)
+    local spellCountText = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    spellCountText:SetPoint("CENTER", classFrame, "RIGHT", -(padding + untrackWidth / 2), 0) -- Center with untrack button
+    spellCountText:SetJustifyH("CENTER")
+    local spellCount = 0
+    for _ in pairs(classData or {}) do spellCount = spellCount + 1 end
+    spellCountText:SetText(string.format("(%d Spells)", spellCount))
 
-    -- 2. Class Name (Between Indicator and Count Text)
+    -- 2. Class Name (Between Indicator and Count Text, adjusted for proper spacing)
     local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    -- Align left edge like the spell icon (padding + checkboxWidth + padding)
-    local classNameLeftOffset = padding + checkboxWidth + padding
-    text:SetPoint("LEFT", classFrame, "LEFT", classNameLeftOffset, 0)
-    -- Align right edge to the left of the count text
-    text:SetPoint("RIGHT", countText, "LEFT", -padding, 0)
+    text:SetPoint("LEFT", classFrame, "LEFT", padding + checkboxWidth + padding, 0)
+    text:SetPoint("RIGHT", spellCountText, "LEFT", -padding, 0)
     local displayName = DM:GetClassDisplayName(className) or className
     text:SetText(displayName)
     text:SetJustifyH("LEFT")
@@ -382,7 +468,8 @@ function GUI:RefreshTrackedSpellTabList()
       visibleSpellCount = visibleSpellCount + 1
       local spellFrame = CreateFrame("Frame", nil, scrollChild)
       spellFrame:SetSize(effectiveWidth, entryHeight)
-      spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+      -- Position at scrollChild's top-left corner (0 offset)
+      spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
       if not classFrame.isExpanded then spellFrame:Hide() else spellFrame:Show() end
 
       local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
@@ -423,11 +510,9 @@ function GUI:RefreshTrackedSpellTabList()
 
       -- Right-Anchored Elements (Reverse Order: Untrack -> Up -> Down -> Swatch)
       local currentRightAnchor = spellFrame
-      local currentRightOffset = -padding
+      local currentRightOffset = -padding -- Standard right padding
 
       -- 7. Untrack Button
-      DM:DatabaseDebug(string.format("Before SetSize for UntrackButton (Spell %d): untrackWidth=%s, untrackHeight=%s",
-        spellID, tostring(untrackWidth), tostring(untrackHeight)))
       local untrackButton = CreateFrame("Button", nil, spellFrame, "UIPanelButtonTemplate")
       untrackButton:SetSize(untrackWidth, untrackHeight)
       untrackButton:SetPoint("RIGHT", currentRightAnchor, "RIGHT", currentRightOffset, 0)
@@ -438,8 +523,9 @@ function GUI:RefreshTrackedSpellTabList()
         DM:SaveDMSpellsDB()
         GUI:RefreshTrackedSpellTabList()
       end)
+      -- Next element anchors to the left of this one
       currentRightAnchor = untrackButton
-      currentRightOffset = -padding
+      currentRightOffset = -5 -- Gap between Untrack and Up arrow
 
       -- 6. Up Arrow Button
       local upArrow = CreateFrame("Button", nil, spellFrame)
@@ -468,8 +554,9 @@ function GUI:RefreshTrackedSpellTabList()
           GUI:RefreshTrackedSpellTabList()
         end
       end)
+      -- Next element anchors to the left of this one
       currentRightAnchor = upArrow
-      currentRightOffset = -padding
+      currentRightOffset = -2 -- Gap between Up and Down arrow
 
       -- 5. Down Arrow Button
       local downArrow = CreateFrame("Button", nil, spellFrame)
@@ -498,10 +585,11 @@ function GUI:RefreshTrackedSpellTabList()
           GUI:RefreshTrackedSpellTabList()
         end
       end)
+      -- Next element anchors to the left of this one
       currentRightAnchor = downArrow
-      currentRightOffset = -padding
+      currentRightOffset = -10 -- Gap between Down arrow and Swatch
 
-      -- 4. Color Swatch (Using DotMaster_CreateColorSwatch)
+      -- 4. Color Swatch
       local initialColor
       if spellData.color and type(spellData.color) == "table" and #spellData.color >= 3 then
         local r_check = tonumber(spellData.color[1]) or 1
@@ -568,11 +656,12 @@ function GUI:UpdateTrackedSpellsLayout()
   local scrollChild = GUI.trackedScrollChild
   if not scrollChild then return end
 
-  local yOffset = 5
-  local entryHeight = 40                             -- Set to 40
-  local headerHeight = 40                            -- Set to 40
+  local yOffset = 2       -- Reduced from 5 to 2 for tighter spacing
+  local entryHeight = 40  -- Set to 40
+  local headerHeight = 40 -- Set to 40
   local spacing = 3
-  local effectiveWidth = scrollChild:GetWidth() - 20 -- Allow for margins
+  -- Use full scrollChild width for rows now
+  local effectiveWidth = scrollChild:GetWidth() -- 430px
 
   local _, playerClassToken = UnitClass("player")
 
@@ -590,14 +679,16 @@ function GUI:UpdateTrackedSpellsLayout()
     local classFrame = GUI.trackedClassFrames[className]
     if classFrame then
       classFrame:ClearAllPoints()
-      classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+      -- Position at scrollChild's top-left corner (0 offset)
+      classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
       classFrame:SetWidth(effectiveWidth)
       yOffset = yOffset + headerHeight + spacing
 
       if classFrame.isExpanded then
         for _, spellFrame in ipairs(classFrame.spellFrames or {}) do
           spellFrame:ClearAllPoints()
-          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
+          -- Position at scrollChild's top-left corner (0 offset)
+          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
           spellFrame:SetWidth(effectiveWidth)
           spellFrame:Show()
           yOffset = yOffset + entryHeight + spacing

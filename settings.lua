@@ -11,7 +11,7 @@ function DM:SaveSettings()
   end
 
   DotMasterDB.enabled = DM.enabled
-  DotMasterDB.version = "0.7.2"
+  DotMasterDB.version = DM.defaults.version
 
   -- Save debug categories and options
   if DM.DEBUG_CATEGORIES then

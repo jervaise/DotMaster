@@ -69,47 +69,53 @@ function DM:CreateGeneralTab(parent)
   debugHelpText:SetText("Type |cFFFFD100/dmdebug|r for quick access to debug options")
   debugHelpText:SetTextColor(0.7, 0.7, 0.7)
 
-  -- Reset All Settings button
-  local resetButton = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  resetButton:SetSize(150, 30)
-  resetButton:SetPoint("TOPLEFT", 20, -180) -- Adjusted position
-  resetButton:SetText("Reset All Settings")
+  -- Container for bottom buttons
+  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
+  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
+  bottomButtonContainer:SetPoint("BOTTOM", 0, 10)
 
-  resetButton:SetScript("OnClick", function()
-    -- Create confirmation dialog
-    StaticPopupDialogs["DOTMASTER_RESET_CONFIRM"] = {
-      text =
-      "Are you sure you want to reset all DotMaster settings? This will delete all your saved spells and configurations.",
-      button1 = "Yes",
-      button2 = "No",
+  -- Reset Database Button (Moved from Database Tab)
+  local resetDbButton = CreateFrame("Button", nil, bottomButtonContainer, "UIPanelButtonTemplate")
+  resetDbButton:SetSize(150, 30)
+  resetDbButton:SetPoint("CENTER", 0, 0) -- Center it in the container
+  resetDbButton:SetText("Reset Database")
+
+  -- Add tooltip
+  resetDbButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Reset Database", 1, 1, 1)
+    GameTooltip:AddLine("Clear all spells from the database. This cannot be undone!", 1, 0.3, 0.3, true)
+    GameTooltip:Show()
+  end)
+
+  resetDbButton:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
+  end)
+
+  resetDbButton:SetScript("OnClick", function()
+    -- Confirmation prompt (Copied from Database Tab)
+    StaticPopupDialogs["DOTMASTER_RESET_DB_CONFIRM"] = {
+      text = "Are you sure you want to reset the database?\nThis will remove ALL spells and cannot be undone!",
+      button1 = "Yes, Reset",
+      button2 = "Cancel",
       OnAccept = function()
-        DM:PrintMessage("Resetting all settings to defaults...")
-        -- Reset all settings
-        DotMasterDB = nil
-        DM.enabled = DM.defaults.enabled
-        DM.DEBUG_MODE = true
-
-        -- Reset spell database
+        DM:DatabaseDebug("Resetting Database from General Tab")
         DM:ResetDMSpellsDB()
-
-        -- Apply changes
-        DM:ResetAllNameplates()
-        DM:UpdateAllNameplates()
-        DM:SaveSettings()
         DM:SaveDMSpellsDB()
-
-        -- Refresh UI
-        if DM.GUI and DM.GUI.RefreshSpellList then
-          DM.GUI:RefreshSpellList()
+        -- Refresh relevant UI if open
+        if DM.GUI and DM.GUI.RefreshDatabaseTabList then
+          DM.GUI:RefreshDatabaseTabList()
         end
-
-        DM:PrintMessage("All settings have been reset to defaults.")
+        if DM.GUI and DM.GUI.RefreshTrackedSpellTabList then
+          DM.GUI:RefreshTrackedSpellTabList()
+        end
+        DM:DatabaseDebug("Database has been reset and UI refreshed.")
       end,
       timeout = 0,
       whileDead = true,
       hideOnEscape = true,
       preferredIndex = 3,
     }
-    StaticPopup_Show("DOTMASTER_RESET_CONFIRM")
+    StaticPopup_Show("DOTMASTER_RESET_DB_CONFIRM")
   end)
 end

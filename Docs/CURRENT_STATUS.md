@@ -6,17 +6,17 @@ This document outlines the current development status of the DotMaster addon. It
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 0.7.1
+- **Current Version**: 0.8.5
 - **Status**: Active Development
-- **Last Updated**: April 3, 2024
+- **Last Updated**: April 10, 2024
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 0.7.1
+- **Current Version**: 0.8.5
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.6.9)
-  - **develop**: Active development branch (v0.7.1)
+  - **main**: Contains the latest stable release (v0.8.0)
+  - **develop**: Active development branch (v0.8.5)
     - This branch is always used for in-game testing
 
 ## Development Progress

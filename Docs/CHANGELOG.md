@@ -327,4 +327,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Remove button positioning and alignment
 - Optimized content layout for visual balance
 
+## [0.8.5] - 2024-04-10 (UI Refinements)
+
+### Changed
+- Improved Database tab UI:
+  - Adjusted spacing between table header and class headers to 3px
+  - Enhanced search functionality to include class names in search results
+  - Fixed search bar placeholder text behavior
+  - Standardized info area height to 50px across all tabs
+  - Centered info text vertically in info areas
+  - Set search bar width to 430px and centered positioning
+
+### Fixed
+- Resolved issues with search bar placeholder text not clearing properly
+- Fixed vertical alignment of info text across all tabs
+- Corrected spacing and margins in the Tracked Spells tab
+- Addressed LAYOUT variable access in RefreshTrackedSpellTabList function
+
 // ... existing code ... 

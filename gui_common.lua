@@ -4,6 +4,35 @@
 local DM = DotMaster
 DotMaster_Components = {}
 
+-- Create standardized info area for tabs
+local function CreateTabInfoArea(parentFrame, titleText, explanationText)
+  -- Create info area container
+  local infoArea = CreateFrame("Frame", nil, parentFrame)
+  infoArea:SetSize(430, 75) -- 75px height
+  infoArea:SetPoint("TOP", parentFrame, "TOP", 0, 0)
+
+  -- Center container for text elements with equal top/bottom margins
+  local textContainer = CreateFrame("Frame", nil, infoArea)
+  textContainer:SetSize(430, 45)                             -- Reduced height to allow for margins
+  textContainer:SetPoint("CENTER", infoArea, "CENTER", 0, 0) -- Centered vertically
+
+  -- Info Area Title
+  local infoTitle = textContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  infoTitle:SetPoint("TOP", textContainer, "TOP", 0, 0)
+  infoTitle:SetText(titleText)
+  infoTitle:SetTextColor(1, 0.82, 0) -- WoW Gold
+
+  -- Info Area Explanation
+  local infoExplanation = textContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  infoExplanation:SetPoint("TOP", infoTitle, "BOTTOM", 0, -2)
+  infoExplanation:SetWidth(300)
+  infoExplanation:SetJustifyH("CENTER")
+  infoExplanation:SetText(explanationText)
+  infoExplanation:SetTextColor(0.8, 0.8, 0.8)
+
+  return infoArea
+end
+
 -- Define component functions first (before they are used)
 DotMaster_Components.CreateGeneralTab = function(parent)
   return DM:CreateGeneralTab(parent)
@@ -17,6 +46,9 @@ end
 DotMaster_Components.CreateDatabaseTab = function(parent)
   return Components.CreateDatabaseTab(parent)
 end
+
+-- Store the info area creation function in the Components namespace
+DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 
 -- Create the main GUI
 function DM:CreateGUI()
@@ -73,8 +105,10 @@ function DM:CreateGUI()
 
   -- Author credit
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("BOTTOM", 0, 10)
-  author:SetText("by Jervaise")
+  author:SetPoint("BOTTOM", 0, 15) -- Keep increased bottom margin
+  -- Read version from SavedVariables, fallback to defaults if not found
+  local versionString = (DotMasterDB and DotMasterDB.version) or (DM.defaults and DM.defaults.version) or "N/A"
+  author:SetText("by Jervaise - v" .. versionString)
 
   -- Create tab system
   local tabHeight = 30
