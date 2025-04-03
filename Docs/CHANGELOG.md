@@ -248,4 +248,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Adjusted spacing between UI elements for optimal readability
 
 ## Version 0.6.8
+## UI Improvements (Tracked Spells Tab)
+
+- Enhanced visibility of the table with proper spacing and borders
+- Fixed the scrollbar to appear only when needed
+- Adjusted background margins to create perfect symmetry
+- Improved layout with optimized column widths for better readability
+- Fixed Remove button positioning and alignment
+- Optimized content layout for visual balance
+
 // ... existing code ... 
