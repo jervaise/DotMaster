@@ -13,6 +13,57 @@ local function GetPlayerClassColor()
   return { r = 0.6, g = 0.6, b = 0.6 }
 end
 
+-- Helper function to set up mouse wheel scrolling and hide scrollbars
+local function SetupScrollFrames(frame)
+  if not frame then return end
+
+  -- Process all scrollframes in this frame
+  for _, child in pairs({ frame:GetChildren() }) do
+    -- Direct scrollframes
+    if child:IsObjectType("ScrollFrame") then
+      -- Hide scrollbar
+      local scrollBar = nil
+      if child:GetName() then
+        scrollBar = _G[child:GetName() .. "ScrollBar"]
+      else
+        -- For frames without names, try to get scrollbar directly from children
+        for _, subchild in pairs({ child:GetChildren() }) do
+          if subchild:IsObjectType("Slider") then
+            scrollBar = subchild
+            break
+          end
+        end
+      end
+
+      if scrollBar then
+        scrollBar:SetWidth(0)
+        scrollBar:SetAlpha(0)
+      end
+
+      -- Enable mouse wheel scrolling
+      child:EnableMouseWheel(true)
+      child:SetScript("OnMouseWheel", function(self, delta)
+        local currentScroll = self:GetVerticalScroll()
+        local scrollRange = self:GetVerticalScrollRange()
+
+        -- Calculate new scroll position (faster scrolling with higher step)
+        local newPosition = currentScroll - (delta * 30)
+
+        -- Clamp scroll position to valid range
+        newPosition = math.max(0, math.min(newPosition, scrollRange))
+
+        -- Apply the scroll
+        self:SetVerticalScroll(newPosition)
+      end)
+    end
+
+    -- Nested scrollframes (in container frames)
+    if child:IsObjectType("Frame") then
+      SetupScrollFrames(child)
+    end
+  end
+end
+
 function DM:CreateCombinationsTab(parent)
   -- Ensure combinations are initialized
   if not DM:IsCombinationsInitialized() then
@@ -1166,55 +1217,4 @@ function DM:ShowSpellSelectionForCombo(parent)
   frame:SetScript("OnShow", function(self)
     self:Raise()
   end)
-end
-
--- Helper function to set up mouse wheel scrolling and hide scrollbars
-local function SetupScrollFrames(frame)
-  if not frame then return end
-
-  -- Process all scrollframes in this frame
-  for _, child in pairs({ frame:GetChildren() }) do
-    -- Direct scrollframes
-    if child:IsObjectType("ScrollFrame") then
-      -- Hide scrollbar
-      local scrollBar = nil
-      if child:GetName() then
-        scrollBar = _G[child:GetName() .. "ScrollBar"]
-      else
-        -- For frames without names, try to get scrollbar directly from children
-        for _, subchild in pairs({ child:GetChildren() }) do
-          if subchild:IsObjectType("Slider") then
-            scrollBar = subchild
-            break
-          end
-        end
-      end
-
-      if scrollBar then
-        scrollBar:SetWidth(0)
-        scrollBar:SetAlpha(0)
-      end
-
-      -- Enable mouse wheel scrolling
-      child:EnableMouseWheel(true)
-      child:SetScript("OnMouseWheel", function(self, delta)
-        local currentScroll = self:GetVerticalScroll()
-        local scrollRange = self:GetVerticalScrollRange()
-
-        -- Calculate new scroll position (faster scrolling with higher step)
-        local newPosition = currentScroll - (delta * 30)
-
-        -- Clamp scroll position to valid range
-        newPosition = math.max(0, math.min(newPosition, scrollRange))
-
-        -- Apply the scroll
-        self:SetVerticalScroll(newPosition)
-      end)
-    end
-
-    -- Nested scrollframes (in container frames)
-    if child:IsObjectType("Frame") then
-      SetupScrollFrames(child)
-    end
-  end
 end
