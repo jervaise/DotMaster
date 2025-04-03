@@ -237,6 +237,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration UI
 - Support for common DoT spells
 
+## Version 0.7.0
+- Version bump for continued development
+- Branch management and repository organization
+- Documentation updates
+
 ## Version 0.6.9
 - UI Improvements for the Tracked Spells tab:
   - Fixed scrollbar overlap issue by properly accounting for scrollbar width
@@ -256,15 +261,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved layout with optimized column widths for better readability
 - Fixed Remove button positioning and alignment
 - Optimized content layout for visual balance
-- Added collapsible class-based grouping for spells with class-colored headers
-- Implemented expand/collapse functionality for each class group
-- Added class icons for better visual identification
-- Maintained ordering by priority within each class group
-
-## Bug Fixes
-
-- Fixed issue with class-based grouping by using the correct row creation function
-- Improved scroll position handling for class groups
-- Fixed variable scoping issues in tracked spells tab
 
 // ... existing code ... 

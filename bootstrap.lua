@@ -16,7 +16,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  version = "0.6.8"
+  version = "0.7.0"
 }
 
 -- Debug categories (minimal initial setup)

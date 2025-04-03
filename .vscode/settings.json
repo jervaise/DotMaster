@@ -45,7 +45,8 @@
     "ScrollingEdit_OnTextChanged",
     "ScrollingEdit_OnCursorChanged",
     "ScrollingEdit_OnUpdate",
-    "GameTooltip_Hide"
+    "GameTooltip_Hide",
+    "ChatFontNormal"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {

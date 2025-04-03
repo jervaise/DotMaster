@@ -60,26 +60,27 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local scrollChild = DM.GUI.scrollChild
   local spellRow = CreateFrame("Frame", "DotMasterSpellRow" .. index, scrollChild)
 
-  -- Calculate row width properly accounting for scrollbar
-  -- Use the exact width of the scrollChild, which already has scrollbar width subtracted
+  -- Calculate row width to match content area
   local rowWidth = scrollChild:GetWidth() - (PADDING.INNER * 2)
   local rowHeight = 36 -- Define row height
+
+  -- Set the row size and position
   spellRow:SetSize(rowWidth, rowHeight)
   spellRow:SetPoint("TOPLEFT", PADDING.INNER, -yOffset)
   spellRow.spellID = numericID -- Store the spellID (numeric) reference
 
-  -- Basic background
+  -- Create background for the row - full width
   local bg = spellRow:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints()
+  bg:SetAllPoints(spellRow)
   if index % 2 == 0 then
     bg:SetColorTexture(0.15, 0.15, 0.15, 0.5) -- Darker
   else
     bg:SetColorTexture(0.2, 0.2, 0.2, 0.3)    -- Lighter
   end
 
-  -- Highlight on hover
+  -- Highlight effect on hover
   local highlight = spellRow:CreateTexture(nil, "HIGHLIGHT")
-  highlight:SetAllPoints()
+  highlight:SetAllPoints(spellRow)
   highlight:SetColorTexture(0.3, 0.3, 0.3, 0.3)
   highlight:SetBlendMode("ADD")
 
@@ -87,7 +88,7 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local enableCheckbox = CreateFrame("CheckButton", nil, spellRow, "UICheckButtonTemplate")
   enableCheckbox:SetSize(24, 24)
   -- Center the checkbox in its column for better alignment
-  enableCheckbox:SetPoint("LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2) - 12, 0)
+  enableCheckbox:SetPoint("CENTER", spellRow, "LEFT", COLUMN_POSITIONS.ON + (COLUMN_WIDTHS.ON / 2), 0)
   enableCheckbox:SetChecked(config.enabled == 1)
 
   enableCheckbox:SetScript("OnClick", function(self)
@@ -126,8 +127,8 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local nameText = spellContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
   -- Allow more space for name by using most of the available width
-  -- Leave 20px margin on right for better spacing
-  nameText:SetWidth(COLUMN_WIDTHS.NAME + COLUMN_WIDTHS.ID - iconSize - 28)
+  -- Adjust width to account for wider window
+  nameText:SetWidth(COLUMN_WIDTHS.NAME + COLUMN_WIDTHS.ID - iconSize - 20)
   nameText:SetJustifyH("LEFT")
   local spellName = config.spellname or "Unknown Name"
   nameText:SetText(string.format("%s (%d)", spellName, numericID))
@@ -160,9 +161,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   orderContainer:SetSize(COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN, rowHeight)
   orderContainer:SetPoint("LEFT", COLUMN_POSITIONS.UP, 0)
 
-  -- Calculate centered position for the buttons
+  -- Calculate centered position for the buttons with reduced spacing
   local buttonAreaWidth = COLUMN_WIDTHS.UP + COLUMN_WIDTHS.DOWN
-  local buttonsWidth = 24 + 5 + 24 -- button + spacing + button
+  local buttonsWidth = 24 + 2 + 24 -- button + spacing + button
   local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
 
   -- Down Button (left) - Standard WoW arrow
@@ -173,10 +174,10 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   downButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
   downButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
 
-  -- UP Button (right) - Standard WoW arrow - minimal spacing
+  -- UP Button (right) - Standard WoW arrow - reduced spacing
   local upButton = CreateFrame("Button", nil, orderContainer)
   upButton:SetSize(24, 24)
-  upButton:SetPoint("LEFT", downButton, "RIGHT", 5, 0)
+  upButton:SetPoint("LEFT", downButton, "RIGHT", 2, 0) -- Reduced from 5px to 2px
   upButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
   upButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
   upButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
@@ -216,10 +217,10 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     DM.GUI:RefreshTrackedSpellList()
   end)
 
-  -- UNTRACK: Cross button to untrack spell - make it more visible
+  -- Create UNTRACK/Remove button with proper spacing and sizing
   local untrackButton = CreateFrame("Button", nil, spellRow, "UIPanelButtonTemplate")
-  untrackButton:SetSize(65, 24) -- Wider for better visibility and text fit
-  untrackButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL + 5, 0)
+  untrackButton:SetSize(60, 24) -- Maintain size for consistency
+  untrackButton:SetPoint("LEFT", COLUMN_POSITIONS.DEL, 0)
   untrackButton:SetText("Remove")
 
   -- Make button red to stand out
@@ -256,28 +257,34 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   function spellRow.UpdatePositions(positions, widths)
     if not positions or not widths then return end
 
+    -- Update row width to match content area
+    spellRow:SetWidth(scrollChild:GetWidth() - (PADDING.INNER * 2))
+
     -- Update positioned elements
-    enableCheckbox:SetPoint("LEFT", positions.ON + (widths.ON / 2) - 12, 0)
+    enableCheckbox:SetPoint("CENTER", spellRow, "LEFT", positions.ON + (widths.ON / 2), 0)
 
     spellContainer:SetPoint("LEFT", positions.ID, 0)
     spellContainer:SetSize(widths.ID + widths.NAME, rowHeight)
 
-    -- Update nameText width when positions change
-    nameText:SetWidth(widths.NAME + widths.ID - iconSize - 28)
+    -- Update nameText width
+    nameText:SetWidth(widths.NAME + widths.ID - iconSize - 20)
 
     colorSwatch:SetPoint("LEFT", positions.COLOR, 0)
 
     orderContainer:SetPoint("LEFT", positions.UP, 0)
     orderContainer:SetSize(widths.UP + widths.DOWN, rowHeight)
 
-    -- Recalculate centered button positions
+    -- Update arrow buttons position
     local buttonAreaWidth = widths.UP + widths.DOWN
-    local buttonsWidth = 24 + 5 + 24 -- button + spacing + button
+    local buttonsWidth = 24 + 2 + 24 -- button + spacing + button
     local leftPadding = (buttonAreaWidth - buttonsWidth) / 2
     downButton:SetPoint("LEFT", leftPadding, 0)
-    upButton:SetPoint("LEFT", downButton, "RIGHT", 5, 0)
+    upButton:SetPoint("LEFT", downButton, "RIGHT", 2, 0)
 
-    untrackButton:SetPoint("LEFT", positions.DEL + 5, 0)
+    -- Position Remove button
+    untrackButton:SetPoint("LEFT", positions.DEL, 0)
+    -- With increased window width, we can use full button width
+    untrackButton:SetWidth(60)
   end
 
   -- Add to tracking table

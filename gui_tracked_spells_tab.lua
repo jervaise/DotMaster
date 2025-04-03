@@ -336,320 +336,130 @@ function DM:CreateTrackedSpellsTab(parent)
   scrollChild:HookScript("OnSizeChanged", function()
     UpdateHeaderPositions()
   end)
+end
 
-  -- Class-specific tracking
-  local classGroups = {}
-  local classFrames = {}
-  local isClassExpanded = {}
-  local spellOrder = {} -- Define spellOrder at this level so it's properly scoped
-
-  -- Class color constants (RGB values using WoW class colors)
-  local CLASS_COLORS = {
-    ["DEATHKNIGHT"] = { 0.77, 0.12, 0.23 },
-    ["DEMONHUNTER"] = { 0.64, 0.19, 0.79 },
-    ["DRUID"] = { 1.00, 0.49, 0.04 },
-    ["HUNTER"] = { 0.67, 0.83, 0.45 },
-    ["MAGE"] = { 0.41, 0.80, 0.94 },
-    ["MONK"] = { 0.00, 1.00, 0.59 },
-    ["PALADIN"] = { 0.96, 0.55, 0.73 },
-    ["PRIEST"] = { 1.00, 1.00, 1.00 },
-    ["ROGUE"] = { 1.00, 0.96, 0.41 },
-    ["SHAMAN"] = { 0.00, 0.44, 0.87 },
-    ["WARLOCK"] = { 0.58, 0.51, 0.79 },
-    ["WARRIOR"] = { 0.78, 0.61, 0.43 },
-    ["OTHER"] = { 0.60, 0.60, 0.60 } -- Default for uncategorized spells
-  }
-
-  -- Class icon texture coordinates for the class circle textures
-  local CLASS_ICON_TCOORDS = {
-    ["WARRIOR"]     = { 0, 0.25, 0, 0.25 },
-    ["MAGE"]        = { 0.25, 0.49609375, 0, 0.25 },
-    ["ROGUE"]       = { 0.49609375, 0.7421875, 0, 0.25 },
-    ["DRUID"]       = { 0.7421875, 0.98828125, 0, 0.25 },
-    ["HUNTER"]      = { 0, 0.25, 0.25, 0.5 },
-    ["SHAMAN"]      = { 0.25, 0.49609375, 0.25, 0.5 },
-    ["PRIEST"]      = { 0.49609375, 0.7421875, 0.25, 0.5 },
-    ["WARLOCK"]     = { 0.7421875, 0.98828125, 0.25, 0.5 },
-    ["PALADIN"]     = { 0, 0.25, 0.5, 0.75 },
-    ["DEATHKNIGHT"] = { 0.25, 0.49609375, 0.5, 0.75 },
-    ["MONK"]        = { 0.49609375, 0.7421875, 0.5, 0.75 },
-    ["DEMONHUNTER"] = { 0.7421875, 0.98828125, 0.5, 0.75 },
-  }
-
-  -- Function to get class color by class name
-  local function GetClassColor(className)
-    className = className and string.upper(className) or "OTHER"
-    return CLASS_COLORS[className] or CLASS_COLORS["OTHER"]
+-- Function to refresh the tracked spells list with class/spec grouping
+function DM.GUI:RefreshTrackedSpellList()
+  -- Ensure the necessary GUI elements exist
+  if not DM.GUI.scrollChild or not DM.GUI.scrollFrame then
+    DM:DatabaseDebug("Required GUI elements (scrollChild or scrollFrame) not found in RefreshTrackedSpellList")
+    return
   end
 
-  -- Create a collapsible class header
-  local function CreateClassHeader(className, order)
-    local color = GetClassColor(className)
-    local displayName = className and className:gsub("^%l", string.upper) or "Other"
+  -- Clear existing frames
+  if not DM.GUI.spellFrames then DM.GUI.spellFrames = {} end
+  for _, frame in ipairs(DM.GUI.spellFrames) do
+    frame:Hide()
+    -- Consider pooling frames here instead of destroying if performance is an issue
+  end
+  DM.GUI.spellFrames = {}
 
-    local headerFrame = CreateFrame("Button", nil, scrollChild)
-    headerFrame:SetSize(scrollChild:GetWidth() - 20, 25)
-    headerFrame:SetPoint("TOPLEFT", 10, -(80 + (order * 30)))
+  local yOffset = 40 -- Start after header
+  local index = 0
 
-    -- Header background
-    local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
-    headerBg:SetAllPoints()
-    headerBg:SetColorTexture(color[1] * 0.3, color[2] * 0.3, color[3] * 0.3, 0.8)
-
-    -- Class icon (placeholder - could be replaced with actual class icons)
-    local classIcon = headerFrame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(20, 20)
-    classIcon:SetPoint("LEFT", 5, 0)
-    classIcon:SetTexture("Interface\\TARGETINGFRAME\\UI-Classes-Circles")
-    local coords = CLASS_ICON_TCOORDS[className:upper()]
-    if coords then
-      classIcon:SetTexCoord(unpack(coords))
-    else
-      classIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-    end
-
-    -- Class name text
-    local classText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    classText:SetPoint("LEFT", classIcon, "RIGHT", 5, 0)
-    classText:SetText(displayName)
-    classText:SetTextColor(color[1], color[2], color[3])
-
-    -- Expand/collapse indicator
-    local expandIcon = headerFrame:CreateTexture(nil, "OVERLAY")
-    expandIcon:SetSize(16, 16)
-    expandIcon:SetPoint("RIGHT", -5, 0)
-    expandIcon:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
-
-    -- Set initial state (expanded)
-    isClassExpanded[className] = true
-
-    -- Click handler for expand/collapse
-    headerFrame:SetScript("OnClick", function()
-      isClassExpanded[className] = not isClassExpanded[className]
-
-      -- Update the expand/collapse icon
-      if isClassExpanded[className] then
-        expandIcon:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
-      else
-        expandIcon:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
-      end
-
-      -- Show/hide spell rows for this class
-      for _, frame in ipairs(classGroups[className] or {}) do
-        frame:SetShown(isClassExpanded[className])
-      end
-
-      -- Reload the rows to fix positioning
-      DM:LoadTrackedSpells()
-    end)
-
-    -- Mouse interaction feedback
-    headerFrame:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight", "ADD")
-
-    return headerFrame
+  -- Ensure DM.dmspellsdb exists and has data
+  if not DM.dmspellsdb or not next(DM.dmspellsdb) then
+    DM:DatabaseDebug("dmspellsdb is empty or nil, nothing to display in Tracked Spells.")
+    DM.GUI.scrollChild:SetHeight(DM.GUI.scrollFrame:GetHeight()) -- Set height to default if empty
+    return
   end
 
-  -- Replace the RefreshTrackedSpellList function with our LoadTrackedSpells
-  function DM:RefreshTrackedSpellList()
-    DM:LoadTrackedSpells()
+  -- Group spells by class and spec from dmspellsdb
+  local spellsByClassSpec = {}
+  local playerClass, playerSpec = DM:GetPlayerClassAndSpec()
+  playerClass = playerClass or "UNKNOWN"
+  playerSpec = playerSpec or "General"
+
+  -- Always create entry for player's class/spec to ensure it appears first
+  spellsByClassSpec[playerClass] = spellsByClassSpec[playerClass] or {}
+  spellsByClassSpec[playerClass][playerSpec] = {}
+
+  -- Iterate through dmspellsdb and filter for tracked spells
+  for spellIDStr, config in pairs(DM.dmspellsdb) do
+    -- IMPORTANT: Filter for tracked spells
+    if config.tracked and tonumber(config.tracked) == 1 then
+      local class = config.wowclass or "Unknown"
+      local spec = config.wowspec or "General"
+
+      -- Initialize tables if needed
+      spellsByClassSpec[class] = spellsByClassSpec[class] or {}
+      spellsByClassSpec[class][spec] = spellsByClassSpec[class][spec] or {}
+
+      -- Add spell to appropriate group
+      table.insert(spellsByClassSpec[class][spec], {
+        id = spellIDStr, -- Keep ID as string from dmspellsdb
+        priority = config.priority or 999,
+        config = config  -- Pass the full config from dmspellsdb
+      })
+    end
   end
 
-  -- Modify the LoadTrackedSpells function to use our existing CreateSpellConfigRow function
-  function DM:LoadTrackedSpells()
-    local firstLoad = (DM.GUI.spellFrames == nil)
-
-    -- Initialize spellFrames if needed
-    if firstLoad then
-      DM.GUI.spellFrames = {}
-    else
-      -- Hide existing spell frames
-      for _, frame in ipairs(DM.GUI.spellFrames) do
-        frame:Hide()
-      end
+  -- Sort all spell groups by priority
+  for class, specs in pairs(spellsByClassSpec) do
+    for spec, spells in pairs(specs) do
+      table.sort(spells, function(a, b) return (a.priority or 999) < (b.priority or 999) end)
     end
+  end
 
-    -- Clear class groups
-    classGroups = {}
-    classFrames = {}
-    spellOrder = {}
+  -- Clear the scroll child before adding new content
+  DM.GUI.scrollChild:Hide()
 
-    -- Organize spells by class
-    local spellsByClass = {}
+  -- Function to create and add rows for a given list of spells
+  local function addSpellRows(spellList, class, spec)
+    local totalSpells = #spellList
+    for i, spellData in ipairs(spellList) do
+      index = index + 1
+      -- Call the row creation function
+      local row = DM:CreateSpellConfigRow(spellData.id, index, yOffset)
+      if row then
+        row.spellID = spellData.id -- Store spellID (string) in the frame
+        row.class = class
+        row.spec = spec
+        table.insert(DM.GUI.spellFrames, row) -- Keep track of the created frame
+        yOffset = yOffset + 38                -- Spacing for the next row (adjust as needed)
 
-    -- Get all tracked spells from the database
-    local spellsFromDB = DM:GetTrackedSpells()
-    DM:DebugMsg("Loading tracked spells: " .. (DM:TableCount(spellsFromDB) or 0) .. " spells found")
+        -- Disable up button for first spell in the group
+        if i == 1 and row.upButton then
+          row.upButton:Disable()
+          row.upButton:GetNormalTexture():SetDesaturated(true)
+          row.upButton:GetPushedTexture():SetDesaturated(true)
+        end
 
-    -- Sort spells by class and priority
-    for id, spellData in pairs(spellsFromDB) do
-      local className = spellData.wowclass or "OTHER"
-      className = string.upper(className)
-      if not spellsByClass[className] then
-        spellsByClass[className] = {}
-        table.insert(spellOrder, className)
-      end
-      table.insert(spellsByClass[className], { id = id, data = spellData })
-    end
-
-    -- Sort classes by name
-    table.sort(spellOrder)
-
-    -- Sort spells within each class by priority
-    for className, spells in pairs(spellsByClass) do
-      table.sort(spells, function(a, b)
-        return (tonumber(a.data.priority) or 0) < (tonumber(b.data.priority) or 0)
-      end)
-    end
-
-    -- Track total rows for scrollframe sizing
-    local totalRows = 0
-    local yOffset = 10 -- Starting Y offset
-
-    -- Create headers and spell rows
-    for i, className in ipairs(spellOrder) do
-      -- Create class header if it doesn't exist
-      if not classFrames[className] then
-        classFrames[className] = CreateClassHeader(className, i - 1)
-      end
-
-      -- Initialize class group
-      classGroups[className] = {}
-      totalRows = totalRows + 1 -- Count header as a row
-
-      -- Position the header
-      classFrames[className]:ClearAllPoints()
-      classFrames[className]:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -yOffset)
-      yOffset = yOffset + 30 -- Add space after header
-
-      -- Create spell rows for this class
-      for j, spellInfo in ipairs(spellsByClass[className]) do
-        -- Use the existing CreateSpellConfigRow function instead of CreateSpellRow
-        local frame = DM:CreateSpellConfigRow(spellInfo.id, totalRows, yOffset)
-        if frame then
-          frame:Show()
-          table.insert(DM.GUI.spellFrames, frame)
-          table.insert(classGroups[className], frame)
-
-          -- Update yOffset for next row
-          yOffset = yOffset + 38 -- Adjust based on row height
-          totalRows = totalRows + 1
+        -- Disable down button for last spell in the group
+        if i == totalSpells and row.downButton then
+          row.downButton:Disable()
+          row.downButton:GetNormalTexture():SetDesaturated(true)
+          row.downButton:GetPushedTexture():SetDesaturated(true)
         end
       end
     end
-
-    -- Update scrollChild height
-    scrollChild:SetHeight(math.max(yOffset + 20, scrollFrame:GetHeight()))
-
-    DM:DebugMsg("RefreshTrackedSpellList: displayed spells in " .. #spellOrder .. " class groups")
   end
 
-  -- Initial load of spells
-  DM:LoadTrackedSpells()
+  -- First add player's class/spec if it has tracked spells
+  if playerClass and playerSpec and spellsByClassSpec[playerClass] and spellsByClassSpec[playerClass][playerSpec] then
+    addSpellRows(spellsByClassSpec[playerClass][playerSpec], playerClass, playerSpec)
+    -- Remove this class/spec after processing to avoid duplication
+    spellsByClassSpec[playerClass][playerSpec] = nil
+    if not next(spellsByClassSpec[playerClass]) then
+      spellsByClassSpec[playerClass] = nil
+    end
+  end
 
-  -- Update on resize
-  scrollFrame:HookScript("OnSizeChanged", function()
-    DM:LoadTrackedSpells()
-  end)
-end
-
--- Helper function to get tracked spells from the database
-function DM:GetTrackedSpells()
-  local trackedSpells = {}
-
-  -- Get spells marked for tracking from dmspellsdb
-  if DM.dmspellsdb then
-    for id, data in pairs(DM.dmspellsdb) do
-      if data.tracked == 1 then
-        trackedSpells[id] = data
+  -- Then add remaining specs
+  for class, specs in pairs(spellsByClassSpec) do
+    for spec, spells in pairs(specs) do
+      if #spells > 0 then -- Only add if there are spells
+        addSpellRows(spells, class, spec)
       end
     end
   end
 
-  -- If no tracked spells found, return default test data
-  if next(trackedSpells) == nil then
-    -- Test data for UI development
-    trackedSpells = {
-      ["589"] = {
-        spellid = "589",
-        spellname = "Shadow Word: Pain",
-        wowclass = "PRIEST",
-        wowspec = "Shadow",
-        color = { 0, 1, 0 },
-        priority = 10,
-        tracked = 1,
-        enabled = 1,
-        spellicon = "Interface\\Icons\\Spell_Shadow_ShadowWordPain"
-      },
-      ["34914"] = {
-        spellid = "34914",
-        spellname = "Vampiric Touch",
-        wowclass = "PRIEST",
-        wowspec = "Shadow",
-        color = { 1, 0, 0 },
-        priority = 20,
-        tracked = 1,
-        enabled = 1,
-        spellicon = "Interface\\Icons\\Spell_Holy_Stoicism"
-      },
-      ["980"] = {
-        spellid = "980",
-        spellname = "Agony",
-        wowclass = "WARLOCK",
-        wowspec = "Affliction",
-        color = { 0.5, 0, 0.5 },
-        priority = 15,
-        tracked = 1,
-        enabled = 1,
-        spellicon = "Interface\\Icons\\Spell_Shadow_CurseOfSargeras"
-      }
-    }
-  end
+  -- Show the scroll child again with new content
+  DM.GUI.scrollChild:Show()
 
-  return trackedSpells
-end
+  -- Update scroll child height for scrolling - add a little more bottom padding
+  DM.GUI.scrollChild:SetHeight(math.max(yOffset + 30, DM.GUI.scrollFrame:GetHeight()))
 
--- Helper function to update an existing spell row
-function DM:UpdateSpellRow(frame, spellID, spellData)
-  if not frame or not spellID or not spellData then return end
-
-  -- Update the spell data in the frame
-  frame.spellID = spellID
-
-  -- Update visual elements
-  local spellName = spellData.spellname or "Unknown Spell"
-  local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
-  local isEnabled = spellData.enabled and tonumber(spellData.enabled) == 1
-  local color = spellData.color or { 1, 0, 0 } -- Default to red
-
-  -- Update spell icon
-  if frame.icon then
-    frame.icon:SetTexture(iconPath)
-  end
-
-  -- Update spell name text
-  if frame.name then
-    frame.name:SetText(spellData.spellname .. " (" .. spellID .. ")")
-  end
-
-  -- Update enabled checkbox
-  if frame.enabledCheckbox then
-    frame.enabledCheckbox:SetChecked(isEnabled)
-  end
-
-  -- Update color swatch
-  if frame.colorSwatch then
-    frame.colorSwatch:SetColorTexture(unpack(color))
-  end
-
-  return frame
-end
-
--- Utility function to count table entries
-function DM:TableCount(tbl)
-  if not tbl then return 0 end
-  local count = 0
-  for _ in pairs(tbl) do
-    count = count + 1
-  end
-  return count
+  -- Debug log of tracked spells count
+  DM:DatabaseDebug(string.format("RefreshTrackedSpellList: displayed %d tracked spells", index))
 end
