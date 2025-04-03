@@ -25,6 +25,14 @@ function DM:CreateCombinationsTab(parent)
     "Create combinations of DoTs to apply unique visual effects when multiple spells are active on the same target."
   )
 
+  -- Ensure title is centered if not already
+  local title = infoArea:GetChildren()
+  if title and title:IsObjectType("FontString") then
+    title:ClearAllPoints()
+    title:SetPoint("TOP", infoArea, "TOP", 0, -5)
+    title:SetJustifyH("CENTER")
+  end
+
   -- Main content area
   local contentFrame = CreateFrame("Frame", nil, container)
   contentFrame:SetPoint("TOP", infoArea, "BOTTOM", 0, -10)
@@ -321,7 +329,15 @@ function DM:ShowCombinationDialog(comboID)
   if not DM.GUI.combinationDialog then
     local dialog = CreateFrame("Frame", "DotMasterCombinationDialog", UIParent, "BackdropTemplate")
     dialog:SetSize(400, 400)
-    dialog:SetPoint("CENTER")
+
+    -- Find main GUI frame - first try the addon's main frame, then fall back to center
+    local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
+    if mainGUI and mainGUI:IsShown() then
+      dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
+    else
+      dialog:SetPoint("CENTER")
+    end
+
     dialog:SetFrameStrata("DIALOG")
     dialog:SetMovable(true)
     dialog:EnableMouse(true)
@@ -338,7 +354,7 @@ function DM:ShowCombinationDialog(comboID)
     })
     dialog:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
 
-    -- Title
+    -- Title - centered at top
     local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -10)
     title:SetText("DoT Combination")
@@ -585,6 +601,15 @@ function DM:ShowCombinationDialog(comboID)
 
   -- Show the dialog
   dialog:Show()
+
+  -- Reposition in case the main UI has moved
+  dialog:ClearAllPoints()
+  local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
+  if mainGUI and mainGUI:IsShown() then
+    dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
+  else
+    dialog:SetPoint("CENTER")
+  end
 end
 
 -- Function to update the spell list in the combination dialog
@@ -727,7 +752,7 @@ function DM:ShowSpellSelectionForCombo(parent)
   if not DM.GUI.comboSpellSelectionFrame then
     local frame = CreateFrame("Frame", "DotMasterComboSpellSelection", UIParent, "BackdropTemplate")
     frame:SetSize(350, 450)
-    frame:SetPoint("CENTER")
+    -- Position will be set when shown based on parent
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
     frame:EnableMouse(true)
@@ -744,7 +769,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     })
     frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
 
-    -- Title
+    -- Title - centered at top
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -10)
     title:SetText("Select Spells for Combination")
@@ -1006,6 +1031,25 @@ function DM:ShowSpellSelectionForCombo(parent)
 
   -- Show the frame
   frame:Show()
+
+  -- Position relative to parent dialog
+  if parent and parent:IsShown() then
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", parent, "TOPRIGHT", 5, 0)
+  else
+    -- Fallback if parent not available
+    frame:ClearAllPoints()
+
+    -- Try to get main GUI frame
+    local mainGUI = _G["DotMasterGUI"] or _G["DotMaster_MainFrame"]
+    if mainGUI and mainGUI:IsShown() then
+      -- Position after where the combination dialog would be
+      frame:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 410, 0) -- 400px (dialog width) + 5px + 5px
+    else
+      -- Last resort, center on screen
+      frame:SetPoint("CENTER")
+    end
+  end
 end
 
 -- Helper function to set up mouse wheel scrolling and hide scrollbars
