@@ -82,6 +82,13 @@ function DM:CreateCombinationsTab(parent)
   scrollFrame:SetPoint("RIGHT", listFrame, "RIGHT", -20, 0)
   scrollFrame:SetPoint("BOTTOM", listFrame, "BOTTOM", 0, 0)
 
+  -- Hide scrollbar
+  local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+  if scrollBar then
+    scrollBar:SetWidth(0)
+    scrollBar:SetAlpha(0)
+  end
+
   -- Content frame inside the scroll frame
   local scrollContent = CreateFrame("Frame", nil, scrollFrame)
   scrollContent:SetSize(scrollFrame:GetWidth(), 500) -- Height will adjust dynamically
@@ -277,6 +284,22 @@ function DM:CreateCombinationsTab(parent)
   -- Initial update after creation
   C_Timer.After(0.2, UpdateCombinationsList)
 
+  -- Setup mouse wheel scrolling since scrollbars are hidden
+  scrollFrame:EnableMouseWheel(true)
+  scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+    local currentScroll = self:GetVerticalScroll()
+    local scrollRange = self:GetVerticalScrollRange()
+
+    -- Calculate new scroll position (faster scrolling with higher step)
+    local newPosition = currentScroll - (delta * 30)
+
+    -- Clamp scroll position to valid range
+    newPosition = math.max(0, math.min(newPosition, scrollRange))
+
+    -- Apply the scroll
+    self:SetVerticalScroll(newPosition)
+  end)
+
   return container
 end
 
@@ -403,6 +426,13 @@ function DM:ShowCombinationDialog(comboID)
     spellsScroll:SetPoint("TOPLEFT", 0, 0)
     spellsScroll:SetPoint("BOTTOMRIGHT", -20, 0)
 
+    -- Hide scrollbar
+    local scrollBar = _G[spellsScroll:GetName() .. "ScrollBar"]
+    if scrollBar then
+      scrollBar:SetWidth(0)
+      scrollBar:SetAlpha(0)
+    end
+
     local spellsContent = CreateFrame("Frame", nil, spellsScroll)
     spellsContent:SetSize(spellsScroll:GetWidth(), 300)
     spellsScroll:SetScrollChild(spellsContent)
@@ -475,6 +505,9 @@ function DM:ShowCombinationDialog(comboID)
 
     -- Store reference
     DM.GUI.combinationDialog = dialog
+
+    -- Setup scrolling and hide scrollbars
+    SetupScrollFrames(dialog)
   end
 
   local dialog = DM.GUI.combinationDialog
@@ -616,6 +649,13 @@ function DM:ShowSpellSelectionForCombo(parent)
     scrollFrame:SetPoint("TOPLEFT", searchBox, "BOTTOMLEFT", 0, -15)
     scrollFrame:SetPoint("RIGHT", frame, "RIGHT", -25, 0)
     scrollFrame:SetPoint("BOTTOM", frame, "BOTTOM", 0, 45)
+
+    -- Hide scrollbar
+    local scrollBar = _G[scrollFrame:GetName() .. "ScrollBar"]
+    if scrollBar then
+      scrollBar:SetWidth(0)
+      scrollBar:SetAlpha(0)
+    end
 
     local scrollContent = CreateFrame("Frame", nil, scrollFrame)
     scrollContent:SetSize(scrollFrame:GetWidth(), 1000) -- Will be adjusted dynamically
@@ -791,6 +831,9 @@ function DM:ShowSpellSelectionForCombo(parent)
     -- Store the frame reference
     DM.GUI.comboSpellSelectionFrame = frame
 
+    -- Setup scrolling and hide scrollbars
+    SetupScrollFrames(frame)
+
     -- Store function for later access
     frame.UpdateSpellList = UpdateSpellList
     frame.selectedSpells = selectedSpells
@@ -813,4 +856,43 @@ function DM:ShowSpellSelectionForCombo(parent)
 
   -- Show the frame
   frame:Show()
+end
+
+-- Helper function to set up mouse wheel scrolling and hide scrollbars
+local function SetupScrollFrames(frame)
+  if not frame then return end
+
+  -- Process all scrollframes in this frame
+  for _, child in pairs({ frame:GetChildren() }) do
+    -- Direct scrollframes
+    if child:IsObjectType("ScrollFrame") then
+      -- Hide scrollbar
+      local scrollBar = _G[child:GetName() .. "ScrollBar"]
+      if scrollBar then
+        scrollBar:SetWidth(0)
+        scrollBar:SetAlpha(0)
+      end
+
+      -- Enable mouse wheel scrolling
+      child:EnableMouseWheel(true)
+      child:SetScript("OnMouseWheel", function(self, delta)
+        local currentScroll = self:GetVerticalScroll()
+        local scrollRange = self:GetVerticalScrollRange()
+
+        -- Calculate new scroll position (faster scrolling with higher step)
+        local newPosition = currentScroll - (delta * 30)
+
+        -- Clamp scroll position to valid range
+        newPosition = math.max(0, math.min(newPosition, scrollRange))
+
+        -- Apply the scroll
+        self:SetVerticalScroll(newPosition)
+      end)
+    end
+
+    -- Nested scrollframes (in container frames)
+    if child:IsObjectType("Frame") then
+      SetupScrollFrames(child)
+    end
+  end
 end
