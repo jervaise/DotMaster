@@ -84,7 +84,7 @@ function DM:CreateCombinationsTab(parent)
   headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
 
   -- Add class-colored border to header
-  local headerBorder = CreateFrame("Frame", nil, headerFrame)
+  local headerBorder = CreateFrame("Frame", nil, headerFrame, "BackdropTemplate")
   headerBorder:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 0, 0)
   headerBorder:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
   headerBorder:SetBackdrop({
