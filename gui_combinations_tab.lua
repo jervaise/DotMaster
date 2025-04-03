@@ -1128,39 +1128,20 @@ function DM:ShowSpellSelectionForCombo(parent)
   -- Show the frame
   frame:Show()
 
-  -- Position relative to parent dialog
+  -- Position relative to parent dialog (combination dialog)
   frame:ClearAllPoints()
 
   if parent and parent:IsShown() then
-    -- Position to the right of the combination dialog with top edges aligned
+    -- Position directly to the right of the combination dialog with top edges aligned
     frame:SetPoint("TOPLEFT", parent, "TOPRIGHT", 5, 0)
   else
-    -- Try to find the main combination dialog if parent not provided
+    -- If we can find the combination dialog directly, use that
     local comboDialog = DM.GUI.combinationDialog
     if comboDialog and comboDialog:IsShown() then
       frame:SetPoint("TOPLEFT", comboDialog, "TOPRIGHT", 5, 0)
     else
-      -- Fallback to main GUI position + offset if combo dialog not found
-      local mainGUI = DotMasterGUI
-      if not mainGUI then
-        for _, frameName in ipairs({ "DotMasterOptionsFrame", "DotMasterFrame", "DotMaster_MainFrame", "DotMasterGUI" }) do
-          mainGUI = _G[frameName]
-          if mainGUI then break end
-        end
-      end
-
-      -- If we still can't find the main GUI through global lookup, try using tab's parent
-      if not mainGUI and DM.GUI and DM.GUI.combinationsTab and DM.GUI.combinationsTab:GetParent() then
-        mainGUI = DM.GUI.combinationsTab:GetParent():GetParent()
-      end
-
-      if mainGUI then
-        -- Position to the right of where combination dialog would be
-        frame:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 410, 0) -- 400 (combo width) + 5 + 5
-      else
-        -- Last resort fallback
-        frame:SetPoint("CENTER", UIParent, "CENTER")
-      end
+      -- Fallback - center on screen if no parent reference available
+      frame:SetPoint("CENTER", UIParent, "CENTER")
     end
   end
 end
