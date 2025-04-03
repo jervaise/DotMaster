@@ -25,6 +25,20 @@ function DM:CreateCombinationsTab(parent)
     "Create combinations of DoTs to apply unique visual effects when multiple spells are active on the same target."
   )
 
+  -- Add class-colored accent to info area
+  local infoBorder = CreateFrame("Frame", nil, infoArea, "BackdropTemplate")
+  infoBorder:SetPoint("TOPLEFT", infoArea, "TOPLEFT", 0, 0)
+  infoBorder:SetPoint("BOTTOMRIGHT", infoArea, "BOTTOMRIGHT", 0, 0)
+  infoBorder:SetBackdrop({
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 12,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 }
+  })
+  
+  -- Apply class color to border
+  local classColor = GetPlayerClassColor()
+  infoBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.7)
+
   -- Ensure title is centered if not already
   local title = infoArea:GetChildren()
   if title and title:IsObjectType("FontString") then
@@ -58,6 +72,20 @@ function DM:CreateCombinationsTab(parent)
   local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
   headerBg:SetAllPoints()
   headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
+
+  -- Add class-colored border to header
+  local headerBorder = CreateFrame("Frame", nil, headerFrame)
+  headerBorder:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 0, 0)
+  headerBorder:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
+  headerBorder:SetBackdrop({
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 8,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 }
+  })
+
+  -- Apply class color to header border
+  local classColor = GetPlayerClassColor()
+  headerBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.8)
 
   -- Header text
   local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -140,13 +168,22 @@ function DM:CreateCombinationsTab(parent)
     -- If database isn't initialized, try to force initialize it
     if not DM:IsCombinationsInitialized() then
       -- Create error message
-      local messageFrame = CreateFrame("Frame", nil, scrollContent)
+      local messageFrame = CreateFrame("Frame", nil, scrollContent, "BackdropTemplate")
       messageFrame:SetSize(scrollContent:GetWidth(), 80)
       messageFrame:SetPoint("CENTER", scrollContent, "CENTER")
 
-      local messageBg = messageFrame:CreateTexture(nil, "BACKGROUND")
-      messageBg:SetAllPoints()
-      messageBg:SetColorTexture(0.1, 0, 0, 0.5)
+      -- Set backdrop with class-colored border
+      messageFrame:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+      })
+
+      -- Apply colors
+      messageFrame:SetBackdropColor(0.1, 0, 0, 0.5)
+      local classColor = GetPlayerClassColor()
+      messageFrame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.8)
 
       local messageText = messageFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       messageText:SetPoint("CENTER", messageFrame, "CENTER", 0, 10)
@@ -350,6 +387,10 @@ function DM:ShowCombinationDialog(comboID)
       insets = { left = 4, right = 4, top = 4, bottom = 4 },
     })
     dialog:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+
+    -- Apply class color to border
+    local classColor = GetPlayerClassColor()
+    dialog:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 1.0)
 
     -- Title - centered at top
     local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -766,6 +807,10 @@ function DM:ShowSpellSelectionForCombo(parent)
     })
     frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
 
+    -- Apply class color to border
+    local classColor = GetPlayerClassColor()
+    frame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 1.0)
+
     -- Title - centered at top
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -10)
@@ -1094,4 +1139,14 @@ local function SetupScrollFrames(frame)
       SetupScrollFrames(child)
     end
   end
+end
+
+-- Helper function to get player class color
+local function GetPlayerClassColor()
+  local _, className = UnitClass("player")
+  if className and RAID_CLASS_COLORS and RAID_CLASS_COLORS[className] then
+    return RAID_CLASS_COLORS[className]
+  end
+  -- Default color if class color not found
+  return { r = 0.6, g = 0.6, b = 0.6 }
 end
