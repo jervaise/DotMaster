@@ -34,7 +34,7 @@ function DM:CreateCombinationsTab(parent)
     edgeSize = 12,
     insets = { left = 1, right = 1, top = 1, bottom = 1 }
   })
-  
+
   -- Apply class color to border
   local classColor = GetPlayerClassColor()
   infoBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.7)
@@ -357,6 +357,10 @@ function DM:CreateCombinationsTab(parent)
     self:SetVerticalScroll(newPosition)
   end)
 
+  -- Store reference to the combinations tab for positioning windows later
+  DM.GUI = DM.GUI or {}
+  DM.GUI.combinationsTab = container
+
   return container
 end
 
@@ -367,10 +371,29 @@ function DM:ShowCombinationDialog(comboID)
     local dialog = CreateFrame("Frame", "DotMasterCombinationDialog", UIParent, "BackdropTemplate")
     dialog:SetSize(400, 400)
 
-    -- Position dialog using screen dimensions for consistent placement
-    local screenWidth = GetScreenWidth()
-    local screenHeight = GetScreenHeight()
-    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.3, screenHeight * 0.8)
+    -- Find the main addon GUI frame
+    local mainGUI = DotMasterGUI
+    if not mainGUI then
+      -- Try various possible parent frames
+      for _, frameName in ipairs({ "DotMasterOptionsFrame", "DotMasterFrame", "DotMaster_MainFrame", "DotMasterGUI" }) do
+        mainGUI = _G[frameName]
+        if mainGUI then break end
+      end
+    end
+
+    -- If we still can't find the main GUI, try using the parent's parent which
+    -- is likely the options frame
+    if not mainGUI and parent and parent:GetParent() then
+      mainGUI = parent:GetParent()
+    end
+
+    -- Position to the right of the main GUI with top edges aligned
+    if mainGUI then
+      dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
+    else
+      -- Fallback if main frame not found
+      dialog:SetPoint("CENTER", UIParent, "CENTER")
+    end
 
     dialog:SetFrameStrata("DIALOG")
     dialog:SetMovable(true)
@@ -640,11 +663,32 @@ function DM:ShowCombinationDialog(comboID)
   -- Show the dialog
   dialog:Show()
 
-  -- Ensure positioning is correct when shown
+  -- Ensure dialog is positioned correctly relative to main GUI
   dialog:ClearAllPoints()
-  local screenWidth = GetScreenWidth()
-  local screenHeight = GetScreenHeight()
-  dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.3, screenHeight * 0.8)
+
+  -- Find the main addon GUI frame
+  local mainGUI = DotMasterGUI
+  if not mainGUI then
+    -- Try various possible parent frames
+    for _, frameName in ipairs({ "DotMasterOptionsFrame", "DotMasterFrame", "DotMaster_MainFrame", "DotMasterGUI" }) do
+      mainGUI = _G[frameName]
+      if mainGUI then break end
+    end
+  end
+
+  -- If we still can't find the main GUI, try using the parent's parent which
+  -- is likely the options frame
+  if not mainGUI and parent and parent:GetParent() then
+    mainGUI = parent:GetParent()
+  end
+
+  -- Position to the right of the main GUI with top edges aligned
+  if mainGUI then
+    dialog:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 5, 0)
+  else
+    -- Fallback if main frame not found
+    dialog:SetPoint("CENTER", UIParent, "CENTER")
+  end
 end
 
 -- Function to update the spell list in the combination dialog
@@ -787,10 +831,10 @@ function DM:ShowSpellSelectionForCombo(parent)
   if not DM.GUI.comboSpellSelectionFrame then
     local frame = CreateFrame("Frame", "DotMasterComboSpellSelection", UIParent, "BackdropTemplate")
     frame:SetSize(350, 450)
-    -- Initial position using screen dimensions
-    local screenWidth = GetScreenWidth()
-    local screenHeight = GetScreenHeight()
-    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, screenHeight * 0.8)
+
+    -- Position to be set when shown (will be right of the combination dialog)
+    frame:SetPoint("CENTER", UIParent, "CENTER")
+
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
     frame:EnableMouse(true)
@@ -1074,19 +1118,40 @@ function DM:ShowSpellSelectionForCombo(parent)
   -- Show the frame
   frame:Show()
 
-  -- Position relative to parent dialog or using screen dimensions
+  -- Position relative to parent dialog
   frame:ClearAllPoints()
 
-  local screenWidth = GetScreenWidth()
-  local screenHeight = GetScreenHeight()
-
   if parent and parent:IsShown() then
-    -- Position to the right of the combination dialog
-    local _, _, _, _, parentY = parent:GetPoint()
-    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, parentY or (screenHeight * 0.8))
+    -- Position to the right of the combination dialog with top edges aligned
+    frame:SetPoint("TOPLEFT", parent, "TOPRIGHT", 5, 0)
   else
-    -- Fallback position if no parent
-    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenWidth * 0.6, screenHeight * 0.8)
+    -- Try to find the main combination dialog if parent not provided
+    local comboDialog = DM.GUI.combinationDialog
+    if comboDialog and comboDialog:IsShown() then
+      frame:SetPoint("TOPLEFT", comboDialog, "TOPRIGHT", 5, 0)
+    else
+      -- Fallback to main GUI position + offset if combo dialog not found
+      local mainGUI = DotMasterGUI
+      if not mainGUI then
+        for _, frameName in ipairs({ "DotMasterOptionsFrame", "DotMasterFrame", "DotMaster_MainFrame", "DotMasterGUI" }) do
+          mainGUI = _G[frameName]
+          if mainGUI then break end
+        end
+      end
+
+      -- If we still can't find the main GUI through global lookup, try using tab's parent
+      if not mainGUI and DM.GUI and DM.GUI.combinationsTab and DM.GUI.combinationsTab:GetParent() then
+        mainGUI = DM.GUI.combinationsTab:GetParent():GetParent()
+      end
+
+      if mainGUI then
+        -- Position to the right of where combination dialog would be
+        frame:SetPoint("TOPLEFT", mainGUI, "TOPRIGHT", 410, 0) -- 400 (combo width) + 5 + 5
+      else
+        -- Last resort fallback
+        frame:SetPoint("CENTER", UIParent, "CENTER")
+      end
+    end
   end
 end
 
