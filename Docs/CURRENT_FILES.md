@@ -21,38 +21,39 @@ This document provides an overview of all files in the DotMaster addon and their
 10. **gui_common.lua** - Shared GUI components
 11. **gui_general_tab.lua** - General tab interface
 12. **gui_tracked_spells_tab.lua** - Tracked spells tab interface
-13. **gui_database_tab.lua** - Database management tab interface
-14. **gui_colorpicker.lua** - Color picker functionality
-15. **gui_spell_row.lua** - Spell list row component
-16. **gui_spell_selection.lua** - Spell selection interface
+13. **gui_combinations_tab.lua** - Dot combinations tab interface
+14. **gui_database_tab.lua** - Database management tab interface
+15. **gui_colorpicker.lua** - Color picker functionality
+16. **gui_spell_row.lua** - Spell list row component
+17. **gui_spell_selection.lua** - Spell selection interface
 
 ### Nameplate Files
-17. **nameplate_core.lua** - Core nameplate functionality
-18. **nameplate_detection.lua** - Nameplate detection and tracking
-19. **nameplate_coloring.lua** - Nameplate color manipulation
+18. **nameplate_core.lua** - Core nameplate functionality
+19. **nameplate_detection.lua** - Nameplate detection and tracking
+20. **nameplate_coloring.lua** - Nameplate color manipulation
 
 ### Feature Files
-20. **find_my_dots.lua** - Implementation of "Find My Dots" feature
-21. **minimap.lua** - Minimap button functionality
+21. **find_my_dots.lua** - Implementation of "Find My Dots" feature
+22. **minimap.lua** - Minimap button functionality
 
 ### Asset Files
-22. **Media/dotmaster-icon.tga** - Addon icon
-23. **Media/dotmaster-main-icon.tga** - Main interface icon
+23. **Media/dotmaster-icon.tga** - Addon icon
+24. **Media/dotmaster-main-icon.tga** - Main interface icon
 
 ### Library Files (in Libs/ directory)
-24. **LibStub** - Library management
-25. **CallbackHandler-1.0** - Event handling
-26. **LibDataBroker-1.1** - Data broker functionality
-27. **LibDBIcon-1.0** - Minimap icon support
+25. **LibStub** - Library management
+26. **CallbackHandler-1.0** - Event handling
+27. **LibDataBroker-1.1** - Data broker functionality
+28. **LibDBIcon-1.0** - Minimap icon support
 
 ### Documentation Files (in Docs/ directory)
-28. **CHANGELOG.md** - Version changelog
-29. **CODE_STRUCTURE.md** - Code organization overview
-30. **CURRENT_FILES.md** - This file
-31. **CURRENT_STATUS.md** - Development status
-32. **DEBUG_SYSTEM.md** - Debug system documentation
-33. **DEVELOPER_GUIDE.md** - Guide for developers
-34. **PROJECT_SCOPE.md** - Project scope and goals
+29. **CHANGELOG.md** - Version changelog
+30. **CODE_STRUCTURE.md** - Code organization overview
+31. **CURRENT_FILES.md** - This file
+32. **CURRENT_STATUS.md** - Development status
+33. **DEBUG_SYSTEM.md** - Debug system documentation
+34. **DEVELOPER_GUIDE.md** - Guide for developers
+35. **PROJECT_SCOPE.md** - Project scope and goals
 
 ## Changed in v0.5.1
 - Restructured documentation to be more user-friendly

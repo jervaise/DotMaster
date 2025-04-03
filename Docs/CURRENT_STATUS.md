@@ -84,6 +84,7 @@ The most significant recent changes include:
 - ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks
 - ✅ **Debug System Improvements**: Added color picker debug category with dedicated debug function
 - ✅ **Error Handling Improvements**: Fixed "attempt to call global 'UnitAura'" and DeepCopy errors
+- ✅ **DoT Combinations**: Added new Combinations tab for managing effects when multiple DoTs are active on the same target
 
 Prior to that:
 - ✅ **Tracked Spells UI Redesign**: Completely redesigned the tracked spells interface with improved usability, better layout, and immediate save functionality

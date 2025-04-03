@@ -31,6 +31,7 @@ gui.lua
 gui_common.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
+gui_combinations_tab.lua
 gui_database_tab.lua
 gui_colorpicker.lua
 gui_spell_row.lua

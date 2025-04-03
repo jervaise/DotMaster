@@ -13,11 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added addon icon to interface list panel
 - Improved dependency handling for Plater requirement
 - Added warning system when Plater is not installed
+- Added new Combinations tab for managing DoT combinations on targets
 
 #### Changed
 - Updated UI title to highlight Plater integration with colored text
 - More robust checkbox text handling for loading screens
 - More efficient class-based filtering for DoT detection
+- Reorganized tab structure to include the new Combinations feature
 
 ### Version 0.9.3 (2023-04-15)
 

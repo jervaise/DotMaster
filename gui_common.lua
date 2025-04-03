@@ -42,6 +42,11 @@ DotMaster_Components.CreateTrackedSpellsTab = function(parent)
   return DM:CreateTrackedSpellsTab(parent)
 end
 
+-- Add Combinations tab component function
+DotMaster_Components.CreateCombinationsTab = function(parent)
+  return DM:CreateCombinationsTab(parent)
+end
+
 -- Add Database tab component function
 DotMaster_Components.CreateDatabaseTab = function(parent)
   return Components.CreateDatabaseTab(parent)
@@ -93,7 +98,7 @@ function DM:CreateGUI()
     message:SetPoint("TOP", title, "BOTTOM", 0, -20)
     message:SetWidth(360)
     message:SetText(
-    "This addon requires |cFFFF6A00Plater Nameplates|r to function.\n\nPlease install and enable Plater from CurseForge, WoWInterface, or Wago.")
+      "This addon requires |cFFFF6A00Plater Nameplates|r to function.\n\nPlease install and enable Plater from CurseForge, WoWInterface, or Wago.")
     message:SetJustifyH("CENTER")
 
     -- Close Button
@@ -193,7 +198,7 @@ function DM:CreateGUI()
   tabBg:SetHeight(tabHeight)
   tabBg:SetColorTexture(0, 0, 0, 0.6) -- Match debug window transparency
 
-  for i = 1, 3 do
+  for i = 1, 4 do
     -- Tab content frames
     tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
     tabFrames[i]:SetPoint("TOPLEFT", 10, -(45 + tabHeight))
@@ -212,7 +217,15 @@ function DM:CreateGUI()
     -- Tab text
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER")
-    text:SetText(i == 1 and "General" or i == 2 and "Tracked Spells" or "Database")
+    if i == 1 then
+      text:SetText("General")
+    elseif i == 2 then
+      text:SetText("Tracked Spells")
+    elseif i == 3 then
+      text:SetText("Combinations")
+    else
+      text:SetText("Database")
+    end
     text:SetTextColor(1, 0.82, 0)
 
     -- Store ID and script
@@ -237,7 +250,7 @@ function DM:CreateGUI()
           DM:DatabaseDebug("Refreshing Tracked Spells tab list")
           DM.GUI:RefreshTrackedSpellTabList("")
         end
-      elseif self.id == 3 then -- Database tab
+      elseif self.id == 4 then -- Database tab (now index 4 instead of 3)
         -- Refresh database tab
         if DM.GUI.RefreshDatabaseTabList then
           DM:DatabaseDebug("Refreshing Database tab list")
@@ -247,7 +260,10 @@ function DM:CreateGUI()
     end)
 
     -- Position tabs side by side with appropriate spacing
-    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * 105, -40)
+    -- Adjust width to fit 4 tabs
+    local tabWidth = 115
+    tabButton:SetSize(tabWidth, tabHeight)
+    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * (tabWidth + 5), -40)
   end
 
   -- Set initial active tab
@@ -273,10 +289,18 @@ function DM:CreateGUI()
     DM:DatabaseDebug("ERROR: CreateTrackedSpellsTab function not found!")
   end
 
-  -- Create Database tab content
+  -- Create Combinations tab content
+  if DotMaster_Components.CreateCombinationsTab then
+    DM:DatabaseDebug("Using DotMaster_Components.CreateCombinationsTab")
+    DotMaster_Components.CreateCombinationsTab(tabFrames[3])
+  else
+    DM:DatabaseDebug("ERROR: CreateCombinationsTab function not found!")
+  end
+
+  -- Create Database tab content (now index 4 instead of 3)
   if DotMaster_Components.CreateDatabaseTab then
     DM:DatabaseDebug("Using DotMaster_Components.CreateDatabaseTab")
-    DotMaster_Components.CreateDatabaseTab(tabFrames[3])
+    DotMaster_Components.CreateDatabaseTab(tabFrames[4])
   else
     DM:DatabaseDebug("ERROR: CreateDatabaseTab function not found!")
   end
