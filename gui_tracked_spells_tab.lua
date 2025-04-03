@@ -692,3 +692,164 @@ function DM:TableCount(tbl)
   end
   return count
 end
+
+-- Function to create a new spell row
+function DM:CreateSpellRow(spellID, spellData)
+  if not spellID or not spellData then return nil end
+
+  -- Get data from the spell
+  local spellName = spellData.spellname or "Unknown Spell"
+  local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
+  local isEnabled = spellData.enabled and tonumber(spellData.enabled) == 1
+  local color = spellData.color or { 1, 0, 0 } -- Default to red
+
+  -- Create a new frame for this spell row
+  local frame = CreateFrame("Button", nil, DM.GUI.scrollChild)
+  frame:SetSize(DM.GUI.scrollChild:GetWidth(), 36)
+  frame.spellID = spellID
+
+  -- Row background for highlighting
+  local bg = frame:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints()
+  bg:SetColorTexture(0.15, 0.15, 0.15, 0.4)
+
+  -- Add the on/off checkbox
+  local checkbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+  checkbox:SetSize(24, 24)
+  checkbox:SetPoint("LEFT", DM.GUI.layout.columns.ON, 0)
+  checkbox:SetChecked(isEnabled)
+
+  checkbox:SetScript("OnClick", function(self)
+    local isChecked = self:GetChecked()
+    -- Update the spell's enabled status in the database
+    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+      DM.dmspellsdb[spellID].enabled = isChecked and 1 or 0
+      DM:DebugMsg("Set spell " .. spellID .. " enabled: " .. (isChecked and "true" or "false"))
+    end
+  end)
+
+  frame.enabledCheckbox = checkbox
+
+  -- Spell icon
+  local icon = frame:CreateTexture(nil, "ARTWORK")
+  icon:SetSize(32, 32)
+  icon:SetPoint("LEFT", DM.GUI.layout.columns.ID, 0)
+  icon:SetTexture(iconPath)
+  frame.icon = icon
+
+  -- Spell name
+  local name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+  name:SetWidth(DM.GUI.layout.widths.NAME - 32) -- Account for the icon
+  name:SetJustifyH("LEFT")
+  name:SetText(spellName .. " (" .. spellID .. ")")
+  frame.name = name
+
+  -- Color swatch
+  local colorSwatch = frame:CreateTexture(nil, "ARTWORK")
+  colorSwatch:SetSize(24, 24)
+  colorSwatch:SetPoint("LEFT", DM.GUI.layout.columns.COLOR, 0)
+  colorSwatch:SetColorTexture(unpack(color))
+  frame.colorSwatch = colorSwatch
+
+  -- Color picker button
+  local colorPickerButton = CreateFrame("Button", nil, frame)
+  colorPickerButton:SetSize(24, 24)
+  colorPickerButton:SetPoint("CENTER", colorSwatch, "CENTER", 0, 0)
+  colorPickerButton:SetScript("OnClick", function()
+    -- Store reference to current row for the color picker
+    DM.currentColorRow = frame
+
+    -- Setup and show the color picker
+    ColorPickerFrame.hasOpacity = false
+    ColorPickerFrame.previousValues = color
+    ColorPickerFrame.func = function()
+      local r, g, b = ColorPickerFrame:GetColorRGB()
+      colorSwatch:SetColorTexture(r, g, b)
+
+      -- Update color in database
+      if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+        DM.dmspellsdb[spellID].color = { r, g, b }
+        DM:DebugMsg("Set spell " .. spellID .. " color: " .. r .. ", " .. g .. ", " .. b)
+      end
+    end
+
+    ColorPickerFrame.cancelFunc = function()
+      local prev = ColorPickerFrame.previousValues
+      colorSwatch:SetColorTexture(prev[1], prev[2], prev[3])
+    end
+
+    ColorPickerFrame:SetColorRGB(unpack(color))
+    ColorPickerFrame:Show()
+  end)
+
+  -- Order Up button
+  local upButton = CreateFrame("Button", nil, frame)
+  upButton:SetSize(24, 24)
+  upButton:SetPoint("LEFT", DM.GUI.layout.columns.UP, 0)
+  upButton:SetNormalTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollUpButton-Up")
+  upButton:SetPushedTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollUpButton-Down")
+  upButton:SetHighlightTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollUpButton-Highlight", "ADD")
+
+  upButton:SetScript("OnClick", function()
+    -- Decrease priority value (higher on the list)
+    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+      local currentPriority = tonumber(DM.dmspellsdb[spellID].priority) or 999
+      DM.dmspellsdb[spellID].priority = currentPriority - 1
+      DM:RefreshTrackedSpellList()
+    end
+  end)
+
+  frame.upButton = upButton
+
+  -- Order Down button
+  local downButton = CreateFrame("Button", nil, frame)
+  downButton:SetSize(24, 24)
+  downButton:SetPoint("LEFT", DM.GUI.layout.columns.DOWN, 0)
+  downButton:SetNormalTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollDownButton-Up")
+  downButton:SetPushedTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollDownButton-Down")
+  downButton:SetHighlightTexture("Interface\\BUTTONS\\UI-ScrollBar-ScrollDownButton-Highlight", "ADD")
+
+  downButton:SetScript("OnClick", function()
+    -- Increase priority value (lower on the list)
+    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+      local currentPriority = tonumber(DM.dmspellsdb[spellID].priority) or 999
+      DM.dmspellsdb[spellID].priority = currentPriority + 1
+      DM:RefreshTrackedSpellList()
+    end
+  end)
+
+  frame.downButton = downButton
+
+  -- Remove button (untrack)
+  local removeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  removeButton:SetSize(70, 24)
+  removeButton:SetPoint("LEFT", DM.GUI.layout.columns.DEL, 0)
+  removeButton:SetText("Remove")
+  removeButton:SetNormalFontObject("GameFontNormalSmall")
+
+  removeButton:SetScript("OnClick", function()
+    -- Set tracked to 0 in database
+    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+      DM.dmspellsdb[spellID].tracked = 0
+      DM:DebugMsg("Removed spell " .. spellID .. " from tracking")
+      DM:RefreshTrackedSpellList()
+    end
+  end)
+
+  -- Add update function to reposition elements based on layout changes
+  frame.UpdatePositions = function(positions, widths)
+    checkbox:SetPoint("LEFT", positions.ON, 0)
+    icon:SetPoint("LEFT", positions.ID, 0)
+    name:SetWidth(widths.NAME - 40)
+    colorSwatch:SetPoint("LEFT", positions.COLOR, 0)
+    upButton:SetPoint("LEFT", positions.UP, 0)
+    downButton:SetPoint("LEFT", positions.DOWN, 0)
+    removeButton:SetPoint("LEFT", positions.DEL, 0)
+  end
+
+  -- Add highlight on mouseover
+  frame:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight", "ADD")
+
+  return frame
+end
