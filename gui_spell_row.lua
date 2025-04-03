@@ -60,13 +60,13 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local scrollChild = DM.GUI.scrollChild
   local spellRow = CreateFrame("Frame", "DotMasterSpellRow" .. index, scrollChild)
 
-  -- Calculate row width to match content area
-  local rowWidth = scrollChild:GetWidth() - (PADDING.INNER * 2)
+  -- Calculate row width to match content area - make rows full width like class headers
+  local rowWidth = scrollChild:GetWidth()
   local rowHeight = 36 -- Define row height
 
-  -- Set the row size and position
+  -- Set the row size and position - remove inner padding to match header
   spellRow:SetSize(rowWidth, rowHeight)
-  spellRow:SetPoint("TOPLEFT", PADDING.INNER, -yOffset)
+  spellRow:SetPoint("TOPLEFT", 0, -yOffset)
   spellRow.spellID = numericID -- Store the spellID (numeric) reference
 
   -- Create background for the row - full width
@@ -83,6 +83,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   highlight:SetAllPoints(spellRow)
   highlight:SetColorTexture(0.3, 0.3, 0.3, 0.3)
   highlight:SetBlendMode("ADD")
+
+  -- Enable mouse interaction for highlight effect
+  spellRow:EnableMouse(true)
 
   -- ON: Enable/Disable Checkbox
   local enableCheckbox = CreateFrame("CheckButton", nil, spellRow, "UICheckButtonTemplate")
@@ -187,6 +190,16 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   spellRow.downButton = downButton
   spellRow.index = index -- Store index for checking first/last position
 
+  -- Store references to UI elements for desaturation
+  spellRow.icon = icon
+  spellRow.colorSwatch = colorSwatch
+  spellRow.enableCheckbox = enableCheckbox
+  spellRow.textures = {
+    icon = icon,
+    bg = bg,
+    highlight = highlight
+  }
+
   upButton:SetScript("OnClick", function()
     local currentPriority = DM.dmspellsdb[numericID].priority or 999
     local newPriority = math.max(1, currentPriority - 10)
@@ -228,6 +241,9 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   untrackButton.Middle:SetVertexColor(0.8, 0.2, 0.2)
   untrackButton.Right:SetVertexColor(0.8, 0.2, 0.2)
 
+  -- Store reference to untrack button
+  spellRow.removeButton = untrackButton
+
   -- Add tooltip
   untrackButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -258,7 +274,7 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
     if not positions or not widths then return end
 
     -- Update row width to match content area
-    spellRow:SetWidth(scrollChild:GetWidth() - (PADDING.INNER * 2))
+    spellRow:SetWidth(scrollChild:GetWidth())
 
     -- Update positioned elements
     enableCheckbox:SetPoint("CENTER", spellRow, "LEFT", positions.ON + (widths.ON / 2), 0)

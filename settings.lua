@@ -24,6 +24,19 @@ function DM:SaveSettings()
     DM:DatabaseDebug("Debug console output setting saved")
   end
 
+  -- Save class collapse state for tracked spells tab
+  if DM.GUI and DM.GUI.classCollapseState then
+    local stateCount = DM:TableCount(DM.GUI.classCollapseState)
+    DM:DatabaseDebug("Class collapse state saved with " .. stateCount .. " entries")
+
+    -- Log each class state for debugging
+    for class, collapsed in pairs(DM.GUI.classCollapseState) do
+      DM:DatabaseDebug("  - Class " .. class .. ": " .. (collapsed and "collapsed" or "expanded"))
+    end
+
+    DotMasterDB.classCollapseState = DM.GUI.classCollapseState
+  end
+
   DM:DebugMsg("Settings saved")
 end
 
@@ -54,6 +67,29 @@ function DM:LoadSettings()
     DM:DatabaseDebug("Debug console output setting loaded")
   else
     DM:DatabaseDebug("No saved debug console output setting found, using default")
+  end
+
+  -- Load class collapse state for tracked spells tab
+  if DM.GUI then
+    if DotMasterDB.classCollapseState then
+      local stateCount = DM:TableCount(DotMasterDB.classCollapseState)
+      DM:DatabaseDebug("Class collapse state loaded with " .. stateCount .. " entries")
+
+      -- Log each class state for debugging
+      for class, collapsed in pairs(DotMasterDB.classCollapseState) do
+        DM:DatabaseDebug("  - Class " .. class .. ": " .. (collapsed and "collapsed" or "expanded"))
+      end
+
+      -- Ensure we copy the values, not just the reference
+      DM.GUI.classCollapseState = {}
+      for class, collapsed in pairs(DotMasterDB.classCollapseState) do
+        DM.GUI.classCollapseState[class] = collapsed
+        DM:DatabaseDebug("  - Copied " .. class .. " state: " .. (collapsed and "collapsed" or "expanded"))
+      end
+    else
+      DM:DatabaseDebug("No saved class collapse state found, initializing empty table")
+      DM.GUI.classCollapseState = {}
+    end
   end
 
   DM:DebugMsg("Settings loaded")

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.7.2
+- Fixed UI alignment issues in the tracked spells tab
+- Improved header and content alignment in tracked spells list
+- Added proper spacing between class headers and spell rows
+- Fixed class collapse button functionality
+- Enhanced visual consistency across the tracked spells interface
+- Ensured perfect alignment of "Tracking" header with Remove buttons
+- Centered spell count text with Remove buttons for visual clarity
+- Added consistent vertical spacing for better readability
+
 ## Version 0.7.1
 - Updated documentation structure with consolidated developer guides
 - Created comprehensive Debug System documentation
