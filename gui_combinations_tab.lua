@@ -576,8 +576,8 @@ function DM:ShowCombinationDialog(comboID)
     -- Load spells
     dialog.selectedSpells = combo.spells or {}
 
-    -- Populate spell list
-    -- Will be implemented with the spell display functions
+    -- Display the spells in the spell list
+    DM:UpdateCombinationSpellList(dialog)
   else
     dialog.title:SetText("New Combination")
     dialog.comboID = nil
@@ -585,6 +585,102 @@ function DM:ShowCombinationDialog(comboID)
 
   -- Show the dialog
   dialog:Show()
+end
+
+-- Function to update the spell list in the combination dialog
+function DM:UpdateCombinationSpellList(dialog)
+  if not dialog or not dialog.spellsContent or not dialog.selectedSpells then
+    return
+  end
+
+  -- Clear current spell list
+  for _, child in pairs({ dialog.spellsContent:GetChildren() }) do
+    child:Hide()
+  end
+
+  -- Exit if no spells
+  if #dialog.selectedSpells == 0 then
+    local noSpellsText = dialog.spellsContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    noSpellsText:SetPoint("CENTER", dialog.spellsContent, "CENTER")
+    noSpellsText:SetText("No spells added to this combination")
+    noSpellsText:SetTextColor(0.7, 0.7, 0.7)
+    return
+  end
+
+  -- Display each spell
+  local yOffset = 5
+  local rowHeight = 30
+
+  for index, spellID in ipairs(dialog.selectedSpells) do
+    -- Create spell row
+    local row = CreateFrame("Frame", nil, dialog.spellsContent)
+    row:SetSize(dialog.spellsContent:GetWidth() - 10, rowHeight)
+    row:SetPoint("TOPLEFT", dialog.spellsContent, "TOPLEFT", 5, -yOffset)
+
+    -- Background
+    local bg = row:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(
+      index % 2 == 0 and 0.2 or 0.15,
+      index % 2 == 0 and 0.2 or 0.15,
+      index % 2 == 0 and 0.2 or 0.15,
+      0.8
+    )
+
+    -- Get spell info
+    local spellName, _, spellIcon
+    if DM.dmspellsdb and DM.dmspellsdb[tostring(spellID)] then
+      -- Get from our database
+      local spellData = DM.dmspellsdb[tostring(spellID)]
+      spellName = spellData.spellname
+      spellIcon = spellData.spellicon
+    else
+      -- Fallback to WoW API
+      local spellInfo = C_Spell.GetSpellInfo(spellID)
+      if spellInfo then
+        spellName = spellInfo.name
+        spellIcon = spellInfo.iconFileID
+      end
+    end
+
+    -- Icon
+    local icon = row:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(rowHeight - 6, rowHeight - 6)
+    icon:SetPoint("LEFT", row, "LEFT", 5, 0)
+    icon:SetTexture(spellIcon or 134400) -- Default to question mark if no icon
+
+    -- Spell name
+    local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+    name:SetPoint("RIGHT", row, "RIGHT", -30, 0)
+    name:SetJustifyH("LEFT")
+    name:SetText(spellName or "Unknown Spell: " .. spellID)
+
+    -- Remove button
+    local removeButton = CreateFrame("Button", nil, row)
+    removeButton:SetSize(16, 16)
+    removeButton:SetPoint("RIGHT", row, "RIGHT", -5, 0)
+    removeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    removeButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+
+    removeButton:SetScript("OnClick", function()
+      -- Remove the spell
+      for i, id in ipairs(dialog.selectedSpells) do
+        if id == spellID then
+          table.remove(dialog.selectedSpells, i)
+          break
+        end
+      end
+
+      -- Update the display
+      DM:UpdateCombinationSpellList(dialog)
+    end)
+
+    yOffset = yOffset + rowHeight
+  end
+
+  -- Set content height
+  dialog.spellsContent:SetHeight(math.max(yOffset + 5, 100))
 end
 
 -- Function to show delete confirmation
@@ -846,10 +942,23 @@ function DM:ShowSpellSelectionForCombo(parent)
 
       -- Update the parent dialog
       if parent and parent.selectedSpells then
-        parent.selectedSpells = spellList
+        -- Merge with existing spells (avoid duplicates)
+        for _, spellID in ipairs(spellList) do
+          local isDuplicate = false
+          for _, existingID in ipairs(parent.selectedSpells) do
+            if existingID == spellID then
+              isDuplicate = true
+              break
+            end
+          end
 
-        -- TODO: Display the selected spells in the parent dialog
-        -- This would typically refresh the spell list display
+          if not isDuplicate then
+            table.insert(parent.selectedSpells, spellID)
+          end
+        end
+
+        -- Update the display in the parent dialog
+        DM:UpdateCombinationSpellList(parent)
       end
 
       -- Hide the selection dialog
@@ -879,7 +988,12 @@ function DM:ShowSpellSelectionForCombo(parent)
 
   -- Reset selected spells if parent has existing selections
   if parent and parent.selectedSpells then
-    wipe(frame.selectedSpells)
+    -- Make sure frame.selectedSpells exists before wiping
+    if not frame.selectedSpells then
+      frame.selectedSpells = {}
+    else
+      wipe(frame.selectedSpells)
+    end
 
     -- Mark existing spells as selected
     for _, spellID in ipairs(parent.selectedSpells) do
