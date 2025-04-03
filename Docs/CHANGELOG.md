@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.6 (2023-04-17)
+
+#### Added
+- Added warning popups when saving combinations with missing name or no spells
+- Added click handler for color swatches in the combinations list
+- Added reminder in combination tab info text about combination priority
+
+#### Fixed
+- Fixed color picker functionality in main combinations tab list
+- Fixed color picker compatibility with both standard WoW UI and ElvUI
+- Fixed spacing and positioning in combination dialog
+- Improved UI consistency across all windows
+- Fixed scrollbar issues in combination spell list
+
+#### Changed
+- Standardized window dimensions (350x450px) across all dialogs
+- Improved window positioning with cascading layout
+- Adjusted UI element spacing for visual consistency
+
 ### Version 0.9.4 (2023-04-16)
 
 #### Added
@@ -109,8 +128,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Centralized version number definition.
   - Integrated temporary debug prints into the addon's debug console system.
 
----
-
 ### Version 0.7.2 (YYYY-MM-DD)
 
 - Added a new "Tracked Spells" tab to the GUI.
@@ -119,8 +136,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Database tab logic to refresh Tracked Spells tab on changes.
 - Updated spell selection dialog to refresh Tracked Spells tab.
 - Fixed class collapsing functionality in Tracked Spells tab.
-
----
 
 ### Version 0.7.1 (YYYY-MM-DD)
 
@@ -131,9 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration UI.
 - Debug Console.
 
----
-
-## Version 0.7.2
+### Version 0.7.2
 - Fixed UI alignment issues in the tracked spells tab
 - Improved header and content alignment in tracked spells list
 - Added proper spacing between class headers and spell rows
@@ -143,19 +156,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Centered spell count text with Remove buttons for visual clarity
 - Added consistent vertical spacing for better readability
 
-## Version 0.7.1
+### Version 0.7.1
 - Updated documentation structure with consolidated developer guides
 - Created comprehensive Debug System documentation
 - Improved version management documentation and workflow
 - Removed obsolete development diary in favor of structured documentation
 - Enhanced development process documentation with clear guidelines
 
-## Version 0.7.0
+### Version 0.7.0
 - Version bump for continued development
 - Branch management and repository organization
 - Documentation updates
 
-## [Unreleased]
+### [Unreleased]
 - Performance optimizations for combat situations
 - Additional spell database entries
 - Enhanced nameplate detection for edge cases
@@ -167,17 +180,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Increased window width for better usability
   - Improved save behavior (all changes now trigger immediate database save)
 
-## [0.5.3] - 2024-08-30 (GUI Fix)
+### [0.5.3] - 2024-08-30 (GUI Fix)
 
-### Fixed
+#### Fixed
 - Removed duplicate GUI creation code to prevent conflicts
 - Ensured the proper resizable frame implementation is used
 - Improved GUI initialization reliability
 - Enhanced window resizing functionality
 
-## [0.5.2] - 2024-08-22 (Debug System Update)
+### [0.5.2] - 2024-08-22 (Debug System Update)
 
-### Added
+#### Added
 - Comprehensive debug console with category-based filtering
 - Dedicated `/dmdebug` command for all debugging options
 - Color-coded debug messages by category (general, spell, nameplate, gui, performance)
@@ -185,21 +198,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Console output toggle for debug messages
 - Debug category filtering through UI and slash commands
 
-### Changed
+#### Changed
 - Improved error handling in all debug functions
 - Better WoW API compatibility with fallbacks for different client versions
 - Enhanced debug message formatting with timestamps and categories
 - More user-friendly debug options in the General tab
 
-### Fixed
+#### Fixed
 - Improved stability with defensive coding patterns for error handling
 - Added backward compatibility for existing debug functions
 - Better scrolling behavior in the debug console
 - Consolidated all debug-related settings in one place
 
-## [0.5.1] - 2024-08-15 (Documentation Update)
+### [0.5.1] - 2024-08-15 (Documentation Update)
 
-### Changed
+#### Changed
 - Consolidated README files into a clearer structure
 - Enhanced main README.md with user-focused information
 - Added Docs/DOCUMENTATION_GUIDE.md as a guide to all documentation
@@ -207,37 +220,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved navigation between documentation files
 - Ensured all links between files work correctly
 
-## [0.5.0] - 2024-08-01 (Stability Release)
+### [0.5.0] - 2024-08-01 (Stability Release)
 
-### Changed
+#### Changed
 - Restored codebase to version 0.4.0 for improved stability
 - Returned to pre-restructuring file naming for better compatibility
 - Preserved all validation scripts and documentation from later versions
 - Updated TOC file to reference the restored file structure
 
-### Added
+#### Added
 - Preserved the `dmcheck` validation tools for pre-game testing
 - Maintained full documentation from 0.4.2
 - Proper version tracking in CHANGELOG and TOC
 
-### Fixed
+#### Fixed
 - Addressed stability issues in the 0.4.x development branch
 - Simplified codebase while maintaining core functionality
 
-## [0.4.2] - 2024-07-15 (Development Build)
+### [0.4.2] - 2024-07-15 (Development Build)
 
-### Added
+#### Added
 - New `dmcheck` validation tool for pre-game testing
 - Automated verification of critical API usage
 
-### Fixed
+#### Fixed
 - ✅ **Fixed CRITICAL API ISSUE**: Resolved the GetSpellInfo API issue by using C_Spell.GetSpellInfo() throughout the codebase
 - Enhanced development workflow with better error detection
 - Improved code validation process to prevent common errors
 
-## [0.4.1] - 2024-06-19 (Development Build)
+### [0.4.1] - 2024-06-19 (Development Build)
 
-### Changed
+#### Changed
 - Complete code restructuring with prefix-based file organization:
   - Core files (dm_*): Core functionality, debug, utils, settings
   - Nameplate files (np_*): Nameplate detection and coloring
@@ -249,26 +262,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More consistent function naming and organization
 - Added comprehensive CODE_STRUCTURE.md documentation
 
-### Fixed
+#### Fixed
 - Improved error handling throughout the codebase
 - Better module initialization sequence
 - More robust dependency management
 
-## [0.4.0] - 2024-06-19 (Stable Release)
+### [0.4.0] - 2024-06-19 (Stable Release)
 
-### Changed
+#### Changed
 - Restored a previously working version of the addon 
 - Realigned version numbering to match development milestones
 - This version provides stable functionality without the critical API issues
 
-### Fixed
+#### Fixed
 - Resolved compatibility issues with recent WoW client versions
 - Fixed nameplate detection and coloring functionality
 - Ensured stable "Find My Dots" feature operation
 
-## [0.3.0] - 2024-03-31 (Development Build)
+### [0.3.0] - 2024-03-31 (Development Build)
 
-### Added
+#### Added
 - Complete architectural rebuild with Ace3 framework
 - Enhanced debugging system with categorized logging
 - Full modular file organization for better maintainability
@@ -278,56 +291,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile support via AceDB-3.0
 - Minimap button for quick access
 
-### Fixed
+#### Fixed
 - Invalid function calls in nameplate detection
 - Performance issues when tracking multiple targets
 - Color persistence issues when nameplates refresh
 - Installed missing libraries (LibDataBroker-1.1 and LibDBIcon-1.0) for minimap button functionality
 - Corrected paths in embeds.xml for all libraries
 
-### Changed
+#### Changed
 - Completely overhauled configuration UI
 - Improved visual appearance of dot indicators
 - Enhanced color management system
 - More efficient event handling
 
-## [0.2.1] - 2024-03-15
+### [0.2.1] - 2024-03-15
 
-### Fixed
+#### Fixed
 - Critical bug with nameplate coloring in raids
 - Lua error when entering dungeons
 
-### Changed
+#### Changed
 - Improved performance of aura scanning
 
-## [0.2.0] - 2024-03-10
+### [0.2.0] - 2024-03-10
 
-### Added
+#### Added
 - Basic configuration panel
 - Color customization for each spell
 - Class-specific spell detection
 - Simple profile system
 
-### Fixed
+#### Fixed
 - Nameplate detection in group scenarios
 - Memory leak in aura tracking
 
-## [0.1.1] - 2024-03-01
+### [0.1.1] - 2024-03-01
 
-### Fixed
+#### Fixed
 - Initial compatibility issues with other nameplate addons
 - Error when targeting neutral NPCs
 
-## [0.1.0] - 2024-02-25
+### [0.1.0] - 2024-02-25
 
-### Added
+#### Added
 - Initial release
 - Basic nameplate coloring functionality
 - Spell detection for major DoT classes
 - Simple commands for enabling/disabling features
 
-## [0.2.0-beta4] - 2023-03-15
-### Fixed
+### [0.2.0-beta4] - 2023-03-15
+#### Fixed
 - Added SafePrint function to both Core/Init.lua and DotMaster.lua to safely handle logging before Debug is initialized
 - Restructured initialization sequence to ensure Debug is properly initialized before calling SetupEvents
 - Fixed "attempt to call method 'Debug' (a nil value)" error in Core/Init.lua
@@ -338,8 +351,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Debug.lua to add safety checks ensuring database is properly initialized
 - Added additional safeguards for database structure and profile initialization
 
-## [0.2.0-beta3] - 2023-03-01
-### Fixed
+#### Changed
+- Added warning popups when saving combinations with missing name or no spells
+- Added click handler for color swatches in the combinations list
+- Added reminder in combination tab info text about combination priority
+
+### [0.2.0-beta3] - 2023-03-01
+#### Fixed
 - Fixed critical "attempt to index local 'options' (a function value)" error in Options UI
 - Fixed "Attempting to rehook already active hook" error in NameplateTracker module
 - Fixed "attempt to call method 'Debug' (a nil value)" error in initialization sequence
@@ -354,40 +372,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added module registration tracking to prevent duplicate initialization
 - Fixed initialization sequence to ensure Debug is available before use
 
-## [0.2.0-beta2] - 2023-02-15
-### Fixed
+#### Changed
+- Standardized window dimensions (350x450px) across all dialogs
+- Improved window positioning with cascading layout
+- Adjusted UI element spacing for visual consistency
+
+### [0.2.0-beta2] - 2023-02-15
+#### Fixed
 - Fixed InterfaceOptionsFrame_OpenToCategory error by updating configuration UI to use the modern Settings API
 - Added compatibility with the WoW Dragonflight UI
 - Added fallback for older client versions
 
-## [0.2.0-beta1] - 2023-02-01
-### Added
+### [0.2.0-beta1] - 2023-02-01
+#### Added
 - Implemented hybrid approach to nameplate tracking combining direct WoW API with Ace3
 - Added dedicated nameplate event frame with proper event handling
 - Implemented color tracking and restoration for nameplates
 - Added default spell configurations for common DoT spells
-### Fixed
+#### Fixed
 - Fixed critical frame initialization issues
 - Optimized ScanUnitAuras function based on working implementation
 - Fixed updateNameplates function to work reliably
 - Updated configuration UI to use the modern Settings API instead of deprecated InterfaceOptionsFrame
 
-## [0.1.1] - 2023-01-15
-### Fixed
+### [0.1.1] - 2023-01-15
+#### Fixed
 - Fixed missing UI loading and debug commands functionality
 - Added version property to DotMaster table
 - Improved debug log export with version information
 - Ensured version consistency across all files
 
-## [0.1.0] - 2023-01-01
-### Added
+### [0.1.0] - 2023-01-01
+#### Added
 - Initial release
 - Basic DoT tracking on enemy nameplates
 - Simple "Find My Dots" window
 - Configuration UI
 - Support for common DoT spells
 
-## Version 0.6.9
+### Version 0.6.9
 - UI Improvements for the Tracked Spells tab:
   - Fixed scrollbar overlap issue by properly accounting for scrollbar width
   - Improved column spacing and alignments throughout the interface
@@ -397,8 +420,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Better centered checkboxes and order arrows for a cleaner layout
   - Adjusted spacing between UI elements for optimal readability
 
-## Version 0.6.8
-## UI Improvements (Tracked Spells Tab)
+### Version 0.6.8
+#### UI Improvements (Tracked Spells Tab)
 
 - Enhanced visibility of the table with proper spacing and borders
 - Fixed the scrollbar to appear only when needed
@@ -407,17 +430,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Remove button positioning and alignment
 - Optimized content layout for visual balance
 
-## [0.8.6] - 2024-04-10 (Database Improvements)
+### [0.8.6] - 2024-04-10 (Database Improvements)
 
-### Fixed
+#### Fixed
 - Fixed issue requiring multiple clicks to save spells to database
 - Fixed friendly message persisting in Database tab when spells are present
 - Improved database save and refresh operations
 - Enhanced UI state management for Database and Tracked Spells tabs
 
-## [0.8.5] - 2024-04-10 (UI Refinements)
+### [0.8.5] - 2024-04-10 (UI Refinements)
 
-### Changed
+#### Changed
 - Improved Database tab UI:
   - Adjusted spacing between table header and class headers to 3px
   - Enhanced search functionality to include class names in search results
@@ -426,7 +449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Centered info text vertically in info areas
   - Set search bar width to 430px and centered positioning
 
-### Fixed
+#### Fixed
 - Resolved issues with search bar placeholder text not clearing properly
 - Fixed vertical alignment of info text across all tabs
 - Corrected spacing and margins in the Tracked Spells tab
