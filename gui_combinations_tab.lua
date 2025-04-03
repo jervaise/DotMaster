@@ -1112,8 +1112,9 @@ function DM:ShowSpellSelectionForCombo(parent)
       local spellCount = 0
       for _ in pairs(DM.dmspellsdb) do
         spellCount = spellCount + 1
-        if spellCount > 0 then break end
       end
+
+      DM:DebugMsg("Spell database has " .. tostring(spellCount) .. " entries")
 
       if spellCount == 0 then
         local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -1153,6 +1154,9 @@ function DM:ShowSpellSelectionForCombo(parent)
               spellData.spellname = "Unknown Spell " .. tostring(spellIDStr)
             end
           end
+
+          -- Debug each spell entry to help diagnose the issue
+          DM:DebugMsg("Found spell: ID=" .. tostring(spellIDStr) .. ", Name=" .. tostring(spellData.spellname))
 
           -- Match search text (simplified logic)
           local matchesSearch = (not searchText or searchText == "")
@@ -1372,7 +1376,7 @@ function DM:ShowSpellSelectionForCombo(parent)
 end
 
 -- Helper function to create a minimal spell database if everything else fails
-local function CreateMinimalSpellDatabase()
+function CreateMinimalSpellDatabase()
   if not DM.dmspellsdb then
     DM.dmspellsdb = {}
   end
