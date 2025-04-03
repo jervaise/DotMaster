@@ -556,8 +556,22 @@ function DM:ShowCombinationDialog(comboID)
     addSpellButton:SetText("Add Spell")
 
     addSpellButton:SetScript("OnClick", function()
-      -- Show spell selection UI
-      DM:ShowSpellSelectionForCombo(dialog)
+      -- Ensure any previous instance is properly hidden first
+      if DM.GUI.comboSpellSelectionFrame and DM.GUI.comboSpellSelectionFrame:IsShown() then
+        DM.GUI.comboSpellSelectionFrame:Hide()
+      end
+
+      -- Small delay to ensure UI updates properly
+      C_Timer.After(0.01, function()
+        -- Show spell selection UI
+        DM:ShowSpellSelectionForCombo(dialog)
+
+        -- Ensure frame is given focus
+        if DM.GUI.comboSpellSelectionFrame then
+          DM.GUI.comboSpellSelectionFrame:SetFrameStrata("DIALOG")
+          DM.GUI.comboSpellSelectionFrame:Raise()
+        end
+      end)
     end)
 
     -- Save/Cancel buttons
@@ -1143,6 +1157,15 @@ function DM:ShowSpellSelectionForCombo(parent)
 
   -- Show the frame AFTER positioning is set
   frame:Show()
+  frame:Raise()
+
+  -- Make sure it's on top of everything
+  frame:SetFrameStrata("FULLSCREEN_DIALOG")
+
+  -- Ensure the frame gets focus
+  frame:SetScript("OnShow", function(self)
+    self:Raise()
+  end)
 end
 
 -- Helper function to set up mouse wheel scrolling and hide scrollbars
