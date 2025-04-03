@@ -3,6 +3,16 @@
 
 local DM = DotMaster
 
+-- Helper function to get player class color
+local function GetPlayerClassColor()
+  local _, className = UnitClass("player")
+  if className and RAID_CLASS_COLORS and RAID_CLASS_COLORS[className] then
+    return RAID_CLASS_COLORS[className]
+  end
+  -- Default color if class color not found
+  return { r = 0.6, g = 0.6, b = 0.6 }
+end
+
 function DM:CreateCombinationsTab(parent)
   -- Ensure combinations are initialized
   if not DM:IsCombinationsInitialized() then
@@ -1204,14 +1214,4 @@ local function SetupScrollFrames(frame)
       SetupScrollFrames(child)
     end
   end
-end
-
--- Helper function to get player class color
-local function GetPlayerClassColor()
-  local _, className = UnitClass("player")
-  if className and RAID_CLASS_COLORS and RAID_CLASS_COLORS[className] then
-    return RAID_CLASS_COLORS[className]
-  end
-  -- Default color if class color not found
-  return { r = 0.6, g = 0.6, b = 0.6 }
 end
