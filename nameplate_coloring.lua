@@ -96,15 +96,94 @@ function DM:CreateNameplateFlash(unitFrame, color)
   local Plater = _G["Plater"]
   if not Plater or not Plater.CreateFlash then return nil end
 
-  -- Create the flash animation
-  -- For border only, target the border
-  -- For full nameplate, target the healthBar
-  local target = DM.settings.borderOnly and unitFrame.healthBar.border or unitFrame.healthBar
+  -- For border only mode, use Plater's border flash function instead
+  if DM.settings.borderOnly then
+    -- Just return a wrapper for Plater's built-in function
+    return {
+      Play = function()
+        -- Use Plater's built-in border flash function
+        if unitFrame.healthBar.canHealthFlash then
+          unitFrame.healthBar.PlayHealthFlash(0.25)
+        end
+      end,
+      Stop = function()
+        -- Nothing to stop - Plater's flash stops itself
+      end
+    }
+  else
+    -- Create a custom flash animation that respects the health value
+    local healthBar = unitFrame.healthBar
+    if not healthBar then return nil end
 
-  -- Parameters: target, duration, amount, color
-  local flash = Plater.CreateFlash(target, 0.3, 3, color)
+    -- Create a flash frame that's the same size as the current health value
+    local flashFrame = CreateFrame("Frame", nil, healthBar)
+    flashFrame:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+    flashFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    flashFrame:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+    flashFrame:SetWidth(healthBar:GetWidth() * (healthBar:GetValue() / healthBar:GetMinMaxValues()))
+    flashFrame:Hide()
 
-  return flash
+    -- Create flash texture
+    local texture = flashFrame:CreateTexture(nil, "OVERLAY")
+    texture:SetAllPoints()
+    texture:SetColorTexture(color[1], color[2], color[3], 0.6)
+    texture:SetBlendMode("ADD")
+
+    -- Create animation group
+    local animGroup = texture:CreateAnimationGroup()
+    animGroup:SetLooping("REPEAT")
+
+    -- Alpha animation (fade in)
+    local fadeIn = animGroup:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0.2)
+    fadeIn:SetToAlpha(0.6)
+    fadeIn:SetDuration(0.4)
+    fadeIn:SetOrder(1)
+
+    -- Alpha animation (fade out)
+    local fadeOut = animGroup:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(0.6)
+    fadeOut:SetToAlpha(0.2)
+    fadeOut:SetDuration(0.4)
+    fadeOut:SetOrder(2)
+
+    -- Update function to make sure flash follows health value changes
+    local function UpdateFlashWidth()
+      if healthBar:IsVisible() then
+        local min, max = healthBar:GetMinMaxValues()
+        if max and max > 0 then
+          local val = healthBar:GetValue() or 0
+          local width = healthBar:GetWidth() * (val / max)
+          flashFrame:SetWidth(width)
+        end
+      end
+    end
+
+    -- Set up update events
+    flashFrame:SetScript("OnUpdate", UpdateFlashWidth)
+
+    -- Set animation callbacks
+    animGroup:SetScript("OnPlay", function()
+      flashFrame:Show()
+    end)
+
+    animGroup:SetScript("OnStop", function()
+      flashFrame:Hide()
+    end)
+
+    -- Return the animation controller
+    return {
+      Play = function()
+        -- Update the width before playing
+        UpdateFlashWidth()
+        animGroup:Play()
+      end,
+      Stop = function()
+        animGroup:Stop()
+      end,
+      flashFrame = flashFrame -- Store reference to flash frame
+    }
+  end
 end
 
 -- Check for expiring DoTs and trigger flashes
