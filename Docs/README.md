@@ -1,50 +1,25 @@
 # DotMaster Documentation
 
-This directory contains comprehensive documentation for the DotMaster addon.
+Welcome to the documentation for DotMaster, an addon that tracks damage-over-time abilities on nameplates in World of Warcraft.
 
-## For Developers
+## User Guides
 
-### Core Documentation
-
-- [Developer Guide](DEVELOPER_GUIDE.md) - Complete development reference
-- [Debug System](DEBUG_SYSTEM.md) - Guide to using the debug system
-- [Code Structure](CODE_STRUCTURE.md) - Overview of the codebase organization
-- [Current Files](CURRENT_FILES.md) - List of current project files
-
-### Project Information
-
-- [Project Scope](PROJECT_SCOPE.md) - Overview of the project's goals and functionality
-- [Current Status](CURRENT_STATUS.md) - Current development status
+- [Release Information](RELEASE.md) - Details about the current release
+- [Current Status](CURRENT_STATUS.md) - Current status of the addon
+- [Tracked Spells UI](TRACKED_SPELLS_UI.md) - Guide to the tracked spells interface
+- [GUI Troubleshooting](GUI_TROUBLESHOOTING.md) - Help with interface issues
 - [Changelog](CHANGELOG.md) - History of changes by version
 
-### Specialized Guides
+## Patch Notes
 
-- [GUI Troubleshooting](GUI_TROUBLESHOOTING.md) - Resolving UI-related issues
-- [Critical API Notes](CRITICAL_API_NOTES.md) - Important API considerations
+The [PatchNotes](PatchNotes/) directory contains detailed information about each version's changes.
 
-## Documentation Structure
+## Need Help?
 
-The documentation is organized to provide both high-level overviews and detailed technical information. The Developer Guide is the primary reference for anyone working on the project, while specialized guides provide additional information on specific topics.
+If you encounter any issues or have questions about DotMaster, please:
 
-## Development Process
+1. Check the [GUI Troubleshooting](GUI_TROUBLESHOOTING.md) guide first
+2. Review the [Current Status](CURRENT_STATUS.md) for known issues
+3. If that doesn't help, report your issue on GitHub
 
-DotMaster follows a structured development process:
-
-1. Make small, incremental changes
-2. Test thoroughly with debug messages
-3. Verify with in-game testing
-4. Document all changes
-5. Update version numbers
-
-See the [Developer Guide](DEVELOPER_GUIDE.md) for a complete description of the development process.
-
-## Debug System
-
-The DotMaster debug system is a critical development tool. It provides:
-
-- Category-based message filtering
-- Detailed debug console
-- Specialized debug functions for different parts of the codebase
-- Persistent logging across sessions
-
-See the [Debug System](DEBUG_SYSTEM.md) guide for detailed information on using this system. 
+Thank you for using DotMaster! 

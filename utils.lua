@@ -1,58 +1,14 @@
 -- DotMaster utils.lua
--- Common utilities and helper functions
+-- Utility functions for the addon
 
 local DM = DotMaster
 
--- Debug Functions
--- --------------------------------------------
-
--- General debug message function
-function DM:DebugMsg(message, ...)
-  if not DM.DEBUG_CATEGORIES.general then return end
-
-  local prefix = "|cFFCC00FFDotMaster Debug:|r "
-  if select('#', ...) > 0 then
-    print(prefix .. message, ...)
-  else
-    print(prefix .. message)
-  end
+-- Simple print function
+function DM:PrintMessage(message)
+  print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Spell-specific debug function
-function DM:SpellDebug(message, ...)
-  if not DM.DEBUG_CATEGORIES.spell then return end
-
-  local prefix = "|cFFFF00FFDM Debug:|r "
-  if select('#', ...) > 0 then
-    print(prefix .. message, ...)
-  else
-    print(prefix .. message)
-  end
-end
-
--- Print addon message (without debug restriction)
-function DM:PrintMessage(message, ...)
-  local prefix = "|cFFCC00FFDotMaster:|r "
-  if select('#', ...) > 0 then
-    print(prefix .. message, ...)
-  else
-    print(prefix .. message)
-  end
-end
-
--- Table & Data Helpers
--- --------------------------------------------
-
--- Count table entries
-function DM:TableCount(tbl)
-  local count = 0
-  for _ in pairs(tbl) do
-    count = count + 1
-  end
-  return count
-end
-
--- Deep copy a table
+-- Deep copy function for tables
 function DM:DeepCopy(original)
   local copy
   if type(original) == "table" then
@@ -70,110 +26,86 @@ function DM:DeepCopy(original)
   return copy
 end
 
--- Check if a spell ID exists in the spell database
-function DM:SpellExists(spellID)
-  -- Convert to number for comparison
-  local numericID = tonumber(spellID)
-  if not numericID then return false end
-
-  -- Direct lookup by numeric ID
-  if self.dmspellsdb and self.dmspellsdb[numericID] then
-    return true
+-- Count entries in a table
+function DM:TableCount(t)
+  if not t or type(t) ~= "table" then
+    return 0
   end
-
-  -- For backward compatibility, check if it exists with a different type
-  if self.dmspellsdb then
-    for existingID, _ in pairs(self.dmspellsdb) do
-      if tonumber(existingID) == numericID then
-        return true
-      end
-    end
+  local count = 0
+  for _ in pairs(t) do
+    count = count + 1
   end
-
-  return false
+  return count
 end
 
--- Parse spell ID from a string
-function DM:ParseSpellIDs(spellIDString)
-  return { tonumber(spellIDString) }
-end
-
--- Color Utilities
--- --------------------------------------------
-
--- Convert RGB (0-1) to hex color code
-function DM:RGBToHex(r, g, b)
-  return string.format("|cFF%02x%02x%02x", r * 255, g * 255, b * 255)
-end
-
--- Get contrasting text color (black or white) based on background
-function DM:GetContrastColor(r, g, b)
-  -- Calculate luminance using standard formula
+-- Determine the most appropriate color for text based on the background color
+function DM:GetReadableTextColor(r, g, b)
+  -- Calculate luminance (formula for perceived brightness)
   local luminance = 0.299 * r + 0.587 * g + 0.114 * b
 
-  -- Return white for dark backgrounds, black for light
+  -- If the background is dark, use white text; otherwise use black text
   if luminance < 0.5 then
-    return 1, 1, 1 -- white
+    return 1, 1, 1 -- White
   else
-    return 0, 0, 0 -- black
+    return 0, 0, 0 -- Black
   end
 end
 
--- Create a brightened/darkened version of a color
-function DM:AdjustBrightness(r, g, b, factor)
-  return math.min(r * factor, 1),
-      math.min(g * factor, 1),
-      math.min(b * factor, 1)
+-- Utility function to round numbers
+function DM:Round(num, decimalPlaces)
+  local mult = 10 ^ (decimalPlaces or 0)
+  return math.floor(num * mult + 0.5) / mult
 end
 
--- Priority Management Functions
--- --------------------------------------------
+-- Utility function to get player class color
+function DM:GetClassColor()
+  -- Get player's class
+  local _, playerClass = UnitClass("player")
 
--- Set default priorities based on current order
-function DM:SetDefaultPriorities()
-  local priority = 1
-  -- Loop through existing spell config rows in current display order
-  if self.GUI.spellFrames then
-    for _, frame in ipairs(self.GUI.spellFrames) do
-      if frame.spellID and self.dmspellsdb[frame.spellID] then
-        self.dmspellsdb[frame.spellID].priority = priority
-        priority = priority + 1
-      end
-    end
+  -- Use standard class colors
+  local classColors = {
+    DEATHKNIGHT = { r = 0.77, g = 0.12, b = 0.23 },
+    DEMONHUNTER = { r = 0.64, g = 0.19, b = 0.79 },
+    DRUID = { r = 1.00, g = 0.49, b = 0.04 },
+    HUNTER = { r = 0.67, g = 0.83, b = 0.45 },
+    MAGE = { r = 0.41, g = 0.80, b = 0.94 },
+    MONK = { r = 0.00, g = 1.00, b = 0.59 },
+    PALADIN = { r = 0.96, g = 0.55, b = 0.73 },
+    PRIEST = { r = 1.00, g = 1.00, b = 1.00 },
+    ROGUE = { r = 1.00, g = 0.96, b = 0.41 },
+    SHAMAN = { r = 0.00, g = 0.44, b = 0.87 },
+    WARLOCK = { r = 0.58, g = 0.51, b = 0.79 },
+    WARRIOR = { r = 0.78, g = 0.61, b = 0.43 },
+    EVOKER = { r = 0.20, g = 0.58, b = 0.50 },
+  }
+
+  -- Return the color object for the player's class, or a default color
+  if classColors[playerClass] then
+    return classColors[playerClass].r, classColors[playerClass].g, classColors[playerClass].b
+  else
+    return 0.5, 0.5, 0.5 -- Default gray if class not found
   end
-
-  -- If no frames exist yet, iterate through dmspellsdb directly
-  if priority == 1 and self.dmspellsdb then
-    for spellID, _ in pairs(self.dmspellsdb) do
-      if self.dmspellsdb[spellID].tracked == 1 then
-        self.dmspellsdb[spellID].priority = priority
-        priority = priority + 1
-      end
-    end
-  end
-
-  self.lastSortOrder = priority - 1
-  DM:SaveDMSpellsDB()
 end
 
--- Get max priority value from current spell configs
-function DM:GetMaxPriority()
-  local maxPriority = 0
-
-  if not self.dmspellsdb then
-    return maxPriority
+-- Utility function to convert hex color to RGB
+function DM:HexToRGB(hex)
+  hex = hex:gsub("#", "")
+  if hex:len() == 3 then
+    return tonumber("0x" .. hex:sub(1, 1)) / 15,
+        tonumber("0x" .. hex:sub(2, 2)) / 15,
+        tonumber("0x" .. hex:sub(3, 3)) / 15
+  elseif hex:len() == 6 then
+    return tonumber("0x" .. hex:sub(1, 2)) / 255,
+        tonumber("0x" .. hex:sub(3, 4)) / 255,
+        tonumber("0x" .. hex:sub(5, 6)) / 255
   end
-
-  for _, config in pairs(self.dmspellsdb) do
-    if config.tracked == 1 and config.priority and config.priority > maxPriority then
-      maxPriority = config.priority
-    end
-  end
-  return maxPriority
+  return 1, 1, 1 -- Default white
 end
 
--- Get next available priority value
-function DM:GetNextPriority()
-  local maxPriority = self:GetMaxPriority()
-  return maxPriority + 1
+-- Utility function to convert RGB to hex
+function DM:RGBToHex(r, g, b)
+  r = math.floor(r * 255 + 0.5)
+  g = math.floor(g * 255 + 0.5)
+  b = math.floor(b * 255 + 0.5)
+  return string.format("#%02x%02x%02x", r, g, b)
 end

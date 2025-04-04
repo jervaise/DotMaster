@@ -1,1 +1,0 @@
-IMPORTANT FIX INSTRUCTIONS: In gui_combinations_tab.lua, find line ~610 where it sets 'row.isExpanded = combo.isExpanded or true' and comment out or delete this line AND the next 3 lines that update the indicator texture. These lines conflict with the proper setting at line 373.

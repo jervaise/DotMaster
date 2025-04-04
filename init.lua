@@ -20,22 +20,15 @@ DM.detectedDots = DM.detectedDots or {}
 DM.defaults = DM.defaults or {}
 DM.defaults.lastSortOrder = 1 -- Added for sorting functionality
 
--- Set remaining debug categories if not set in bootstrap
-if not DM.DEBUG_CATEGORIES.nameplate then
-  DM.DEBUG_CATEGORIES.nameplate = false
-end
-if not DM.DEBUG_CATEGORIES.spell then
-  DM.DEBUG_CATEGORIES.spell = false
-end
-if not DM.DEBUG_CATEGORIES.gui then
-  DM.DEBUG_CATEGORIES.gui = false
-end
-if not DM.DEBUG_CATEGORIES.performance then
-  DM.DEBUG_CATEGORIES.performance = false
-end
-if not DM.DEBUG_CATEGORIES.colorpicker then
-  DM.DEBUG_CATEGORIES.colorpicker = true
-end
+-- Initialize empty debug categories to disable all debug functionality
+DM.DEBUG_CATEGORIES = DM.DEBUG_CATEGORIES or {
+  general = false,
+  nameplate = false,
+  spell = false,
+  gui = false,
+  performance = false,
+  colorpicker = false
+}
 
 -- Create Components namespace if it doesn't exist
 if not DotMaster_Components then
@@ -44,20 +37,38 @@ end
 
 -- Legacy initialization function (now coordinated via the bootstrap events)
 function DM:Initialize()
-  DM:DebugMsg("Legacy Initialize() called - this is now managed by bootstrap.lua")
-  DM:DebugMsg("Current initialization state: " .. (DM.initState or "unknown"))
-
-  -- Provide backward compatibility for any code still calling this function
   -- No core functionality should be here anymore
+  -- This is just for backward compatibility
 end
 
--- Modify PrintMessage to respect DEBUG_CATEGORIES.general
+-- Basic message print function
 function DM:PrintMessage(message, ...)
-  if not DM.DEBUG_CATEGORIES.general then return end
   local prefix = "|cFFCC00FFDotMaster:|r "
   if select('#', ...) > 0 then
-    DM:DebugMsg(prefix .. message, ...)
+    print(prefix .. string.format(message, ...))
   else
-    DM:DebugMsg(prefix .. message)
+    print(prefix .. message)
   end
+end
+
+-- Empty debug functions to maintain compatibility with existing code
+function DM:DebugMsg(message, ...)
+  -- Debug output disabled
+end
+
+-- Empty category-specific debug functions
+function DM:ColorPickerDebug(message, ...)
+  -- Debug output disabled
+end
+
+function DM:NameplateDebug(message, ...)
+  -- Debug output disabled
+end
+
+function DM:GUIDebug(message, ...)
+  -- Debug output disabled
+end
+
+function DM:DatabaseDebug(message, ...)
+  -- Debug output disabled
 end

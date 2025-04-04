@@ -5,8 +5,6 @@ local DM = DotMaster
 
 -- Initialize function for the minimap icon
 function DM:InitializeMinimapIcon()
-  DM:DebugMsg("Initializing minimap icon...")
-
   -- Create or access saved variables for the minimap icon
   if not DotMasterDB then
     DotMasterDB = {}
@@ -70,10 +68,7 @@ function DM:InitializeMinimapIcon()
     else
       LibDBIcon:Show("DotMaster")
     end
-    DM:DebugMsg("Minimap icon visibility set to: " .. (DotMasterDB.minimap.hide and "hidden" or "shown"))
   end
-
-  DM:DebugMsg("Minimap icon initialized successfully")
 end
 
 -- Add minimap slash command
@@ -100,8 +95,6 @@ function DM:AddMinimapSlashCommand()
     DM:PrintMessage("Available commands:")
     DM:PrintMessage("  /dm on - Enable addon")
     DM:PrintMessage("  /dm off - Disable addon")
-    DM:PrintMessage("  /dm status - Display debug information")
-    DM:PrintMessage("  /dm console - Open Debug Console (use /dmdebug)")
     DM:PrintMessage("  /dm show - Show GUI (if loaded)")
     DM:PrintMessage("  /dm reset - Reset to default settings")
     DM:PrintMessage("  /dm save - Force save settings")

@@ -1,44 +1,35 @@
 -- DotMaster core.lua
--- Final initialization steps and startup
+-- Core functionality
 
 local DM = DotMaster
 
--- Skip duplicate initialization if bootstrap has already handled it
-if DM.initState and DM.initState ~= "bootstrap" then
-  DM:DebugMsg("Core.lua: Skipping duplicated initialization (current state: " .. DM.initState .. ")")
-  return
+-- Initialize nameplate handling
+function DM:InitializeNameplates()
+  -- Initialize nameplate tables properly
+  DM.activePlates = DM.activePlates or {}
+  DM.coloredPlates = DM.coloredPlates or {}
+  DM.originalColors = DM.originalColors or {}
+
+  -- Register nameplate related events
+  DM:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+  DM:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+  DM:RegisterEvent("UNIT_AURA")
+
+  -- Hook our OnEvent handler to handle nameplate events
+  local existingOnEvent = DM:GetScript("OnEvent")
+  DM:SetScript("OnEvent", function(self, event, arg1, ...)
+    -- Call the existing event handler for all events first
+    if existingOnEvent then
+      existingOnEvent(self, event, arg1, ...)
+    end
+
+    -- Handle nameplate events after other handlers
+    if event == "NAME_PLATE_UNIT_ADDED" and self.NameplateAdded then
+      self:NameplateAdded(arg1)
+    elseif event == "NAME_PLATE_UNIT_REMOVED" and self.NameplateRemoved then
+      self:NameplateRemoved(arg1)
+    elseif event == "UNIT_AURA" and self.UnitAuraChanged then
+      self:UnitAuraChanged(arg1)
+    end
+  end)
 end
-
--- Initialize Debug System Core (Hooks, Logging)
-local debugOK, debugErr = pcall(function()
-  if DM.Debug and DM.Debug.Init then
-    DM.Debug:Init()
-    DM:DebugMsg("Core debug system initialized (logging hooked).")
-  else
-    DM:SimplePrint("DM.Debug.Init not found!")
-  end
-
-  -- Create Debug Console GUI (but don't show it yet)
-  if DM.Debug and DM.Debug.CreateDebugWindow then
-    DM.Debug:CreateDebugWindow()
-    DM:DebugMsg("Debug console GUI created.")
-  end
-end)
-
-if not debugOK then
-  DM:SimplePrint("Error initializing debug system: " .. tostring(debugErr))
-end
-
--- Check database state for diagnostic purposes
-if DM.dmspellsdb then
-  local count = 0
-  for _ in pairs(DM.dmspellsdb) do
-    count = count + 1
-  end
-  DM:DebugMsg("Database check from core.lua: " .. count .. " spells")
-else
-  DM:DebugMsg("Database check from core.lua: NOT LOADED")
-end
-
--- Final debug note
-DM:DebugMsg("Core.lua execution finished. Initialization will complete during PLAYER_ENTERING_WORLD event.")
