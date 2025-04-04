@@ -98,16 +98,30 @@ function DM:CreateNameplateFlash(unitFrame, color)
 
   -- For border only mode, use Plater's border flash function instead
   if DM.settings.borderOnly then
-    -- Just return a wrapper for Plater's built-in function
+    -- Create a custom border flash effect that's more visible
     return {
       Play = function()
-        -- Use Plater's built-in border flash function
+        -- Use Plater's built-in border flash function with more frequent flashes
         if unitFrame.healthBar.canHealthFlash then
-          unitFrame.healthBar.PlayHealthFlash(0.25)
+          -- Call multiple times with delayed execution to create rapid sequence
+          unitFrame.healthBar.PlayHealthFlash(0.15)
+
+          -- Create a repeating flash timer
+          if not unitFrame.DotMasterBorderFlashTimer then
+            unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.4, function()
+              if unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
+                unitFrame.healthBar.PlayHealthFlash(0.15)
+              end
+            end)
+          end
         end
       end,
       Stop = function()
-        -- Nothing to stop - Plater's flash stops itself
+        -- Cancel the flash timer if it exists
+        if unitFrame.DotMasterBorderFlashTimer then
+          unitFrame.DotMasterBorderFlashTimer:Cancel()
+          unitFrame.DotMasterBorderFlashTimer = nil
+        end
       end
     }
   else
@@ -126,25 +140,36 @@ function DM:CreateNameplateFlash(unitFrame, color)
     -- Create flash texture
     local texture = flashFrame:CreateTexture(nil, "OVERLAY")
     texture:SetAllPoints()
-    texture:SetColorTexture(color[1], color[2], color[3], 0.6)
+
+    -- More vibrant color for visibility (brighten the color)
+    local r, g, b = color[1], color[2], color[3]
+    -- Brighten the colors while preserving their relative proportions
+    local maxChannel = math.max(r, g, b)
+    if maxChannel > 0 then
+      r = r / maxChannel
+      g = g / maxChannel
+      b = b / maxChannel
+    end
+
+    texture:SetColorTexture(r, g, b, 0.7)
     texture:SetBlendMode("ADD")
 
     -- Create animation group
     local animGroup = texture:CreateAnimationGroup()
     animGroup:SetLooping("REPEAT")
 
-    -- Alpha animation (fade in)
+    -- Alpha animation (fade in) - faster and brighter
     local fadeIn = animGroup:CreateAnimation("Alpha")
-    fadeIn:SetFromAlpha(0.2)
-    fadeIn:SetToAlpha(0.6)
-    fadeIn:SetDuration(0.4)
+    fadeIn:SetFromAlpha(0.1)
+    fadeIn:SetToAlpha(0.9)
+    fadeIn:SetDuration(0.3)
     fadeIn:SetOrder(1)
 
-    -- Alpha animation (fade out)
+    -- Alpha animation (fade out) - faster
     local fadeOut = animGroup:CreateAnimation("Alpha")
-    fadeOut:SetFromAlpha(0.6)
-    fadeOut:SetToAlpha(0.2)
-    fadeOut:SetDuration(0.4)
+    fadeOut:SetFromAlpha(0.9)
+    fadeOut:SetToAlpha(0.1)
+    fadeOut:SetDuration(0.3)
     fadeOut:SetOrder(2)
 
     -- Update function to make sure flash follows health value changes
@@ -165,6 +190,14 @@ function DM:CreateNameplateFlash(unitFrame, color)
     -- Set animation callbacks
     animGroup:SetScript("OnPlay", function()
       flashFrame:Show()
+
+      -- Store original nameplate text color if needed
+      -- This ensures nameplate text doesn't flash
+      local nameText = unitFrame.healthBar.unitName
+      if nameText then
+        flashFrame.originalTextColor = { nameText:GetTextColor() }
+        nameText:SetTextColor(unpack(flashFrame.originalTextColor))
+      end
     end)
 
     animGroup:SetScript("OnStop", function()
