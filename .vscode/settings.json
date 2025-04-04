@@ -83,7 +83,19 @@
     "NOT_BOUND",
     "CreateTexturePool",
     "CreateFramePool",
-    "GetCVarNumberOrDefault"
+    "GetCVarNumberOrDefault",
+    "CompactUnitFrame_UnregisterEvents",
+    "GetRelativeDifficultyColor",
+    "SetRaidTargetIconTexture",
+    "DefaultCompactNamePlateFrameSetUpOptions",
+    "DefaultCompactNamePlateFriendlyFrameOptions",
+    "DefaultCompactNamePlateEnemyFrameOptions",
+    "UNKNOWN",
+    "UNIT_LEVEL_TEMPLATE",
+    "UNITNAME_TITLE_GUARDIAN",
+    "THREAT_TOOLTIP",
+    "UNITNAME_TITLE_PET",
+    "UNITNAME_TITLE_MINION"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {

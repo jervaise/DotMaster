@@ -89,44 +89,53 @@ function DM:RecordDots(unitToken)
 
   AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, source, _, _, id)
     -- Only record player's own debuffs and if not already detected
-    if source == "player" and id and not self.detectedDots[id] then
-      -- Skip if name is nil
-      if not name or name == "" then
-        DM:DebugMsg(string.format("RecordDots: Skipping spell with ID %d due to missing name", id))
-        return
-      end
-
-      -- Check if the spell already exists in database
-      local isExisting = self:SpellExists(id)
-
-      -- Record detailed info with safety
+    if source == "player" and not self.detectedDots[id] then
+      -- Record detailed info
       self.detectedDots[id] = {
-        name = name or "Unknown",
+        name = name,
         id = id,
-        timestamp = GetTime(),
-        isExisting = isExisting -- Mark if it's already in the database
+        timestamp = GetTime()
       }
-
       -- DEBUG: Print the exact spell ID detected by UNIT_AURA
-      DM:DebugMsg(string.format("RecordDots: Detected Spell ID: %d, Name: %s from UNIT_AURA (Already in DB: %s)",
-        id, name, tostring(isExisting)))
+      DM:DebugMsg(string.format("RecordDots: Detected Spell ID: %d, Name: %s from UNIT_AURA", id, name))
 
-      -- Update dot counter - only count new dots
-      if not isExisting then
-        self.newDotsFound = (self.newDotsFound or 0) + 1
-        if self.dotsFoundText then
-          self.dotsFoundText:SetText(string.format("%d new dots found", self.newDotsFound))
+      -- Update spell database with class and spec info
+      local className, specName = self:GetPlayerClassAndSpec()
+
+      -- Do not save to database here
+      -- DM:AddSpellToDMSpellsDB(id, name, "Interface\\Icons\\Spell_Nature_HealingTouch", className, specName)
+
+      -- Also add to spell config automatically if not exists
+      if not self:SpellExists(id) then
+        -- Do not create a new spell config entry
+        -- self.spellConfig[tostring(id)] = {
+        --   enabled = true,
+        --   color = { 1, 0, 0 }, -- Default red color
+        --   name = name,
+        --   priority = self:GetNextPriority(),
+        --   saved = true
+        -- }
+
+        -- Refresh GUI if open
+        if self.GUI and self.GUI.RefreshSpellList then
+          self.GUI:RefreshSpellList()
         end
+
+        -- Do not save settings here
+        -- self:SaveSettings()
       end
 
-      -- Update total counter regardless
+      -- Update dot counter
       self.totalDotsFound = (self.totalDotsFound or 0) + 1
+      if self.dotsFoundText then
+        self.dotsFoundText:SetText(self.totalDotsFound .. " DOT BULUNDU")
+      end
 
       -- Inform user
       DM:DebugMsg(string.format("Dot detected: %s (ID: %d)", name, id))
 
       -- Show visual feedback
-      self:ShowDetectedDotNotification(name, id, isExisting)
+      self:ShowDetectedDotNotification(name, id)
     end
   end)
 end
@@ -159,26 +168,31 @@ end
 -- Visual feedback functions
 function DM:ShowRecordingIndicator()
   if not self.recordingFrame then
-    -- Create recording frame with modern WoW style and match main UI style
+    -- Create recording frame with modern WoW style
     self.recordingFrame = CreateFrame("Frame", "DotMasterRecordingFrame", UIParent, "BackdropTemplate")
-    self.recordingFrame:SetSize(450, 30) -- Wider to prevent overlap
+    self.recordingFrame:SetSize(400, 30)
     self.recordingFrame:SetPoint("TOP", 0, -50)
 
-    -- Match the main UI backdrop style
+    -- Background with gradient
+    local bg = self.recordingFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.8)
+
+    -- Purple border like DotMaster main UI
     self.recordingFrame:SetBackdrop({
-      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      bgFile = "Interface/DialogFrame/UI-DialogBox-Background-Dark",
+      edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
       edgeSize = 16,
       insets = { left = 4, right = 4, top = 4, bottom = 4 },
     })
     self.recordingFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-    self.recordingFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Purple border
+    self.recordingFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Purple border to match DotMaster style
 
-    -- Mode text
+    -- Text with better layout
     self.recordingText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     self.recordingText:SetPoint("LEFT", 20, 0)
     self.recordingText:SetText("DOT RECORDING MODE ACTIVE")
-    self.recordingText:SetTextColor(1, 0.82, 0) -- Gold color
+    self.recordingText:SetTextColor(1, 0.82, 0) -- Gold color like WoW UI
 
     -- Time indicator
     self.recordingTime = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -186,36 +200,36 @@ function DM:ShowRecordingIndicator()
     self.recordingTime:SetText("30s")
     self.recordingTime:SetTextColor(1, 1, 1)
 
-    -- Initialize counters
+    -- Dot counter - tek bir sayaç ekleyelim
     self.totalDotsFound = 0
-    self.newDotsFound = 0
-
-    -- New dots counter with English text
     self.dotsFoundText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    self.dotsFoundText:SetPoint("LEFT", self.recordingTime, "RIGHT", 15, 0) -- Position after time
-    self.dotsFoundText:SetText("0 new dots found")
-    self.dotsFoundText:SetTextColor(0.3, 1, 0.3)                            -- Green color
+    self.dotsFoundText:SetPoint("RIGHT", self.recordingFrame, "RIGHT", -100, 0)
+    self.dotsFoundText:SetText("0 DOT BULUNDU")
+    self.dotsFoundText:SetTextColor(0.3, 1, 0.3) -- Yeşil renkte
 
-    -- Button container on far right
+    -- Button container for better layout
     local buttonContainer = CreateFrame("Frame", nil, self.recordingFrame)
-    buttonContainer:SetSize(80, 22)
+    buttonContainer:SetSize(170, 22)
     buttonContainer:SetPoint("RIGHT", -10, 0)
 
-    -- Finish button
+    -- Finish button with WoW style
     self.finishButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-    self.finishButton:SetSize(70, 22)
-    self.finishButton:SetPoint("CENTER", 0, 0)
+    self.finishButton:SetSize(80, 22)
+    self.finishButton:SetPoint("LEFT", 0, 0)
     self.finishButton:SetText("Finish")
 
     self.finishButton:SetScript("OnClick", function()
-      self:StopFindMyDots(false, true) -- Marked as finished
+      -- Stop recording but don't mark as automatic/canceled
+      self:StopFindMyDots(false, true) -- Pass true as second param to indicate finished
     end)
-  end
 
-  -- Reset counters
-  self.totalDotsFound = 0
-  self.newDotsFound = 0
-  self.dotsFoundText:SetText("0 new dots found")
+    -- Cancel button with WoW style
+    self.cancelButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+    self.cancelButton:SetSize(80, 22)
+    self.cancelButton:SetPoint("RIGHT", 0, 0)
+    self.cancelButton:SetText("Cancel")
+    self.cancelButton:SetScript("OnClick", function() self:StopFindMyDots() end)
+  end
 
   -- Make visible
   self.recordingFrame:Show()
@@ -257,7 +271,7 @@ function DM:HideRecordingIndicator()
 end
 
 -- Show minimal, clean visual feedback when a spell is detected
-function DM:ShowDetectedDotNotification(name, id, isExisting)
+function DM:ShowDetectedDotNotification(name, id)
   -- Skip already shown notifications for this session
   if not self.shownNotifications then self.shownNotifications = {} end
   if self.shownNotifications[id] then return end
@@ -265,12 +279,12 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   -- Mark as shown
   self.shownNotifications[id] = true
 
-  -- Main notification container with larger size
+  -- Main notification container - timer çubuğunun altında konumlanacak
   if not self.dotAlertContainer then
     self.dotAlertContainer = CreateFrame("Frame", "DotMasterAlertContainer", UIParent)
-    self.dotAlertContainer:SetSize(350, 120) -- Increased width for better text display
+    self.dotAlertContainer:SetSize(300, 120) -- 3 satır için daha fazla alan
 
-    -- Position below the recording frame
+    -- Find My Dots timer çubuğunun altına hizala
     if self.recordingFrame then
       self.dotAlertContainer:SetPoint("TOP", self.recordingFrame, "BOTTOM", 0, -5)
     else
@@ -278,22 +292,33 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
     end
 
     self.dotAlertContainer.frames = {}
-    self.dotAlertContainer.maxDisplayed = 3 -- Maximum 3 notifications
+    self.dotAlertContainer.maxDisplayed = 3 -- Maksimum 3 satır göster
   end
 
-  -- Notification dimensions
-  local NOTIFICATION_HEIGHT = 42 -- Increased height
+  -- Move existing notifications up
+  local NOTIFICATION_HEIGHT = 36
   local NOTIFICATION_SPACING = 4
 
-  -- Maximum number of displayed notifications
+  -- Maksimum görüntülenecek bildirim sayısı
   local maxDisplayed = self.dotAlertContainer.maxDisplayed or 3
 
-  -- Remove oldest notification if we have too many
+  -- Toplam bulunan dot sayısını güncelle
+  self.totalDotsFound = self.totalDotsFound or 0
+  self.totalDotsFound = self.totalDotsFound + 1
+
+  -- Recording frame üzerinde dot sayacını güncelle
+  if self.recordingFrame and self.dotsFoundText then
+    self.dotsFoundText:SetText(self.totalDotsFound .. " dot bulundu")
+  end
+
+  -- Eski bildirimleri yukarı kaydırmak yerine en eski olanı kaldır
   if #self.dotAlertContainer.frames >= maxDisplayed then
     local oldestFrame = self.dotAlertContainer.frames[#self.dotAlertContainer.frames]
 
-    -- Exit animation for old notification
+    -- Eski bildirim için çıkış animasyonu
     local exitAnimGroup = oldestFrame:CreateAnimationGroup()
+
+    -- Sadece fade out (yana kayma olmadan)
     local fadeOut = exitAnimGroup:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(1)
     fadeOut:SetToAlpha(0)
@@ -302,6 +327,8 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
 
     exitAnimGroup:SetScript("OnFinished", function()
       oldestFrame:Hide()
+
+      -- Containerdan kaldır
       table.remove(self.dotAlertContainer.frames, #self.dotAlertContainer.frames)
     end)
 
@@ -310,30 +337,43 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
 
   -- Create a new alert frame for this spell
   local alertFrame = CreateFrame("Frame", nil, self.dotAlertContainer, "BackdropTemplate")
-  alertFrame:SetSize(330, NOTIFICATION_HEIGHT) -- Increased width and height
+  alertFrame:SetSize(280, NOTIFICATION_HEIGHT)
 
-  -- Position the notification
+  -- İlk bildirim en üstte, diğerleri onun altında olacak
   if #self.dotAlertContainer.frames == 0 then
     alertFrame:SetPoint("TOP", self.dotAlertContainer, "TOP", 0, 0)
   else
+    -- Ekrandaki en son bildirimin altına hizala
     alertFrame:SetPoint("TOP", self.dotAlertContainer, "TOP", 0,
       -(#self.dotAlertContainer.frames * (NOTIFICATION_HEIGHT + NOTIFICATION_SPACING)))
   end
 
-  -- Match the main UI backdrop style
+  -- Yeni modern tasarım için arkaplan
   alertFrame:SetBackdrop({
-    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 16,
-    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
   })
+  -- Sınıf renk ayarları
+  local className = select(2, UnitClass("player")) or "UNKNOWN"
+  local classColor = self.classColors[className] or { r = 0.5, g = 0, b = 0.7 }
+
   alertFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-  alertFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Purple border to match DotMaster style
+  alertFrame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.8)
+
+  -- Modern görünüm için hafif bir arka plan glow efekti
+  local bgGlow = alertFrame:CreateTexture(nil, "BACKGROUND")
+  bgGlow:SetPoint("TOPLEFT", -2, 2)
+  bgGlow:SetPoint("BOTTOMRIGHT", 2, -2)
+  bgGlow:SetTexture("Interface\\GLUES\\MODELS\\UI_Tauren\\gradientCircle")
+  bgGlow:SetBlendMode("ADD")
+  bgGlow:SetVertexColor(classColor.r, classColor.g, classColor.b, 0.1)
 
   -- Add to container at the beginning of the array
   table.insert(self.dotAlertContainer.frames, 1, alertFrame)
 
-  -- Update positions of all notifications
+  -- Tüm bildirimlerin pozisyonlarını güncelle
   for i, frame in ipairs(self.dotAlertContainer.frames) do
     if frame and frame:IsShown() then
       frame:ClearAllPoints()
@@ -341,83 +381,68 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
     end
   end
 
-  -- Retrieve the correct spell icon
+  -- Spell ikonu için ikonların sınıf rengine göre hazırlanması
   local spellIcon = DM:GetSpellIcon(id)
 
-  -- Debug message for spell icon with safety checks
-  if name and name ~= "" then
-    DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s, Existing: %s",
-      name, id, spellIcon or "nil", tostring(isExisting)))
-  else
-    DM:DebugMsg(string.format("Retrieved icon for unknown spell (ID: %d): %s",
-      id, spellIcon or "nil"))
-  end
+  -- Debug message for spell icon
+  DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", name, id, spellIcon))
 
-  -- Spell icon
+  -- Spell ikonu olarak standart mor ikonu kullan (spell ID'ye göre)
   local icon = alertFrame:CreateTexture(nil, "ARTWORK")
-  icon:SetSize(32, 32) -- Larger icon
-  icon:SetPoint("LEFT", 12, 0)
+  icon:SetSize(28, 28)
+  icon:SetPoint("LEFT", 8, 0)
   icon:SetTexture(spellIcon)
   icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Crop out the border
 
-  -- If existing spell, desaturate the icon
-  if isExisting then
-    icon:SetDesaturated(true)
-  end
-
-  -- Icon border - red for existing, green for new
-  local borderColor = isExisting and { r = 1, g = 0.3, b = 0.3 } or { r = 0.3, g = 1, b = 0.3 }
-
+  -- İkon çerçevesi ekle
   local border = alertFrame:CreateTexture(nil, "BORDER")
   border:SetPoint("TOPLEFT", icon, "TOPLEFT", -2, 2)
   border:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 2, -2)
   border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
   border:SetBlendMode("ADD")
-  border:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, 1.0)
+  border:SetVertexColor(classColor.r, classColor.g, classColor.b, 0.9)
 
-  -- Spell name with larger font
+  -- Yazılar için daha iyi yerleşim
   local spellText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  spellText:SetPoint("LEFT", icon, "RIGHT", 12, 4)
+  spellText:SetPoint("LEFT", icon, "RIGHT", 10, 4)
   spellText:SetText(name)
   spellText:SetTextColor(1, 0.82, 0) -- Gold
 
-  -- Make sure text fits within frame - limit width and add ellipsis if needed
-  spellText:SetWidth(220)
-  spellText:SetWordWrap(false)
-  spellText:SetNonSpaceWrap(false)
-
-  -- Spell ID
+  -- Spell ID daha düzenli konum
   local idText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   idText:SetPoint("TOPLEFT", spellText, "BOTTOMLEFT", 0, -2)
   idText:SetText("ID: " .. id)
   idText:SetTextColor(0.7, 0.7, 0.7) -- Gray
+  -- Remove old alerts if we have too many
+  if #self.dotAlertContainer.frames > 5 then
+    for i = 6, #self.dotAlertContainer.frames do
+      local oldFrame = self.dotAlertContainer.frames[i]
+      if oldFrame and oldFrame:IsShown() then
+        oldFrame:Hide()
+      end
+    end
 
-  -- Add status text (New/Known)
-  local statusText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  statusText:SetPoint("RIGHT", alertFrame, "RIGHT", -12, 0)
-  if isExisting then
-    statusText:SetText("Known")
-    statusText:SetTextColor(1, 0.3, 0.3) -- Red for existing
-  else
-    statusText:SetText("New")
-    statusText:SetTextColor(0.3, 1, 0.3) -- Green for new
+    -- Truncate the array
+    for i = #self.dotAlertContainer.frames, 6, -1 do
+      self.dotAlertContainer.frames[i] = nil
+    end
   end
 
-  -- Fade in animation setup
+  -- Sadece fade in (hareket etmeden)
   alertFrame:SetAlpha(0)
   alertFrame:Show()
 
-  -- Create animation group for entrance
+  -- Alpha ile giriş animasyonu
   local animGroup = alertFrame:CreateAnimationGroup()
 
-  -- Fade in animation
+  -- Alpha animasyonu (fade in)
   local fadeIn = animGroup:CreateAnimation("Alpha")
   fadeIn:SetFromAlpha(0)
   fadeIn:SetToAlpha(1)
   fadeIn:SetDuration(0.3)
   fadeIn:SetSmoothing("IN_OUT")
 
-  -- Add glow effect
+  -- Glow efekti ekle
   local glow = alertFrame:CreateTexture(nil, "OVERLAY")
   glow:SetPoint("TOPLEFT", -5, 5)
   glow:SetPoint("BOTTOMRIGHT", 5, -5)
@@ -426,7 +451,6 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   glow:SetAlpha(0)
   glow:SetBlendMode("ADD")
 
-  -- Glow in animation
   local glowAnim = animGroup:CreateAnimation("Alpha")
   glowAnim:SetTarget(glow)
   glowAnim:SetFromAlpha(0)
@@ -434,7 +458,6 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   glowAnim:SetDuration(0.3)
   glowAnim:SetSmoothing("IN")
 
-  -- Glow out animation
   local glowFadeOut = animGroup:CreateAnimation("Alpha")
   glowFadeOut:SetTarget(glow)
   glowFadeOut:SetStartDelay(0.3)
@@ -443,37 +466,35 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   glowFadeOut:SetDuration(0.5)
   glowFadeOut:SetSmoothing("OUT")
 
-  -- Animation finished callback
   animGroup:SetScript("OnFinished", function()
+    -- Orijinal konumda tam görünürlükte bırak
     alertFrame:SetAlpha(1)
   end)
 
-  -- Start animation
+  -- Animasyonu başlat
   animGroup:Play()
 
-  -- Schedule removal after 4 seconds
+  -- 4 saniye sonra çıkış animasyonu
   C_Timer.After(4, function()
     if not alertFrame or not alertFrame:IsShown() then return end
 
     local exitAnimGroup = alertFrame:CreateAnimationGroup()
 
-    -- Fade out animation
+    -- Sadece fade out (hareket etmeden)
     local fadeOut = exitAnimGroup:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(1)
     fadeOut:SetToAlpha(0)
     fadeOut:SetDuration(0.4)
     fadeOut:SetSmoothing("OUT")
 
-    -- Animation finished callback
     exitAnimGroup:SetScript("OnFinished", function()
       alertFrame:Hide()
 
-      -- Remove from container
+      -- Frameyi containerdan kaldır
       for i, frame in ipairs(self.dotAlertContainer.frames) do
         if frame == alertFrame then
           table.remove(self.dotAlertContainer.frames, i)
-
-          -- Update positions of remaining notifications
+          -- Kalan bildirimlerin pozisyonlarını güncelle
           for j, remainingFrame in ipairs(self.dotAlertContainer.frames) do
             if remainingFrame and remainingFrame:IsShown() then
               remainingFrame:ClearAllPoints()
@@ -500,10 +521,10 @@ function DM:ShowDotsConfirmationDialog(dots)
   if not self.dotsConfirmFrame then
     self.dotsConfirmFrame = CreateFrame("Frame", "DotMasterDotsConfirm", UIParent, "BackdropTemplate")
     self.dotsConfirmFrame:SetFrameStrata("DIALOG")
-    self.dotsConfirmFrame:SetSize(400, 300)
+    self.dotsConfirmFrame:SetSize(450, 350) -- Increased size for better layout
     self.dotsConfirmFrame:SetPoint("CENTER")
 
-    -- Simple background
+    -- Background and border
     self.dotsConfirmFrame:SetBackdrop({
       bgFile = "Interface/Tooltips/UI-Tooltip-Background",
       edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -515,33 +536,34 @@ function DM:ShowDotsConfirmationDialog(dots)
 
     -- Title
     local title = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", 0, -15)
+    title:SetPoint("TOP", 0, -10)
     title:SetText("Detected Dots")
 
-    -- Subtitle
+    -- Description
     local desc = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    desc:SetPoint("TOP", title, "BOTTOM", 0, -5)
+    desc:SetPoint("TOP", title, "BOTTOM", 0, -10)
     desc:SetText("Select dots you want to add")
     desc:SetTextColor(1, 0.82, 0)
 
     -- Scroll frame for dots list
-    local scrollFrame = CreateFrame("ScrollFrame", "DotMasterDotsScrollFrame", self.dotsConfirmFrame,
-      "UIPanelScrollFrameTemplate")
-    scrollFrame:SetSize(370, 180)
-    scrollFrame:SetPoint("TOP", desc, "BOTTOM", 0, -15)
+    local scrollFrame = CreateFrame("ScrollFrame", nil, self.dotsConfirmFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetSize(400, 200) -- Wider scroll frame
+    scrollFrame:SetPoint("TOP", desc, "BOTTOM", 0, -20)
 
     local scrollChild = CreateFrame("Frame")
     scrollFrame:SetScrollChild(scrollChild)
-    scrollChild:SetSize(350, 10) -- Will be adjusted dynamically
+    scrollChild:SetSize(380, 10) -- Will be adjusted dynamically
 
-    -- Button at the bottom
-    local addButton = CreateFrame("Button", nil, self.dotsConfirmFrame, "UIPanelButtonTemplate")
-    addButton:SetSize(100, 25)
-    addButton:SetPoint("BOTTOM", 0, 15)
-    addButton:SetText("OK")
+    -- Buttons at the bottom
+    local buttonContainer = CreateFrame("Frame", nil, self.dotsConfirmFrame)
+    buttonContainer:SetSize(400, 25)
+    buttonContainer:SetPoint("BOTTOM", 0, 15)
 
-    -- Store reference to the save button
-    self.saveButton = addButton
+    -- Add Selected button
+    local addButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+    addButton:SetSize(120, 25)
+    addButton:SetPoint("CENTER", 0, 0)
+    addButton:SetText("Save to Database")
 
     -- Close button at the top right
     local closeButton = CreateFrame("Button", nil, self.dotsConfirmFrame, "UIPanelCloseButton")
@@ -552,35 +574,16 @@ function DM:ShowDotsConfirmationDialog(dots)
       self.dotsConfirmFrame:Hide()
     end)
 
-    -- Add selected dots or just close the window
+    -- Add selected dots
     addButton:SetScript("OnClick", function()
-      -- Check if there are any new dots to add
-      local hasNewDots = false
-      for id, _ in pairs(self.dotCheckboxes or {}) do
-        local dotInfo = self.detectedDots[tonumber(id)]
-        if dotInfo and not self:SpellExists(id) then
-          hasNewDots = true
-          break
-        end
-      end
-
-      -- If no new dots, just close the window
-      if not hasNewDots then
-        DM:DebugMsg("No new dots to add - closing window")
-        self.dotsConfirmFrame:Hide()
-        return
-      end
-
-      -- Otherwise proceed with adding dots
       DM:DatabaseDebug("Add to Database button clicked.")
       local added = 0
 
-      -- Collect all spells to add
+      -- First, collect all spells to add
       local spellsToAdd = {}
-      for id, checkbox in pairs(self.dotCheckboxes or {}) do
+      for id, checkbox in pairs(self.dotCheckboxes) do
         if checkbox:GetChecked() then
           local dotInfo = self.detectedDots[tonumber(id)]
-          -- Only add if it doesn't already exist in database
           if dotInfo and not self:SpellExists(id) then
             spellsToAdd[id] = dotInfo
           end
@@ -631,6 +634,14 @@ function DM:ShowDotsConfirmationDialog(dots)
     self.dotsConfirmFrame:SetScript("OnDragStart", self.dotsConfirmFrame.StartMoving)
     self.dotsConfirmFrame:SetScript("OnDragStop", self.dotsConfirmFrame.StopMovingOrSizing)
 
+    -- Fix the scrollbar
+    scrollFrame:SetScript("OnSizeChanged", function(self)
+      local height = scrollChild:GetHeight()
+      scrollFrame:SetVerticalScroll(0)
+      scrollFrame:UpdateScrollChildRect()
+      scrollFrame:SetVerticalScroll(height)
+    end)
+
     -- Store references
     self.dotsScrollChild = scrollChild
     self.scrollFrame = scrollFrame
@@ -653,123 +664,66 @@ function DM:ShowDotsConfirmationDialog(dots)
   -- Display dots in a simple list
   local yOffset = 10
 
-  -- Sort dots by name with safety checks and check for new dots
+  -- Sort dots by name
   local sortedDots = {}
-  local hasNewDots = false
-
   for id, dotInfo in pairs(dots) do
-    -- Ensure dotInfo has a name before adding to sortedDots
-    if dotInfo and dotInfo.name then
-      local isExisting = dotInfo.isExisting or self:SpellExists(id)
-      -- Track if we have at least one new dot
-      if not isExisting then
-        hasNewDots = true
-      end
-      table.insert(sortedDots, { id = id, name = dotInfo.name, info = dotInfo, isExisting = isExisting })
-    else
-      -- Log the issue
-      DM:DebugMsg(string.format("Warning: Dot with ID %s has missing or invalid data", tostring(id)))
-    end
+    table.insert(sortedDots, { id = id, name = dotInfo.name, info = dotInfo })
   end
 
-  -- Only sort if we have valid dots
-  if #sortedDots > 0 then
-    table.sort(sortedDots, function(a, b)
-      return a.name < b.name
-    end)
-  end
-
-  -- Update button text based on whether we have new dots
-  if self.saveButton then
-    self.saveButton:SetText(hasNewDots and "Add Selected" or "OK")
-  end
-
-  -- Simple message if no new dots or no dots at all
-  if #sortedDots == 0 then
-    -- No dots detected message
-    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
-    messageText:SetText("No dots have been detected.\n\nTry again and cast your DoT abilities on enemies.")
-    messageText:SetWidth(340)
-    messageText:SetJustifyH("CENTER")
-
-    yOffset = yOffset + 60
-  elseif not hasNewDots then
-    -- All dots are known message
-    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
-    messageText:SetText("All detected dots are already in your database.")
-    messageText:SetWidth(340)
-    messageText:SetJustifyH("CENTER")
-
-    yOffset = yOffset + 30
-  end
+  table.sort(sortedDots, function(a, b)
+    return a.name < b.name
+  end)
 
   -- Create a row for each dot
   for _, dotData in ipairs(sortedDots) do
     local id = dotData.id
     local dotInfo = dotData.info
-    local isExisting = dotData.isExisting or self:SpellExists(id)
 
     -- Retrieve the correct spell icon
     local spellIcon = DM:GetSpellIcon(id)
 
+    -- Debug message for spell icon
+    DM:DebugMsg(string.format("Retrieved icon for %s (ID: %d): %s", dotInfo.name, id, spellIcon))
+
     -- Create row
     local row = CreateFrame("Frame", nil, self.dotsScrollChild)
-    row:SetSize(350, 24)
+    row:SetSize(370, 30)
     row:SetPoint("TOPLEFT", 5, -yOffset)
 
     -- Row background for alternating colors
     local rowBg = row:CreateTexture(nil, "BACKGROUND")
     rowBg:SetAllPoints()
-    if yOffset % 48 < 24 then
+    if yOffset % 60 < 30 then
       rowBg:SetColorTexture(0.1, 0.1, 0.1, 0.3)
     else
       rowBg:SetColorTexture(0.12, 0.12, 0.12, 0.4)
     end
 
-    -- Checkbox - only check by default if it's a new spell
+    -- Checkbox
     local checkbox = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
-    checkbox:SetSize(20, 20)
+    checkbox:SetSize(24, 24)
     checkbox:SetPoint("LEFT", 5, 0)
-    checkbox:SetChecked(not isExisting) -- Only check new spells by default
+    checkbox:SetChecked(true)
 
     -- Store in checkboxes table
     self.dotCheckboxes[tostring(id)] = checkbox
 
     -- Spell icon
     local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(20, 20)
+    icon:SetSize(24, 24)
     icon:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
     icon:SetTexture(spellIcon)
 
-    -- Desaturate if existing
-    if isExisting then
-      icon:SetDesaturated(true)
-    end
-
     -- Spell name and ID
-    local text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     text:SetText(string.format("%s (ID: %d)", dotInfo.name, id))
-    text:SetWidth(230)
 
-    -- Status label
-    local statusText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusText:SetPoint("RIGHT", row, "RIGHT", -5, 0)
-    statusText:SetText(isExisting and "Known" or "New")
-    statusText:SetTextColor(isExisting and 1 or 0, isExisting and 0 or 1, 0)
-
-    yOffset = yOffset + 24
+    yOffset = yOffset + 30
   end
 
   -- Update scroll child height
-  self.dotsScrollChild:SetHeight(math.max(yOffset + 10, 100))
-
-  -- Reset scroll position to top
-  if self.scrollFrame then
-    self.scrollFrame:SetVerticalScroll(0)
-  end
+  self.dotsScrollChild:SetHeight(math.max(yOffset + 10, 180))
 
   -- Show confirmation dialog
   if self.dotsConfirmFrame then

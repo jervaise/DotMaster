@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.9 (2023-06-18)
+- Simplified the "Detected Dots" UI for a cleaner look
+- Removed decorative borders, icons and fancy visual elements from dot detection dialogs
+- Fixed error with SetBackdrop by adding BackdropTemplate to frame creation
+- Improved message clarity when no new dots are found
+- Enhanced overall user experience with more straightforward interface
+
 ### Version 0.9.8 (2023-06-15)
 - Improved General tab UI with accordion-style information panels
 - Adjusted combination bars height to 40px for consistency with class headers

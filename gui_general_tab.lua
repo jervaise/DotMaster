@@ -37,7 +37,7 @@ function DM:CreateGeneralTab(parent)
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     parent,
     "DotMaster: Your DoT Tracking |cFFFF6A00Plater|r Companion",
-    "• Highlights enemy nameplates with your active DoTs\n• Tracks all your damage-over-time effects in one place\n• Works with any class and specialization"
+    "Colors Plater enemy nameplates\nTracks all your damage-over-time effects in one place\nWorks with any class and specialization"
   )
 
   -- ===== NEW MODERN UI DESIGN BEGINS HERE =====
