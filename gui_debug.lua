@@ -369,9 +369,13 @@ function DM.Debug:CreateDebugWindow()
   copyButton:SetPoint("RIGHT", clearButton, "LEFT", -10, 0)
   copyButton:SetText("Copy All")
   copyButton:SetScript("OnClick", function()
-    -- Select all text for copying
+    -- Improved copy mechanism
     editBox:SetFocus()
     editBox:HighlightText()
+    -- Use delayed execution to ensure text is selected
+    C_Timer.After(0.1, function()
+      editBox:HighlightText()
+    end)
   end)
 
   -- Export Button
