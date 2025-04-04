@@ -254,11 +254,14 @@ function DM:CheckForExpiringDoTs(unitToken)
   if expiringFound then
     -- Check the flashing mode (border or full)
     if DM.settings.borderOnly then
-      -- Border-only mode - use a simple alternating color approach
+      -- Border-only mode - use a smooth color pulsing approach
       local healthBar = unitFrame.healthBar
       if not healthBar or not healthBar.border then return end
 
-      -- Store the original color for restoration
+      -- Get the DoT color for the flash
+      local r, g, b = expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3]
+
+      -- Store the original color for restoration if we don't have it already
       if not unitFrame.DotMasterOrigBorderColor then
         if healthBar.border.originalColor then
           unitFrame.DotMasterOrigBorderColor = {
@@ -273,57 +276,70 @@ function DM:CheckForExpiringDoTs(unitToken)
         end
       end
 
-      -- Get the DoT color for the flash
-      local r, g, b = expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3]
+      -- Calculate the bright flash color based on the DoT color
+      -- We'll make it brighter but maintain the hue
+      local maxChannel = math.max(r, g, b, 0.1) -- Avoid division by zero
+      local brightR = math.min(r * 1.75, 1)
+      local brightG = math.min(g * 1.75, 1)
+      local brightB = math.min(b * 1.75, 1)
 
-      -- Store the flash color
-      if not unitFrame.DotMasterFlashColor then
-        unitFrame.DotMasterFlashColor = { r, g, b, 1 }
+      -- Ensure the color is bright enough by forcing at least one channel to full brightness
+      local brightest = math.max(brightR, brightG, brightB)
+      if brightest < 0.9 then
+        local factor = 0.9 / brightest
+        brightR = math.min(brightR * factor, 1)
+        brightG = math.min(brightG * factor, 1)
+        brightB = math.min(brightB * factor, 1)
       end
 
-      -- Set up a repeating alternating color timer if not already flashing
-      if not unitFrame.DotMasterIsFlashing then
-        DM:NameplateDebug("Starting border flash for %s", unitToken)
-        unitFrame.DotMasterIsFlashing = true
+      -- Store the flash colors
+      unitFrame.DotMasterFlashColorBright = { brightR, brightG, brightB, 1 }
+      unitFrame.DotMasterFlashColorDot = { r, g, b, 1 }
 
-        -- Apply the first flash immediately
+      -- Set up a smooth animation if not already flashing
+      if not unitFrame.DotMasterIsFlashing then
+        DM:NameplateDebug("Starting smooth border flash for %s", unitToken)
+        unitFrame.DotMasterIsFlashing = true
+        unitFrame.DotMasterFlashStartTime = GetTime()
+
+        -- Apply the flash color immediately
         if healthBar.border and healthBar.border.SetVertexColor then
           healthBar.border:SetVertexColor(r, g, b, 1)
         end
 
-        -- Create a timer that will alternate border colors
+        -- Create a timer for smooth, continuous animation
         if not unitFrame.DotMasterBorderFlashTimer then
-          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.25, function()
-            if not unitFrame or not unitFrame:IsShown() or not healthBar or not healthBar.border then
-              -- Clean up timer if frame is gone
-              if unitFrame and unitFrame.DotMasterBorderFlashTimer then
-                unitFrame.DotMasterBorderFlashTimer:Cancel()
-                unitFrame.DotMasterBorderFlashTimer = nil
-                unitFrame.DotMasterIsFlashing = nil
-                DM:NameplateDebug("Canceling border flash timer - frame no longer visible")
+          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.05,
+            function()                                                             -- More frequent updates for smoother animation
+              if not unitFrame or not unitFrame:IsShown() or not healthBar or not healthBar.border then
+                -- Clean up timer if frame is gone
+                if unitFrame and unitFrame.DotMasterBorderFlashTimer then
+                  unitFrame.DotMasterBorderFlashTimer:Cancel()
+                  unitFrame.DotMasterBorderFlashTimer = nil
+                  unitFrame.DotMasterIsFlashing = nil
+                  DM:NameplateDebug("Canceling border flash timer - frame no longer visible")
+                end
+                return
               end
-              return
-            end
 
-            -- Toggle between flash color and original/DoT color
-            if unitFrame.DotMasterBorderState then
-              -- Use original/DoT color
-              local origColor = unitFrame.DotMasterOrigBorderColor
+              -- Calculate a smooth pulse based on time
+              local currentTime = GetTime()
+              local elapsedTime = currentTime - (unitFrame.DotMasterFlashStartTime or 0)
+              local pulsePhase = (math.sin(elapsedTime * 4) + 1) / 2 -- Ranges from 0 to 1 in a smooth sine wave
+
+              -- Interpolate between normal dot color and bright flash color
+              local brightColor = unitFrame.DotMasterFlashColorBright
+              local normalColor = unitFrame.DotMasterFlashColorDot
+
+              local currentR = normalColor[1] + (brightColor[1] - normalColor[1]) * pulsePhase
+              local currentG = normalColor[2] + (brightColor[2] - normalColor[2]) * pulsePhase
+              local currentB = normalColor[3] + (brightColor[3] - normalColor[3]) * pulsePhase
+
+              -- Apply the interpolated color
               if healthBar.border.SetVertexColor then
-                healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
-                DM:NameplateDebug("Flashing border - original color")
+                healthBar.border:SetVertexColor(currentR, currentG, currentB, 1)
               end
-              unitFrame.DotMasterBorderState = false
-            else
-              -- Use flash color (bright white or bright DoT color)
-              if healthBar.border.SetVertexColor then
-                -- Make a brighter version of the DoT color
-                healthBar.border:SetVertexColor(1, 1, 1, 1)
-                DM:NameplateDebug("Flashing border - white")
-              end
-              unitFrame.DotMasterBorderState = true
-            end
-          end)
+            end)
         end
       end
     else
