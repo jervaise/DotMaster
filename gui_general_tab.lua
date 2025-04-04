@@ -249,7 +249,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Add flashing checkbox
   local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
-    checkboxContainer, borderOnlyCheckbox, -8, "Flashing")
+    checkboxContainer, borderOnlyCheckbox, -8, "Expiry Flash")
   if DM.settings.flashExpiring == nil then DM.settings.flashExpiring = false end
   flashingCheckbox:SetChecked(DM.settings.flashExpiring)
 
@@ -303,7 +303,7 @@ function DM:CreateGeneralTab(parent)
   -- Set up the flashing checkbox handler
   flashingCheckbox:SetScript("OnClick", function(self)
     DM.settings.flashExpiring = self:GetChecked()
-    DM:PrintMessage("Flashing " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
+    DM:PrintMessage("Expiry Flash " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
 
     -- Show/hide the seconds control based on checkbox state
     if secondsContainer then
