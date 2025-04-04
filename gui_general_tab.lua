@@ -193,15 +193,21 @@ function DM:CreateGeneralTab(parent)
   thicknessContainer:SetSize(70, 26)
   thicknessContainer:SetPoint("LEFT", borderOnlyCheckbox.labelText, "RIGHT", 10, 0)
 
-  -- Create the thickness value display
-  local thicknessValue = thicknessContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-  thicknessValue:SetPoint("LEFT", thicknessContainer, "LEFT", 0, 0)
+  -- Create a fixed-width container for the value to prevent button movement
+  local thicknessValueContainer = CreateFrame("Frame", nil, thicknessContainer)
+  thicknessValueContainer:SetSize(30, 26)
+  thicknessValueContainer:SetPoint("LEFT", thicknessContainer, "LEFT", 0, 0)
+
+  -- Create the thickness value display with right alignment
+  local thicknessValue = thicknessValueContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  thicknessValue:SetPoint("RIGHT", thicknessValueContainer, "RIGHT", 0, 0)
+  thicknessValue:SetJustifyH("RIGHT")
   thicknessValue:SetText(DM.settings.borderThickness .. " px")
 
-  -- Create decrease button
+  -- Create decrease button with fixed position
   local decreaseButton = CreateFrame("Button", nil, thicknessContainer)
   decreaseButton:SetSize(18, 18)
-  decreaseButton:SetPoint("LEFT", thicknessValue, "RIGHT", 2, 0)
+  decreaseButton:SetPoint("LEFT", thicknessValueContainer, "RIGHT", 2, 0)
   decreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
   decreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
   decreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
@@ -258,15 +264,21 @@ function DM:CreateGeneralTab(parent)
   secondsContainer:SetSize(70, 26)
   secondsContainer:SetPoint("LEFT", flashingCheckbox.labelText, "RIGHT", 10, 0)
 
-  -- Create the seconds input display
-  local secondsValue = secondsContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-  secondsValue:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
+  -- Create a fixed-width container for the value to prevent button movement
+  local secondsValueContainer = CreateFrame("Frame", nil, secondsContainer)
+  secondsValueContainer:SetSize(30, 26)
+  secondsValueContainer:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
+
+  -- Create the seconds input display with right alignment
+  local secondsValue = secondsValueContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  secondsValue:SetPoint("RIGHT", secondsValueContainer, "RIGHT", 0, 0)
+  secondsValue:SetJustifyH("RIGHT")
   secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
 
-  -- Create decrease button for seconds
+  -- Create decrease button for seconds with fixed position
   local secondsDecreaseButton = CreateFrame("Button", nil, secondsContainer)
   secondsDecreaseButton:SetSize(18, 18)
-  secondsDecreaseButton:SetPoint("LEFT", secondsValue, "RIGHT", 2, 0)
+  secondsDecreaseButton:SetPoint("LEFT", secondsValueContainer, "RIGHT", 2, 0)
   secondsDecreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
   secondsDecreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
   secondsDecreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
