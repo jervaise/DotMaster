@@ -110,7 +110,9 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
         DM:ColorPickerDebug("Running callback function with " ..
           tostring(newR) .. ", " .. tostring(newG) .. ", " .. tostring(newB))
         callback(newR, newG, newB)
-        DM:ColorPickerDebug("Callback completed")
+        DM:ColorPickerDebug("Callback completed, saving settings")
+        -- Renklerin kaydedildiğinden emin olmak için SaveSettings'i doğrudan çağır
+        DM:SaveSettings()
       end
     end
 

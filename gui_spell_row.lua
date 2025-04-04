@@ -166,27 +166,14 @@ function DM:CreateSpellConfigRow(spellID, index, yOffset)
   local colorSwatch
   if colorSwatchFunc then
     colorSwatch = colorSwatchFunc(spellRow, r, g, b, function(newR, newG, newB)
-      -- Store original color values for comparison
-      local origR = r
-      local origG = g
-      local origB = b
+      -- Update color in database
+      DM.dmspellsdb[numericID].color = { newR, newG, newB }
 
-      -- Only update if color actually changed
-      if math.abs(newR - origR) > 0.001 or math.abs(newG - origG) > 0.001 or math.abs(newB - origB) > 0.001 then
-        -- Update color in database
-        DM.dmspellsdb[numericID].color = { newR, newG, newB }
+      -- Save changes immediately (SaveDMSpellsDB handles saving)
+      -- DM:SaveDMSpellsDB() -- Already called within the swatch callback logic
 
-        -- Save changes to database
-        DM:SaveDMSpellsDB()
-
-        DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
-          numericID, newR, newG, newB))
-      else
-        DM:DatabaseDebug(string.format("Color unchanged for spell %d - skipping save", numericID))
-      end
-
-      -- Update reference values for future comparisons
-      r, g, b = newR, newG, newB
+      DM:DatabaseDebug(string.format("Updated color for spell %d to RGB(%f, %f, %f)",
+        numericID, newR, newG, newB))
     end)
   else
     -- Fallback if function doesn't exist

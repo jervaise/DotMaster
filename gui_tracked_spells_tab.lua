@@ -206,9 +206,6 @@ end
 function GUI:GetGroupedTrackedSpells()
   local grouped = {}
 
-  -- Get the player's class
-  local playerClass = DM.GetPlayerClass()
-
   -- Make sure we have access to the database
   if not DM.dmspellsdb then
     DM:DatabaseDebug("dmspellsdb is nil - attempting to load")
@@ -252,17 +249,13 @@ function GUI:GetGroupedTrackedSpells()
       else
         local className = data.wowclass or "UNKNOWN"
 
-        -- Only include spells from the player's class or unknown class
-        if className == playerClass or className == "UNKNOWN" then
-          if not grouped[className] then grouped[className] = {} end
-          grouped[className][id] = data
-        end
+        if not grouped[className] then grouped[className] = {} end
+        grouped[className][id] = data
       end
     end
   end
 
-  DM:DatabaseDebug("GetGroupedTrackedSpells processed " ..
-    count .. " tracked entries, filtered for player class: " .. playerClass)
+  DM:DatabaseDebug("GetGroupedTrackedSpells processed " .. count .. " tracked entries")
   return grouped
 end
 
@@ -680,26 +673,13 @@ function GUI:RefreshTrackedSpellTabList()
             initialColor[2],
             initialColor[3],
             function(newR, newG, newB) -- Callback for when color changes
-              -- Check if color actually changed
-              local oldR = initialColor[1] or 1
-              local oldG = initialColor[2] or 0
-              local oldB = initialColor[3] or 0
+              DM:DatabaseDebug(string.format("Color changed for spell %d: R=%.2f, G=%.2f, B=%.2f",
+                spellID, newR, newG, newB))
 
-              -- Only update the database if the color actually changed
-              if math.abs(newR - oldR) > 0.001 or math.abs(newG - oldG) > 0.001 or math.abs(newB - oldB) > 0.001 then
-                DM:DatabaseDebug(string.format("Color changed for spell %d: R=%.2f, G=%.2f, B=%.2f",
-                  spellID, newR, newG, newB))
-
-                if DM.dmspellsdb[spellID] then
-                  DM.dmspellsdb[spellID].color = { newR, newG, newB }
-                  DM:SaveDMSpellsDB() -- Only save when the color has actually changed
-                  DM:DatabaseDebug(string.format("Updated color for spell %d in database", spellID))
-                end
-
-                -- Update initialColor for future comparisons
-                initialColor = { newR, newG, newB }
-              else
-                DM:DatabaseDebug(string.format("Color unchanged for spell %d - skipping save", spellID))
+              if DM.dmspellsdb[spellID] then
+                DM.dmspellsdb[spellID].color = { newR, newG, newB }
+                DM:SaveDMSpellsDB() -- Make sure to save the database
+                DM:DatabaseDebug(string.format("Updated color for spell %d in database", spellID))
               end
             end
           )

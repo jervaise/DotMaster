@@ -186,6 +186,16 @@ function DM:CompleteInitialization()
 
     -- We're done here, don't initialize anything else
     return
+  else
+    -- Hook Plater NPC colors specifically to handle conflicts (this should be first)
+    if DM.HookPlaterNpcColors then
+      DM:HookPlaterNpcColors()
+    end
+
+    -- Hook other Plater functions to ensure our colors persist
+    if DM.HookPlaterFunctions then
+      DM:HookPlaterFunctions()
+    end
   end
 
   -- Check if we have database data loaded
@@ -242,8 +252,78 @@ end
 DM.Meta = {
   addonName = "DotMaster",
   displayName = "|cFFB54AC9DotMaster|r",
-  version = "1.0.1",
+  version = "1.0.0",
   author = "Your Name",
   website = "https://github.com/yourusername/DotMaster",
   slash = "/dm"
 }
+
+-- Make sure we initialize Plater hooks in the correct order and with proper timing
+do
+  -- Function to initialize DotMaster's Plater integration
+  local function InitializePlaterIntegration()
+    -- Check if Plater is loaded
+    if not _G["Plater"] then
+      DM:Debug("Plater not found, will retry initialization later")
+      C_Timer.After(2, InitializePlaterIntegration)
+      return
+    end
+
+    DM:Debug("Initializing Plater integration")
+
+    -- First and most important: Hook NPC Colors system to prevent conflicts
+    DM:HookPlaterNpcColors()
+
+    -- Then hook the general Plater functions
+    DM:HookPlaterFunctions()
+
+    -- Register for PLAYER_ENTERING_WORLD to ensure hooks are maintained after loading screens
+    local f = CreateFrame("Frame")
+    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    f:SetScript("OnEvent", function()
+      -- Delay slightly to ensure Plater has finished its initialization
+      C_Timer.After(1, function()
+        if _G["Plater"] then
+          -- Check if our hooks are intact
+          if not DM.platerNpcColorsHooked then
+            DM:Debug("Reapplying Plater NPC Colors hook after loading screen")
+            DM:HookPlaterNpcColors()
+          end
+
+          if not DM.platerFunctionsHooked then
+            DM:Debug("Reapplying general Plater hooks after loading screen")
+            DM:HookPlaterFunctions()
+          end
+        end
+      end)
+    end)
+
+    DM:Debug("Plater integration initialized successfully")
+  end
+  -- In bootstrap.lua, add this after Plater is loaded:
+  if DM.InstallPlaterDirectMod then
+    DM:InstallPlaterDirectMod()
+  end
+  -- Trigger the initialization
+  C_Timer.After(1, InitializePlaterIntegration)
+end
+
+-- Full addon initialization function (called after PLAYER_ENTERING_WORLD)
+function DM:Initialize()
+  if not DM.pendingInitialization or DM.initState == "initialized" then
+    DM:DebugMsg("Initialize called but addon already initialized or not pending.")
+    return
+  end
+
+  -- Default settings structure
+  DM.defaults = {
+    enabled = true,
+    debug = false,
+    version = "1.0.1",
+    flashExpiring = false,
+    flashThresholdSeconds = 3.0,
+  }
+
+  -- Rest of the function remains unchanged
+  DM:CompleteInitialization()
+end

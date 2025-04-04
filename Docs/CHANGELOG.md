@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-### Version 1.0.1 (2024-07-10)
-- **Fixed**: Problem where DotMaster GUI wouldn't open when Plater's color picker was active
-- **Fixed**: Unnecessary database saving when color picker was interacted with but colors weren't changed
-- **Enhanced**: Class-specific filtering for combinations and spell tracking
-- **Enhanced**: Border flashing colors now use more pronounced brightness for better visibility
-- **Added**: Force threat mode now properly disables flashing when active (non-border mode only)
-- **Added**: Better error handling for color picker interactions
-- **Technical**: Improved frame level management for GUI windows
-- **Documentation**: Updated README with more comprehensive features and usage information
-
 ### Version 1.0.0 (2024-07-01)
 - **Major Release**: First stable release of DotMaster
 - **API Stability**: All features are now considered stable and production-ready
@@ -520,4 +510,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected spacing and margins in the Tracked Spells tab
 - Addressed LAYOUT variable access in RefreshTrackedSpellTabList function
 
-// ... existing code ... 
+### Version 1.0.1 (YYYY-MM-DD) 
+#### Added
+- Implemented Expiry Flash for nameplate *fill* (non-border mode) when using Plater, animating the health bar texture alpha.
+
+#### Changed
+- Refactored expiry flash logic to remove dependency on `Plater.CreateFlash`.
+- Consolidated flash visual updates into the main check timer (`DotMasterCheckTimer`) to improve stability and reduce erratic behavior.
+- Improved flash state management to prevent flashes from persisting after DoT expiration.
+- Updated README for clarity, user appeal, and feature accuracy.
+
+#### Fixed
+- Resolved recursive call error (`UpdateSingleNameplate` nil value) during nameplate updates.
+- Prevented `DotMasterForceColorTimer` from interfering with expiry flash visuals.
+- Removed delayed `Plater.RefreshNameplateColor` call from `RestoreDefaultColor` to potentially fix color flickering on reset.
+
+### Version 1.0.0 (2024-07-01)
+#### Added
+- Initial stable release.
+- Core features: Nameplate coloring, Find My Dots, Spell Database, Config UI, Plater pseudo-mod integration.
+
+*(Previous version notes remain unchanged)* 

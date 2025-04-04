@@ -18,16 +18,7 @@ function DM:ApplyThreatColor(unitFrame, unitToken)
         local tankPlayersInTheRaid = Plater.GetTanks()
 
         -- Get the target of this unit
-        local unitTargetName
-        if unitFrame.targetUnitID then
-          unitTargetName = UnitName(unitFrame.targetUnitID)
-        else
-          -- If targetUnitID is not available, try to construct it
-          local targetUnit = unitToken .. "target"
-          if UnitExists(targetUnit) then
-            unitTargetName = UnitName(targetUnit)
-          end
-        end
+        local unitTargetName = UnitName(unitFrame.targetUnitID)
 
         -- If the unit isn't targeting another tank, show the noaggro color
         if not tankPlayersInTheRaid[unitTargetName] then
@@ -112,81 +103,29 @@ function DM:CreateNameplateFlash(unitFrame, color)
 
       -- For border only mode
       if DM.settings.borderOnly then
-        local healthBar = unitFrame.healthBar
-        if not healthBar or not healthBar.border then
-          DM:NameplateDebug("No healthBar or border found")
-          return
+        -- Cancel any existing flash timer
+        if unitFrame.DotMasterBorderFlashTimer then
+          unitFrame.DotMasterBorderFlashTimer:Cancel()
+          unitFrame.DotMasterBorderFlashTimer = nil
         end
 
-        -- Store the original color for restoration if we don't have it already
-        if not unitFrame.DotMasterOrigBorderColor then
-          if healthBar.border.originalColor then
-            unitFrame.DotMasterOrigBorderColor = {
-              healthBar.border.originalColor[1],
-              healthBar.border.originalColor[2],
-              healthBar.border.originalColor[3],
-              healthBar.border.originalColor[4] or 1
-            }
-          else
-            -- Default to black if we can't find the original
-            unitFrame.DotMasterOrigBorderColor = { 0, 0, 0, 1 }
+        -- Create new flash
+        if unitFrame.healthBar.canHealthFlash then
+          -- Use direct Plater API for border flash
+          Plater.FlashNameplateBorder(unitFrame, 0.25)
 
-            -- Try to capture current color
-            if healthBar.border.GetVertexColor then
-              local cr, cg, cb, ca = healthBar.border:GetVertexColor()
-              if cr and cg and cb then
-                unitFrame.DotMasterOrigBorderColor = { cr, cg, cb, ca or 1 }
-                DM:NameplateDebug("Captured current border color: %.2f,%.2f,%.2f", cr, cg, cb)
+          -- Set up ongoing flash
+          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.35, function()
+            if unitFrame and unitFrame.healthBar and unitFrame:IsShown() then
+              Plater.FlashNameplateBorder(unitFrame, 0.25)
+            else
+              -- If the unitFrame is gone or hidden, cancel the timer
+              if unitFrame.DotMasterBorderFlashTimer then
+                unitFrame.DotMasterBorderFlashTimer:Cancel()
+                unitFrame.DotMasterBorderFlashTimer = nil
               end
             end
-          end
-        end
-
-        -- Apply the color to the border
-        if healthBar.border.SetVertexColor then
-          -- Make the border color brighter for better contrast
-          local r, g, b = color[1], color[2], color[3]
-          local brightR = math.min(r * 2.0, 1)
-          local brightG = math.min(g * 2.0, 1)
-          local brightB = math.min(b * 2.0, 1)
-
-          healthBar.border:SetVertexColor(brightR, brightG, brightB, 1)
-          DM:NameplateDebug("Set border color for flash: %.2f,%.2f,%.2f", brightR, brightG, brightB)
-
-          -- Store the current flash color for reference
-          unitFrame.DotMasterLastFlashColor = { r, g, b }
-          unitFrame.DotMasterBorderFlashColor = { r, g, b, 1 }
-        end
-
-        -- Create animation if it doesn't exist - using the animation approach that works
-        if not unitFrame.DotMasterFlashAnimation then
-          -- Create animation group on the border directly
-          unitFrame.DotMasterFlashAnimation = healthBar.border:CreateAnimationGroup()
-          unitFrame.DotMasterFlashAnimation:SetLooping("REPEAT")
-
-          -- First animation - dim
-          local dimAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
-          dimAnim:SetFromAlpha(1.0)
-          dimAnim:SetToAlpha(0.4)
-          dimAnim:SetDuration(0.3)
-          dimAnim:SetOrder(1)
-
-          -- Second animation - brighten
-          local brightenAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
-          brightenAnim:SetFromAlpha(0.4)
-          brightenAnim:SetToAlpha(1.0)
-          brightenAnim:SetDuration(0.3)
-          brightenAnim:SetOrder(2)
-
-          DM:NameplateDebug("Created border flash animation group in CreateNameplateFlash")
-        end
-
-        -- Play the animation
-        if unitFrame.DotMasterFlashAnimation then
-          unitFrame.DotMasterFlashAnimation:Play()
-          unitFrame.DotMasterIsFlashing = true
-          unitFrame.DotMasterFlashColorChanged = false -- Reset the flag
-          DM:NameplateDebug("Started border flash animation")
+          end)
         end
       else
         -- For full nameplate mode
@@ -228,7 +167,6 @@ function DM:CreateNameplateFlash(unitFrame, color)
 
           -- Start the animation
           unitFrame.DotMasterFlashAnimation:Play()
-          unitFrame.DotMasterIsFlashing = true
         end
       end
     end,
@@ -236,35 +174,16 @@ function DM:CreateNameplateFlash(unitFrame, color)
     Stop = function()
       if not unitFrame then return end
 
-      -- Stop border flash timer (just in case)
+      -- Stop border flash timer
       if unitFrame.DotMasterBorderFlashTimer then
         unitFrame.DotMasterBorderFlashTimer:Cancel()
         unitFrame.DotMasterBorderFlashTimer = nil
       end
 
-      -- Stop the animation if it exists
+      -- Stop nameplate flash animation
       if unitFrame.DotMasterFlashAnimation then
         unitFrame.DotMasterFlashAnimation:Stop()
         unitFrame.DotMasterFlashAnimation = nil
-        DM:NameplateDebug("Stopped flash animation in CreateNameplateFlash.Stop")
-      end
-
-      -- Reset flashing status
-      unitFrame.DotMasterIsFlashing = nil
-      unitFrame.DotMasterFlashColorChanged = nil
-      unitFrame.DotMasterLastFlashColor = nil
-      unitFrame.DotMasterBorderFlashColor = nil
-
-      -- Restore original border color
-      if DM.settings and DM.settings.borderOnly then
-        local healthBar = unitFrame.healthBar
-        if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
-          local origColor = unitFrame.DotMasterOrigBorderColor
-          if healthBar.border.SetVertexColor then
-            healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
-            DM:NameplateDebug("Restored original border color in CreateNameplateFlash.Stop")
-          end
-        end
       end
 
       -- Restore any text layers
@@ -287,91 +206,6 @@ function DM:CheckForExpiringDoTs(unitToken)
 
   -- Debug API availability
   DM:NameplateDebug("CheckForExpiringDoTs called for unit: %s", unitToken)
-
-  -- If Force Threat Color is enabled and border-only is disabled, check if threat conditions apply
-  -- which would mean we should suppress flashing
-  local unitFrame = nameplate.unitFrame
-  local suppressFlashing = false
-
-  if DM.settings and DM.settings.forceColor and not DM.settings.borderOnly then
-    local Plater = _G["Plater"]
-    if Plater then
-      -- Check if player is a tank with lost aggro or DPS/healer with aggro
-      if Plater.PlayerIsTank then
-        -- Player is a tank, check if we lost aggro
-        if not unitFrame.namePlateThreatIsTanking then
-          -- Check for raid tanks (same logic as ApplyThreatColor)
-          if Plater.ZoneInstanceType == "raid" then
-            -- Get tanks in the raid
-            local tankPlayersInTheRaid = Plater.GetTanks()
-            -- Get the target of this unit
-            local unitTargetName
-            if unitFrame.targetUnitID then
-              unitTargetName = UnitName(unitFrame.targetUnitID)
-            else
-              -- If targetUnitID is not available, try to construct it
-              local targetUnit = unitToken .. "target"
-              if UnitExists(targetUnit) then
-                unitTargetName = UnitName(targetUnit)
-              end
-            end
-            -- If the unit isn't targeting another tank, suppress flashing
-            if not tankPlayersInTheRaid[unitTargetName] then
-              suppressFlashing = true
-              DM:NameplateDebug("Force Threat: Tank lost aggro - suppressing flashing")
-            end
-          else
-            -- Not in raid, just suppress flashing
-            suppressFlashing = true
-            DM:NameplateDebug("Force Threat: Tank lost aggro - suppressing flashing")
-          end
-        end
-      else
-        -- Player is DPS/healer - check if we have aggro
-        if unitFrame.namePlateThreatIsTanking then
-          suppressFlashing = true
-          DM:NameplateDebug("Force Threat: DPS/Healer has aggro - suppressing flashing")
-        end
-      end
-    end
-  end
-
-  -- If flashing is suppressed due to force threat mode, stop any current flashing and exit early
-  if suppressFlashing then
-    -- Stop any flashing
-    if unitFrame.DotMasterIsFlashing then
-      DM:NameplateDebug("Forced threat color active - stopping flash")
-
-      -- Stop the animation if it exists
-      if unitFrame.DotMasterFlashAnimation then
-        unitFrame.DotMasterFlashAnimation:Stop()
-        DM:NameplateDebug("Stopped border flash animation")
-      end
-
-      -- Stop the Flash animation if it exists
-      if unitFrame.DotMasterFlash then
-        unitFrame.DotMasterFlash:Stop()
-        unitFrame.DotMasterFlash = nil
-        DM:NameplateDebug("Stopped full nameplate flash")
-      end
-
-      -- Restore original border color
-      local healthBar = unitFrame.healthBar
-      if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
-        local origColor = unitFrame.DotMasterOrigBorderColor
-        if healthBar.border.SetVertexColor then
-          healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
-          DM:NameplateDebug("Restored original border color due to force threat color")
-        end
-      end
-
-      unitFrame.DotMasterIsFlashing = nil
-    end
-
-    return
-  end
-
-  -- Debug API availability
   DM:NameplateDebug("API Check - C_UnitAuras: %s, AuraUtil: %s",
     C_UnitAuras and "Available" or "Not Available",
     AuraUtil and "Available" or "Not Available")
@@ -515,6 +349,7 @@ function DM:CheckForExpiringDoTs(unitToken)
           else
             DM:NameplateDebug("Threshold check: %.1f > %.1f, won't flash nameplates yet",
               leastRemainingTime, threshold)
+            expiringFound = false -- Explicitly set false if threshold not met
           end
         else
           DM:NameplateDebug("Critical index %d is outside the range of remaining times (1-%d)",
@@ -662,155 +497,38 @@ function DM:CheckForExpiringDoTs(unitToken)
         else
           DM:NameplateDebug("Threshold check: %.1f > %.1f, won't flash nameplates yet",
             leastRemainingTime, threshold)
+          expiringFound = false -- Explicitly set false if threshold not met
         end
       else
         DM:NameplateDebug("Error: No dot info found for spell %d", highestPriorityDot)
+        expiringFound = false -- Explicitly set false on error
       end
     else
       DM:NameplateDebug("No active individual dots found to check for flashing")
+      expiringFound = false -- Explicitly set false if no dots
     end
   end
 
   local unitFrame = nameplate.unitFrame
 
+  -- <<< Add Debugging >>>
+  DM:NameplateDebug("Final check for %s: expiringFound = %s", unitToken, tostring(expiringFound))
+
   -- If there's an expiring DoT, flash
   if expiringFound then
-    -- Get the DoT color for the flash
-    local r, g, b = expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3]
-
-    -- Check the flashing mode (border or full)
-    if DM.settings.borderOnly then
-      -- Border-only mode
-      local healthBar = unitFrame.healthBar
-      if not healthBar or not healthBar.border then
-        DM:NameplateDebug("No healthBar or border found")
-        return
-      end
-
-      -- Store the original color for restoration if we don't have it already
-      if not unitFrame.DotMasterOrigBorderColor then
-        if healthBar.border.originalColor then
-          unitFrame.DotMasterOrigBorderColor = {
-            healthBar.border.originalColor[1],
-            healthBar.border.originalColor[2],
-            healthBar.border.originalColor[3],
-            healthBar.border.originalColor[4] or 1
-          }
-        else
-          -- Default to black if we can't find the original
-          unitFrame.DotMasterOrigBorderColor = { 0, 0, 0, 1 }
-
-          -- Try to capture current color
-          if healthBar.border.GetVertexColor then
-            local cr, cg, cb, ca = healthBar.border:GetVertexColor()
-            if cr and cg and cb then
-              unitFrame.DotMasterOrigBorderColor = { cr, cg, cb, ca or 1 }
-              DM:NameplateDebug("Captured current border color: %.2f,%.2f,%.2f", cr, cg, cb)
-            end
-          end
-        end
-      end
-
-      -- Store the actual DoT color for use in animation
-      unitFrame.DotMasterBorderFlashColor = { r, g, b, 1 }
-
-      -- Apply the color to the border
-      if healthBar.border.SetVertexColor then
-        -- Make the border color brighter for better contrast (more pronounced)
-        local brightR = math.min(r * 2.0, 1)
-        local brightG = math.min(g * 2.0, 1)
-        local brightB = math.min(b * 2.0, 1)
-
-        healthBar.border:SetVertexColor(brightR, brightG, brightB, 1)
-        DM:NameplateDebug("Set border color for flash: %.2f,%.2f,%.2f", brightR, brightG, brightB)
-      end
-
-      -- Create animation if it doesn't exist - using the animation approach that works
-      if not unitFrame.DotMasterFlashAnimation then
-        -- Create animation group on the border directly
-        unitFrame.DotMasterFlashAnimation = healthBar.border:CreateAnimationGroup()
-        unitFrame.DotMasterFlashAnimation:SetLooping("REPEAT")
-
-        -- First animation - dim
-        local dimAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
-        dimAnim:SetFromAlpha(1.0)
-        dimAnim:SetToAlpha(0.4)
-        dimAnim:SetDuration(0.3)
-        dimAnim:SetOrder(1)
-
-        -- Second animation - brighten
-        local brightenAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
-        brightenAnim:SetFromAlpha(0.4)
-        brightenAnim:SetToAlpha(1.0)
-        brightenAnim:SetDuration(0.3)
-        brightenAnim:SetOrder(2)
-
-        DM:NameplateDebug("Created border flash animation group in CheckForExpiringDoTs")
-      end
-
-      -- Set up animation for border if not already flashing
-      if not unitFrame.DotMasterIsFlashing or unitFrame.DotMasterFlashColorChanged then
-        -- Check if the color has changed since last flash
-        if unitFrame.DotMasterIsFlashing and unitFrame.DotMasterLastFlashColor then
-          local lastColor = unitFrame.DotMasterLastFlashColor
-          -- If color changed, we need to update
-          if lastColor[1] ~= r or lastColor[2] ~= g or lastColor[3] ~= b then
-            unitFrame.DotMasterFlashColorChanged = true
-            DM:NameplateDebug("Flash color changed, updating animation")
-          end
-        end
-
-        DM:NameplateDebug("Starting border flash animation for %s", unitToken)
-        unitFrame.DotMasterIsFlashing = true
-        unitFrame.DotMasterFlashColorChanged = false    -- Reset the flag
-        unitFrame.DotMasterLastFlashColor = { r, g, b } -- Remember current color
-
-        -- Play the animation if exists
-        if unitFrame.DotMasterFlashAnimation then
-          unitFrame.DotMasterFlashAnimation:Play()
-          DM:NameplateDebug("Started border flash animation")
-        end
-      end
-    else
-      -- Full nameplate mode
-      -- If we don't have an animation yet, create one
-      if not unitFrame.DotMasterFlash then
-        -- Create flash using Plater's API
-        local Plater = _G["Plater"]
-        if Plater and Plater.CreateFlash then
-          DM:NameplateDebug("Creating full nameplate flash with color: %.2f,%.2f,%.2f", r, g, b)
-          unitFrame.DotMasterFlash = Plater.CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
-          DM:NameplateDebug("Created full nameplate flash animation")
-        else
-          DM:NameplateDebug("Plater.CreateFlash not found!")
-        end
-      end
-
-      -- Play the animation if we have it
-      if unitFrame.DotMasterFlash then
-        unitFrame.DotMasterFlash:Play()
-        unitFrame.DotMasterIsFlashing = true
-        DM:NameplateDebug("Started full nameplate flash")
-      else
-        DM:NameplateDebug("No DotMasterFlash animation exists")
-      end
-    end
+    -- Return flash state
+    return true, expiringDoTColor
   else
     -- No expiring DoT, stop any flashing
+    DM:NameplateDebug("Condition NOT met (expiringFound=false), checking if flash needs stopping for %s", unitToken)
+
     if unitFrame.DotMasterIsFlashing then
-      DM:NameplateDebug("No expiring DoTs, stopping flash")
+      DM:NameplateDebug("No expiring DoTs, stopping BORDER flash")
 
       -- Stop the animation if it exists
       if unitFrame.DotMasterFlashAnimation then
         unitFrame.DotMasterFlashAnimation:Stop()
         DM:NameplateDebug("Stopped border flash animation")
-      end
-
-      -- Stop the Flash animation if it exists
-      if unitFrame.DotMasterFlash then
-        unitFrame.DotMasterFlash:Stop()
-        unitFrame.DotMasterFlash = nil
-        DM:NameplateDebug("Stopped full nameplate flash")
       end
 
       -- Restore original border color
@@ -827,12 +545,48 @@ function DM:CheckForExpiringDoTs(unitToken)
       unitFrame.DotMasterIsFlashing = nil
     end
 
-    -- Stop any border flash timer (just in case we have any lingering timers)
     if unitFrame.DotMasterBorderFlashTimer then
       unitFrame.DotMasterBorderFlashTimer:Cancel()
       unitFrame.DotMasterBorderFlashTimer = nil
       DM:NameplateDebug("Stopping border flash timer - no expiring DoTs")
     end
+
+    if unitFrame.DotMasterFlash then
+      unitFrame.DotMasterFlash:Stop()
+      unitFrame.DotMasterFlash = nil
+      DM:NameplateDebug("Stopping full nameplate flash - no expiring DoTs")
+    end
+
+    -- If the flag is set (meaning flash *was* active or *tried* to activate), reset it and restore color
+    if unitFrame.DotMasterIsFlashingFill then
+      DM:NameplateDebug("Resetting DotMasterIsFlashingFill flag for %s and restoring color.", unitToken)
+      unitFrame.DotMasterIsFlashingFill = false
+
+      -- Restore color immediately
+      local texture = unitFrame.healthBar and unitFrame.healthBar:GetStatusBarTexture()
+      if texture then
+        local _, currentDotColor = self:GetHighestPriorityDotColor(unitToken)
+        if currentDotColor then
+          DM:NameplateDebug("Restoring dot color: %.2f, %.2f, %.2f", currentDotColor[1], currentDotColor[2],
+            currentDotColor[3])
+          unitFrame.DotMasterAllowChange = true
+          texture:SetVertexColor(currentDotColor[1], currentDotColor[2], currentDotColor[3], currentDotColor[4] or 1)
+          unitFrame.DotMasterAllowChange = nil
+        else
+          DM:NameplateDebug("No active DoT found, attempting reset via RestoreDefaultColor")
+          local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
+          self:RestoreDefaultColor(nameplate, unitToken) -- Try full reset
+        end
+      else
+        DM:NameplateDebug("No texture found while restoring color for %s.", unitToken)
+        -- Attempt broader reset just in case
+        local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
+        self:RestoreDefaultColor(nameplate, unitToken)
+      end
+    end
+
+    -- Return non-flash state
+    return false, nil
   end
 end
 
@@ -845,6 +599,30 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
     local Plater = _G["Plater"]
     local unitFrame = nameplate.unitFrame
     if unitFrame and unitFrame.healthBar then
+      -- Store the original color on first application if not already stored
+      if not DM.originalColors[unitToken] then
+        local r, g, b, a
+        local healthBar = unitFrame.healthBar
+
+        -- Try to get the current color values
+        if healthBar.GetStatusBarColor then
+          r, g, b, a = healthBar:GetStatusBarColor()
+        end
+
+        -- If we couldn't get values, use fallbacks based on unit reaction
+        if not r then
+          if UnitCanAttack("player", unitToken) then
+            r, g, b, a = 1, 0, 0, 1 -- hostile default (red)
+          else
+            r, g, b, a = 0, 1, 0, 1 -- friendly default (green)
+          end
+        end
+
+        DM.originalColors[unitToken] = { r, g, b, a or 1 }
+        DM:NameplateDebug("Stored original color for %s: %.2f, %.2f, %.2f",
+          unitToken, r, g, b)
+      end
+
       -- If Force Threat Color is enabled, check threat conditions
       if DM.settings and DM.settings.forceColor then
         -- Apply threat-based color if applicable
@@ -862,49 +640,202 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
           self.coloredPlates[unitToken] = true
 
           -- Create flash animation for this nameplate if needed
-          if DM.settings.flashExpiring and not unitFrame.DotMasterCheckTimer then
+          if DM.settings.flashExpiring then
+            -- Call check immediately to set initial state
             self:CheckForExpiringDoTs(unitToken)
 
-            -- Set up a repeating timer to check for expiring DoTs
-            unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.5, function()
-              if nameplate and nameplate:IsShown() and unitFrame and unitFrame.healthBar then
-                self:CheckForExpiringDoTs(unitToken)
-              else
-                -- Clean up timer if the nameplate is gone
-                if unitFrame.DotMasterCheckTimer then
-                  unitFrame.DotMasterCheckTimer:Cancel()
-                  unitFrame.DotMasterCheckTimer = nil
+            -- Set up a repeating timer to check for expiring DoTs AND APPLY FLASH
+            if not unitFrame.DotMasterCheckTimer then
+              DM:NameplateDebug("Creating DotMasterCheckTimer for border mode: %s", unitToken)
+              unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Increased frequency
+                if nameplate and nameplate:IsShown() and unitFrame and unitFrame.healthBar then
+                  -- In border mode, just call the check (it handles its own animation)
+                  self:CheckForExpiringDoTs(unitToken)
+                else
+                  -- Clean up timer if the nameplate is gone
+                  if unitFrame.DotMasterCheckTimer then
+                    unitFrame.DotMasterCheckTimer:Cancel()
+                    unitFrame.DotMasterCheckTimer = nil
+                  end
                 end
-              end
-            end)
+              end)
+            end
           end
 
           return true
         end
       else
-        -- If not using border-only mode, use full nameplate coloring
-        Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+        -- DIRECT APPROACH: Bypass Plater's color system entirely and set the color directly
+        DM:NameplateDebug("Directly setting color for %s: %.2f, %.2f, %.2f", unitToken, color[1], color[2], color[3])
+
+        -- Store our color in the DotMaster system
+        DM.dotColors = DM.dotColors or {}
+        DM.dotColors[unitToken] = { color[1], color[2], color[3], color[4] or 1 }
+
+        -- Apply directly to the StatusBar texture
+        local healthBar = unitFrame.healthBar
+
+        -- <<< ADD CHECK: Don't apply normal color if flash is active >>>
+        if unitFrame.DotMasterIsFlashingFill then
+          DM:NameplateDebug("Flash active, skipping normal color application for %s", unitToken)
+          return true -- Indicate success even though we didn't change color now
+        end
+
+        if healthBar.SetStatusBarColor then
+          healthBar:SetStatusBarColor(color[1], color[2], color[3], color[4] or 1)
+        end
+
+        -- Set internal Plater variables to prevent overrides
+        healthBar.R = color[1]
+        healthBar.G = color[2]
+        healthBar.B = color[3]
+        healthBar.A = color[4] or 1
+
+        -- Create a stronger protection by hooking the statusbar's SetVertexColor
+        if not healthBar.DotMasterColorProtected then
+          healthBar.DotMasterColorProtected = true
+
+          -- Get the texture and protect it
+          local texture = healthBar:GetStatusBarTexture()
+          if texture and texture.SetVertexColor then
+            -- Store original functions
+            if not texture.OrigSetVertexColor then
+              texture.OrigSetVertexColor = texture.SetVertexColor
+            end
+
+            -- Override the SetVertexColor function
+            texture.SetVertexColor = function(self, r, g, b, a)
+              -- Only allow our color through if not flashing
+              if unitFrame.DotMasterAllowChange or unitFrame.DotMasterIsFlashingFill then -- ADD CHECK HERE
+                texture:OrigSetVertexColor(r, g, b, a)
+              else
+                local dotColor = DM.dotColors[unitToken]
+                if dotColor then
+                  texture:OrigSetVertexColor(dotColor[1], dotColor[2], dotColor[3], dotColor[4] or 1)
+                  DM:NameplateDebug("Protected color from change for %s", unitToken)
+                else
+                  texture:OrigSetVertexColor(r, g, b, a)
+                end
+              end
+            end
+          end
+        end
 
         -- These flags tell Plater not to change this nameplate's color
         unitFrame.UsingCustomColor = true
         unitFrame.DenyColorChange = true
+        unitFrame.DotMasterControlled = true
+
+        -- Use the CanHide flag to stop Plater from hiding the nameplate
+        unitFrame.PriorityShowState = true
+
+        -- Make NPC colors completely ineffective for this nameplate
+        if unitFrame.namePlateNpcId then
+          unitFrame.DotMasterStoredNpcId = unitFrame.namePlateNpcId
+          unitFrame.namePlateNpcId = nil
+        end
 
         self.coloredPlates[unitToken] = true
 
         -- Create flash animation for this nameplate if needed
-        if DM.settings.flashExpiring and not unitFrame.DotMasterCheckTimer then
+        if DM.settings.flashExpiring then
+          -- Call check immediately to set initial state (it will handle flag reset)
           self:CheckForExpiringDoTs(unitToken)
 
-          -- Set up a repeating timer to check for expiring DoTs
-          unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.5, function()
-            if nameplate and nameplate:IsShown() and unitFrame and unitFrame.healthBar then
-              self:CheckForExpiringDoTs(unitToken)
-            else
-              -- Clean up timer if the nameplate is gone
-              if unitFrame.DotMasterCheckTimer then
-                unitFrame.DotMasterCheckTimer:Cancel()
-                unitFrame.DotMasterCheckTimer = nil
+          -- Set up a repeating timer to check AND APPLY flash
+          if not unitFrame.DotMasterCheckTimer then
+            DM:NameplateDebug("Creating DotMasterCheckTimer for fill mode: %s", unitToken)
+            unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Increased frequency
+              if not nameplate or not nameplate:IsShown() or not unitFrame or not unitFrame.healthBar then
+                -- Clean up timer if the nameplate is gone
+                if unitFrame.DotMasterCheckTimer then
+                  unitFrame.DotMasterCheckTimer:Cancel()
+                  unitFrame.DotMasterCheckTimer = nil
+                end
+                -- Ensure flag is reset on cleanup
+                if unitFrame.DotMasterIsFlashingFill then
+                  unitFrame.DotMasterIsFlashingFill = false
+                end
+                return
               end
+
+              -- Get expiration state from the function
+              local shouldFlash, flashColor = self:CheckForExpiringDoTs(unitToken)
+              local texture = unitFrame.healthBar:GetStatusBarTexture()
+
+              if texture then
+                if shouldFlash and flashColor then
+                  -- Flash is needed
+                  unitFrame.DotMasterIsFlashingFill = true
+
+                  -- Determine alpha based on time (simple toggle for now)
+                  local alpha = (math.floor(GetTime() * 4) % 2 == 0) and 1.0 or 0.5 -- ~0.25s cycle
+                  local r, g, b = flashColor[1], flashColor[2], flashColor[3]
+
+                  -- Apply flash color/alpha
+                  unitFrame.DotMasterAllowChange = true
+                  texture:SetVertexColor(r, g, b, alpha)
+                  unitFrame.DotMasterAllowChange = nil
+                  DM:NameplateDebug("Timer applying fill flash for %s, Alpha: %.1f", unitToken, alpha)
+                else
+                  -- Flash is NOT needed, ensure state is restored
+                  if unitFrame.DotMasterIsFlashingFill then
+                    DM:NameplateDebug("Timer ending flash for %s", unitToken)
+                    unitFrame.DotMasterIsFlashingFill = false
+
+                    -- Restore correct color immediately
+                    local _, currentDotColor = self:GetHighestPriorityDotColor(unitToken)
+                    if currentDotColor then
+                      unitFrame.DotMasterAllowChange = true
+                      texture:SetVertexColor(currentDotColor[1], currentDotColor[2], currentDotColor[3],
+                        currentDotColor[4] or 1)
+                      unitFrame.DotMasterAllowChange = nil
+                    else
+                      self:RestoreDefaultColor(nameplate, unitToken)
+                    end
+                  end
+                  -- If not previously flashing, do nothing (normal color is handled elsewhere)
+                end
+              else
+                -- If texture somehow disappears, try to clean up
+                if unitFrame.DotMasterCheckTimer then
+                  unitFrame.DotMasterCheckTimer:Cancel()
+                  unitFrame.DotMasterCheckTimer = nil
+                end
+                unitFrame.DotMasterIsFlashingFill = false
+              end
+            end)
+          end
+        end
+
+        -- Setup periodic reapplication of color
+        if not unitFrame.DotMasterForceColorTimer then
+          unitFrame.DotMasterForceColorTimer = C_Timer.NewTicker(0.1, function()
+            if not nameplate:IsShown() or not unitFrame:IsShown() then
+              unitFrame.DotMasterForceColorTimer:Cancel()
+              unitFrame.DotMasterForceColorTimer = nil
+              return
+            end
+
+            -- <<< ADD CHECK: Don't run if flashing >>>
+            if unitFrame.DotMasterIsFlashingFill then
+              DM:NameplateDebug("ForceColorTimer: Skipping reapplication, flash active for %s", unitToken)
+              return
+            end
+
+            if DM.coloredPlates[unitToken] and DM.dotColors[unitToken] then
+              local dotColor = DM.dotColors[unitToken]
+              local texture = healthBar:GetStatusBarTexture()
+
+              -- Re-apply directly to the texture
+              if texture then
+                unitFrame.DotMasterAllowChange = true
+                texture:SetVertexColor(dotColor[1], dotColor[2], dotColor[3], dotColor[4] or 1)
+                unitFrame.DotMasterAllowChange = nil
+              end
+
+              -- Re-apply to the statusbar
+              healthBar:SetStatusBarColor(dotColor[1], dotColor[2], dotColor[3], dotColor[4] or 1)
             end
           end)
         end
@@ -954,39 +885,63 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
       unitFrame.DotMasterCheckTimer = nil
     end
 
+    -- Cancel color protection timer
+    if unitFrame.DotMasterForceColorTimer then
+      unitFrame.DotMasterForceColorTimer:Cancel()
+      unitFrame.DotMasterForceColorTimer = nil
+    end
+
     -- Stop any border flash timer
     if unitFrame.DotMasterBorderFlashTimer then
       unitFrame.DotMasterBorderFlashTimer:Cancel()
       unitFrame.DotMasterBorderFlashTimer = nil
-    end
+      unitFrame.DotMasterIsFlashing = nil
 
-    -- Stop any FlashAnimation for border flashing
-    if unitFrame.DotMasterFlashAnimation then
-      unitFrame.DotMasterFlashAnimation:Stop()
-      unitFrame.DotMasterFlashAnimation = nil
-      DM:NameplateDebug("Stopped DotMasterFlashAnimation in RestoreDefaultColor")
-    end
-
-    -- Reset flashing status
-    unitFrame.DotMasterIsFlashing = nil
-    unitFrame.DotMasterFlashColorChanged = nil
-    unitFrame.DotMasterLastFlashColor = nil
-    unitFrame.DotMasterBorderFlashColor = nil
-
-    -- Restore original border color
-    if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
-      local origColor = unitFrame.DotMasterOrigBorderColor
-      if healthBar.border.SetVertexColor then
-        healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
-        DM:NameplateDebug("Restored original border color in RestoreDefaultColor")
+      -- Restore original border color
+      if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
+        local origColor = unitFrame.DotMasterOrigBorderColor
+        if healthBar.border.SetVertexColor then
+          healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
+        end
       end
-      unitFrame.DotMasterOrigBorderColor = nil
     end
 
     -- Stop full nameplate flashing
-    if unitFrame.DotMasterFlash then
-      unitFrame.DotMasterFlash:Stop()
-      unitFrame.DotMasterFlash = nil
+    if unitFrame.DotMasterFillFlashTimer then -- Check if the timer exists
+      DM:NameplateDebug("RestoreDefaultColor: Stopping FILL flash timer for %s", unitToken)
+      unitFrame.DotMasterFillFlashTimer:Cancel()
+      unitFrame.DotMasterFillFlashTimer = nil
+      -- <<< ADD FLAG RESET HERE >>>
+      if unitFrame.DotMasterIsFlashingFill then
+        DM:NameplateDebug("RestoreDefaultColor: Resetting DotMasterIsFlashingFill flag for %s", unitToken)
+        unitFrame.DotMasterIsFlashingFill = false
+      end
+    end
+    -- Ensure flag is false even if timer didn't exist (belt-and-suspenders)
+    if unitFrame.DotMasterIsFlashingFill then
+      DM:NameplateDebug("RestoreDefaultColor: Found lingering flash flag for %s, resetting.", unitToken)
+      unitFrame.DotMasterIsFlashingFill = false
+    end
+
+    -- Restore original NPC ID if we saved it
+    if unitFrame.DotMasterStoredNpcId then
+      unitFrame.namePlateNpcId = unitFrame.DotMasterStoredNpcId
+      unitFrame.DotMasterStoredNpcId = nil
+    end
+
+    -- Remove texture protection
+    if healthBar.DotMasterColorProtected then
+      local texture = healthBar:GetStatusBarTexture()
+      if texture and texture.OrigSetVertexColor then
+        texture.SetVertexColor = texture.OrigSetVertexColor
+        texture.OrigSetVertexColor = nil
+      end
+      healthBar.DotMasterColorProtected = nil
+    end
+
+    -- Remove our stored color for this unit
+    if DM.dotColors then
+      DM.dotColors[unitToken] = nil
     end
 
     -- If we were in border-only mode, restore default Plater border settings
@@ -1017,22 +972,20 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
       -- Reset Plater's color control flags
       unitFrame.UsingCustomColor = nil
       unitFrame.DenyColorChange = nil
+      unitFrame.PriorityShowState = nil
+      unitFrame.DotMasterControlled = nil
 
       -- Reset the healthBar color variables
       healthBar.R, healthBar.G, healthBar.B, healthBar.A = nil, nil, nil, nil
-    end
 
-    -- Call Plater's color refresh function
-    Plater.RefreshNameplateColor(unitFrame)
+      -- Allow Plater to manage color again
+      unitFrame.DotMasterAllowChange = true
 
-    -- Force Plater to update all plates
-    if Plater.UpdateAllNameplateColors then
-      Plater.UpdateAllNameplateColors()
-    end
-
-    -- Force a tick to update threat colors
-    if Plater.ForceTickOnAllNameplates then
-      Plater.ForceTickOnAllNameplates()
+      -- Apply original color directly if we have it
+      if self.originalColors[unitToken] then
+        local origColor = self.originalColors[unitToken]
+        healthBar:SetStatusBarColor(origColor[1], origColor[2], origColor[3], origColor[4] or 1)
+      end
     end
   else
     -- Standard nameplate handling (non-Plater)
@@ -1056,6 +1009,12 @@ function DM:HookPlaterFunctions()
   local Plater = _G["Plater"]
   if not Plater then
     DM:NameplateDebug("Plater not found, cannot hook color functions")
+    return
+  end
+
+  -- Prevent double hooking
+  if DM.platerFunctionsHooked then
+    DM:NameplateDebug("Plater functions already hooked, skipping")
     return
   end
 
@@ -1088,21 +1047,135 @@ function DM:HookPlaterFunctions()
     -- Let Plater do its work
     local result = originalRefreshNameplateColor(unitFrame, ...)
 
-    -- Check if this is a nameplate we're tracking
-    if DM.enabled and unitFrame and unitFrame.unit then
-      local unitToken = unitFrame.unit
-      if DM.activePlates[unitToken] then
-        C_Timer.After(0, function()
-          -- Reapply our colors if needed
-          DM:UpdateNameplate(unitToken)
-        end)
-      end
+    -- Check if this is a nameplate we're tracking with DoTs
+    if unitFrame and unitFrame.unit and DM.coloredPlates and DM.coloredPlates[unitFrame.unit] then
+      -- Reapply our DoT coloring immediately
+      C_Timer.After(0, function()
+        if unitFrame and unitFrame:IsShown() and unitFrame.unit and DM.coloredPlates[unitFrame.unit] then
+          DM:NameplateDebug("Reapplying DoT color after standard refresh for unit: " .. unitFrame.unit)
+          DM:UpdateNameplate(unitFrame.unit)
+        end
+      end)
     end
 
     return result
   end
 
-  DM:NameplateDebug("Plater function hooks installed successfully")
+  -- Mark as hooked
+  DM.platerFunctionsHooked = true
+end
+
+-- Function to specifically handle the NPC Colors and Names conflict
+function DM:HookPlaterNpcColors()
+  local Plater = _G["Plater"]
+  if not Plater then
+    DM:NameplateDebug("Plater not found, cannot hook NPC colors functions")
+    return
+  end
+
+  -- Prevent double hooking
+  if DM.platerNpcColorsHooked then
+    DM:NameplateDebug("Plater NPC colors already hooked, skipping")
+    return
+  end
+
+  DM:NameplateDebug("Setting up DIRECT SetNameplateColor hook")
+
+  -- Hook Plater.SetNameplateColor - this is the key function that all color changes go through
+  local originalSetNameplateColor = Plater.SetNameplateColor
+  Plater.SetNameplateColor = function(unitFrame, r, g, b, a)
+    -- First check if this is one of our nameplates
+    if unitFrame and unitFrame.unit and DM.coloredPlates and DM.coloredPlates[unitFrame.unit] then
+      -- We control this nameplate
+      if not unitFrame.DotMasterStopped then
+        DM:NameplateDebug("SetNameplateColor BLOCKED for: %s", unitFrame.unit)
+
+        -- Here's the important part: if we're blocking the color change, we need to apply our own
+        -- color immediately so Plater's change doesn't win
+        if DM.originalColors[unitFrame.unit] then
+          local color = DM.originalColors[unitFrame.unit]
+
+          -- Set a flag to prevent infinite recursion
+          unitFrame.DotMasterStopped = true
+
+          -- Call original with our color
+          originalSetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+
+          -- Remove flag
+          unitFrame.DotMasterStopped = nil
+
+          -- Set unit frame flags to prevent other changes
+          unitFrame.UsingCustomColor = true
+          unitFrame.DenyColorChange = true
+
+          -- Add our tracking flag
+          unitFrame.DotMasterControlled = true
+        end
+
+        -- Return early to block the original color change
+        return
+      else
+        -- This is our own call, let it proceed
+        unitFrame.DotMasterStopped = nil
+      end
+    end
+
+    -- Not our nameplate or it's our own call, proceed normally
+    return originalSetNameplateColor(unitFrame, r, g, b, a)
+  end
+
+  -- Setup periodic refresh to ensure our colors stay applied
+  if not DM.dotColorRefreshTimer then
+    DM.dotColorRefreshTimer = C_Timer.NewTicker(0.2, function()
+      if not DM.enabled then return end
+
+      -- Check if we have any nameplates to update
+      local hasPlates = false
+      for unit in pairs(DM.coloredPlates or {}) do
+        if unit then
+          hasPlates = true; break
+        end
+      end
+
+      if not hasPlates then return end
+
+      -- For each nameplate we control, force-reapply our color
+      for unitToken in pairs(DM.coloredPlates) do
+        local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
+        if nameplate and nameplate.unitFrame and nameplate.unitFrame:IsShown() then
+          local unitFrame = nameplate.unitFrame
+          local color = DM.originalColors[unitToken]
+
+          if color then
+            -- Apply directly
+            unitFrame.DotMasterStopped = true
+            Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+            unitFrame.DotMasterStopped = nil
+
+            -- Set flags to prevent other changes
+            unitFrame.UsingCustomColor = true
+            unitFrame.DenyColorChange = true
+            unitFrame.DotMasterControlled = true
+
+            -- This is key: also scrub any NPC ID data from the nameplate while we control it
+            if unitFrame.namePlateNpcId then
+              -- Store the NPC ID but remove it from the frame to prevent Plater from reapplying its color
+              if not unitFrame.DotMasterOriginalNpcId then
+                unitFrame.DotMasterOriginalNpcId = unitFrame.namePlateNpcId
+              end
+
+              -- Erase it from the frame
+              unitFrame.namePlateNpcId = nil
+            end
+          end
+        end
+      end
+    end)
+  end
+
+  -- Mark as hooked
+  DM.platerNpcColorsHooked = true
+  DM:NameplateDebug("Successfully hooked Plater SetNameplateColor")
 end
 
 -- Initialize the hook when this file loads

@@ -5,30 +5,30 @@
 The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on enemy nameplates and providing visual feedback to the player.
 
 - **Release Status**: Beta
-- **Current Version**: 1.0.0
+- **Current Version**: 1.0.1
 - **Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Branches
 
-- **main**: Stable release (v1.0.0)
-- **develop**: Active development branch (v1.0.0)
+- **main**: Stable release (v1.0.0) - *Should be updated after successful develop testing*
+- **develop**: Active development branch (v1.0.1)
 - **feature/X**: Various feature branches for specific components
 
 ## Project Status
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 1.0.0
+- **Current Version**: 1.0.1
 - **Status**: Active Development
 - **Last Updated**: July 15, 2023
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 1.0.0
+- **Current Version**: 1.0.1
 - **Branch Status**:
   - **main**: Contains the latest stable release (v1.0.0)
-  - **develop**: Active development branch (v1.0.0)
+  - **develop**: Active development branch (v1.0.1)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -130,3 +130,24 @@ These improvements follow professional UI/UX design principles, creating a more 
 1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
 2. **Performance**: May experience frame drops during combat with many targets
 3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios 
+
+## Project Summary
+
+- **Addon Name**: DotMaster
+- **Current Version**: 1.0.1
+- **Status**: Active Development
+
+## Addon Information
+
+- **Current Version**: 1.0.1
+- **Target WoW Version**: 10.2.x
+
+## Development Status
+
+- **Current Version**: 1.0.1
+- **Current Phase**: Beta / Feature Enhancement
+### Branches
+
+- **main**: Contains the latest stable release (v1.0.0)
+- **develop**: Active development branch (v1.0.1)
+    - This branch is always used for in-game testing 

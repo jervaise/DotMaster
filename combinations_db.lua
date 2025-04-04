@@ -235,9 +235,8 @@ function DM:CreateCombination(name, spells, color)
     color = color or { r = 1, g = 0, b = 0, a = 1 },
     priority = priority,
     enabled = true,
-    threshold = "all",             -- "all" or numeric value
-    isExpanded = false,            -- ALWAYS start collapsed
-    wowclass = DM.GetPlayerClass() -- Add class field to store the combination's class
+    threshold = "all", -- "all" or numeric value
+    isExpanded = false -- ALWAYS start collapsed
   }
 
   -- Debug message to confirm expanded state is set correctly
@@ -394,25 +393,15 @@ function DM:CheckCombinationsOnUnit(unit)
 
   -- Sort combinations by priority
   local sortedCombos = {}
-  local playerClass = DM.GetPlayerClass()
-
   for id, combo in pairs(DM.combinations.data) do
-    -- Only include combinations for the current player's class
-    -- If wowclass isn't set (backward compatibility), include it but set the class
     if combo and combo.enabled then
-      if not combo.wowclass then
-        combo.wowclass = playerClass -- Set missing class to current player's class for backward compatibility
-      end
-
-      if combo.wowclass == playerClass then
-        table.insert(sortedCombos, { id = id, priority = combo.priority or 999, data = combo })
-      end
+      table.insert(sortedCombos, { id = id, priority = combo.priority or 999, data = combo })
     end
   end
 
   -- If no combos, early return
   if #sortedCombos == 0 then
-    DM:DebugMsg("CheckCombinationsOnUnit: No enabled combinations found for class: " .. playerClass)
+    DM:DebugMsg("CheckCombinationsOnUnit: No enabled combinations found")
     return nil
   end
 

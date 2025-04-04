@@ -1,8 +1,8 @@
 # DotMaster Development Roadmap
 
-This document outlines the planned development roadmap for DotMaster beyond version 0.6.8.
+This document outlines the development roadmap for DotMaster, tracking progress from initial concept to future enhancements.
 
-## Current Version: 0.6.8
+## Current Version: 1.0.1
 
 Successfully fixed critical API issues with Find My Dots functionality and standardized aura detection methods across all modules.
 
@@ -52,7 +52,7 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
    - Add import/export functionality for sharing settings
    - Develop class-specific default configurations
 
-## Long-Term Vision (v1.0.0)
+## Long-Term Vision (Post v1.0.1)
 
 1. **Advanced Tracking Features**
    - Track enemy cooldowns with optional indicators
@@ -71,6 +71,9 @@ Successfully fixed critical API issues with Find My Dots functionality and stand
    - Create detailed documentation and video tutorials
    - Implement automatic configuration backup
    - Develop analytics for DoT uptime and efficiency
+
+4. **Advanced Configuration**: More granular control over appearance, animations, and conditions.
+5. **Expanded Spell Support**: Auto-detection or better handling for temporary weapon enchants, trinket procs, etc.
 
 ## Development Process
 
