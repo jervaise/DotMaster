@@ -79,21 +79,27 @@ function (self, unitId, unitFrame, envTable, modTable)
 
     -- Apply color exactly like the sample mod
     if hasDoT and bestColor then
-        -- Store the unit for DotMaster tracking
+        -- We have a DoT, apply DotMaster color
         if DotMaster.coloredPlates then
             DotMaster.coloredPlates[unitId] = true
         end
-
-        -- Apply color using the same method as the sample mod
         Plater.SetNameplateColor(unitFrame, bestColor[1], bestColor[2], bestColor[3], bestColor[4] or 1)
     else
-        -- No DoT, but we were controlling this plate before
-        if DotMaster.coloredPlates and DotMaster.coloredPlates[unitId] then
-            -- Reset to Plater's normal coloring
-            Plater.RefreshNameplateColor(unitFrame)
-
-            -- Remove tracking
-            DotMaster.coloredPlates[unitId] = nil
+        -- No DotMaster DoT found for this unit
+        if envTable.isFTCEnabled then
+            -- FTC is ON, but no DoT. Plater handles threat/default color. Reset our state.
+            if DotMaster.coloredPlates and DotMaster.coloredPlates[unitId] then
+                Plater.RefreshNameplateColor(unitFrame)
+                DotMaster.coloredPlates[unitId] = nil
+            end
+        else
+            -- FTC is OFF and no DoT. Let Plater do its thing entirely.
+            -- Do NOT call RefreshNameplateColor here.
+            -- Just ensure our tracking flag is cleared if it was somehow set.
+            if DotMaster.coloredPlates and DotMaster.coloredPlates[unitId] then
+                 DotMaster.coloredPlates[unitId] = nil
+            end
+            return
         end
     end
 end]],

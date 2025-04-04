@@ -11,7 +11,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 ## Branches
 
 - **main**: Stable release (v1.0.0) - *Should be updated after successful develop testing*
-- **develop**: Active development branch (v1.0.1)
+- **develop**: Active development branch (v1.0.2)
 - **feature/X**: Various feature branches for specific components
 
 ## Project Status
@@ -28,7 +28,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 - **Current Version**: 1.0.1
 - **Branch Status**:
   - **main**: Contains the latest stable release (v1.0.0)
-  - **develop**: Active development branch (v1.0.1)
+  - **develop**: Active development branch (v1.0.2)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -134,20 +134,20 @@ These improvements follow professional UI/UX design principles, creating a more 
 ## Project Summary
 
 - **Addon Name**: DotMaster
-- **Current Version**: 1.0.1
+- **Current Version**: 1.0.2
 - **Status**: Active Development
 
 ## Addon Information
 
-- **Current Version**: 1.0.1
+- **Current Version**: 1.0.2
 - **Target WoW Version**: 10.2.x
 
 ## Development Status
 
-- **Current Version**: 1.0.1
+- **Current Version**: 1.0.2
 - **Current Phase**: Beta / Feature Enhancement
 ### Branches
 
 - **main**: Contains the latest stable release (v1.0.0)
-- **develop**: Active development branch (v1.0.1)
+- **develop**: Active development branch (v1.0.2)
     - This branch is always used for in-game testing 

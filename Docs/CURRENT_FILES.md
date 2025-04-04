@@ -1,8 +1,8 @@
-# Current File Structure - DotMaster v1.0.1
+# Current File Structure - DotMaster v1.0.2
 
 This document provides an overview of all files in the DotMaster addon and their purpose.
 
-## Active Files (v1.0.1)
+## Active Files (v1.0.2)
 
 ### Core Files
 1. **bootstrap.lua** - Initial addon setup and core variable initialization

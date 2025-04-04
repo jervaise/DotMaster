@@ -516,50 +516,102 @@ function DM:CheckForExpiringDoTs(unitToken)
 
   -- If there's an expiring DoT, flash
   if expiringFound then
-    -- Return flash state
+    -- << RE-ADD BORDER LOGIC >>
+    if DM.settings.borderOnly then
+      -- Border-only mode - simpler and more reliable approach
+      local healthBar = unitFrame.healthBar
+      if not healthBar or not healthBar.border then
+        DM:NameplateDebug("No healthBar or border found for border flash")
+      else
+        -- Get the DoT color for the flash
+        local r, g, b = expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3]
+
+        -- Store the original color for restoration if we don't have it already
+        if not unitFrame.DotMasterOrigBorderColor then
+          -- (Existing logic to store original border color - unchanged)
+          if healthBar.border.originalColor then
+            unitFrame.DotMasterOrigBorderColor = {
+              healthBar.border.originalColor[1],
+              healthBar.border.originalColor[2],
+              healthBar.border.originalColor[3],
+              healthBar.border.originalColor[4] or 1
+            }
+          elseif healthBar.border.GetVertexColor then -- Fallback capture
+            local cr, cg, cb, ca = healthBar.border:GetVertexColor()
+            if cr and cg and cb then
+              unitFrame.DotMasterOrigBorderColor = { cr, cg, cb, ca or 1 }
+              DM:NameplateDebug("Captured current border color: %.2f,%.2f,%.2f", cr, cg, cb)
+            else
+              unitFrame.DotMasterOrigBorderColor = { 0, 0, 0, 1 } -- Default black
+            end
+          else
+            unitFrame.DotMasterOrigBorderColor = { 0, 0, 0, 1 } -- Default black
+          end
+        end
+
+        -- Create animation if it doesn't exist
+        if not unitFrame.DotMasterFlashAnimation then
+          -- (Existing logic to create border animation group - unchanged)
+          unitFrame.DotMasterFlashAnimation = healthBar.border:CreateAnimationGroup()
+          unitFrame.DotMasterFlashAnimation:SetLooping("REPEAT")
+          local brightenAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
+          brightenAnim:SetFromAlpha(0.5); brightenAnim:SetToAlpha(1.0); brightenAnim:SetDuration(0.3); brightenAnim
+              :SetOrder(1)
+          local dimAnim = unitFrame.DotMasterFlashAnimation:CreateAnimation("Alpha")
+          dimAnim:SetFromAlpha(1.0); dimAnim:SetToAlpha(0.5); dimAnim:SetDuration(0.3); dimAnim:SetOrder(2)
+          DM:NameplateDebug("Created border flash animation group for %s", unitToken)
+        end
+
+        -- Set up animation for border if not already flashing
+        if not unitFrame.DotMasterIsFlashing then
+          DM:NameplateDebug("Starting border flash animation for %s", unitToken)
+          unitFrame.DotMasterIsFlashing = true
+
+          -- Apply the brightest version of the DoT color for flash
+          local brightR, brightG, brightB = math.min(r * 1.5, 1), math.min(g * 1.5, 1), math.min(b * 1.5, 1)
+          if healthBar.border.SetVertexColor then
+            healthBar.border:SetVertexColor(brightR, brightG, brightB, 1)
+          end
+
+          -- Play the animation
+          if unitFrame.DotMasterFlashAnimation then
+            unitFrame.DotMasterFlashAnimation:Play()
+          end
+        end
+      end
+    end
+    -- << END RE-ADD BORDER LOGIC >>
+
+    -- Return flash state (used by fill mode timer)
     return true, expiringDoTColor
   else
     -- No expiring DoT, stop any flashing
     DM:NameplateDebug("Condition NOT met (expiringFound=false), checking if flash needs stopping for %s", unitToken)
 
+    -- << RE-ADD BORDER CLEANUP >>
     if unitFrame.DotMasterIsFlashing then
-      DM:NameplateDebug("No expiring DoTs, stopping BORDER flash")
-
+      DM:NameplateDebug("No expiring DoTs, stopping BORDER flash for %s", unitToken)
       -- Stop the animation if it exists
       if unitFrame.DotMasterFlashAnimation then
         unitFrame.DotMasterFlashAnimation:Stop()
-        DM:NameplateDebug("Stopped border flash animation")
       end
-
       -- Restore original border color
       local healthBar = unitFrame.healthBar
       if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
         local origColor = unitFrame.DotMasterOrigBorderColor
         if healthBar.border.SetVertexColor then
           healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
-          DM:NameplateDebug("Restored original border color: %.2f,%.2f,%.2f,%.2f",
-            origColor[1], origColor[2], origColor[3], origColor[4])
         end
       end
-
       unitFrame.DotMasterIsFlashing = nil
     end
+    -- Remove potentially redundant timer cancels if they existed for border
+    -- unitFrame.DotMasterBorderFlashTimer = nil -- Assuming no separate border timer
+    -- << END RE-ADD BORDER CLEANUP >>
 
-    if unitFrame.DotMasterBorderFlashTimer then
-      unitFrame.DotMasterBorderFlashTimer:Cancel()
-      unitFrame.DotMasterBorderFlashTimer = nil
-      DM:NameplateDebug("Stopping border flash timer - no expiring DoTs")
-    end
-
-    if unitFrame.DotMasterFlash then
-      unitFrame.DotMasterFlash:Stop()
-      unitFrame.DotMasterFlash = nil
-      DM:NameplateDebug("Stopping full nameplate flash - no expiring DoTs")
-    end
-
-    -- If the flag is set (meaning flash *was* active or *tried* to activate), reset it and restore color
+    -- Stop the fill flash state if needed
     if unitFrame.DotMasterIsFlashingFill then
-      DM:NameplateDebug("Resetting DotMasterIsFlashingFill flag for %s and restoring color.", unitToken)
+      DM:NameplateDebug("No expiring DoTs, stopping FILL flash for %s", unitToken)
       unitFrame.DotMasterIsFlashingFill = false
 
       -- Restore color immediately
@@ -625,47 +677,56 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
 
       -- If Force Threat Color is enabled, check threat conditions
       if DM.settings and DM.settings.forceColor then
+        local ftcTookOverFill = false
         -- Apply threat-based color if applicable
         if self:ApplyThreatColor(unitFrame, unitToken) then
-          -- Tell DotMaster we're handling this nameplate
+          -- Tell DotMaster we're handling this nameplate (color part)
           self.coloredPlates[unitToken] = true
-          return true
+          -- Mark that FTC handled the fill, so we skip DM fill logic later
+          ftcTookOverFill = true
+          -- << DON'T return here if borderOnly might be true >>
         end
       end
 
       -- Check for border-only mode
       if DM.settings and DM.settings.borderOnly then
-        -- Apply color only to the border
+        -- Apply color only to the border (Always apply border if in border mode, regardless of ftcTookOverFill)
         if self:SetNameplateBorderColor(unitFrame, color) then
           self.coloredPlates[unitToken] = true
-
-          -- Create flash animation for this nameplate if needed
+          -- Create flash animation timer (handles its own flash logic)
           if DM.settings.flashExpiring then
-            -- Call check immediately to set initial state
             self:CheckForExpiringDoTs(unitToken)
-
-            -- Set up a repeating timer to check for expiring DoTs AND APPLY FLASH
             if not unitFrame.DotMasterCheckTimer then
               DM:NameplateDebug("Creating DotMasterCheckTimer for border mode: %s", unitToken)
-              unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Increased frequency
+              unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Use same frequency
                 if nameplate and nameplate:IsShown() and unitFrame and unitFrame.healthBar then
-                  -- In border mode, just call the check (it handles its own animation)
-                  self:CheckForExpiringDoTs(unitToken)
+                  self:CheckForExpiringDoTs(unitToken)                           -- Border flash logic is self-contained here
                 else
-                  -- Clean up timer if the nameplate is gone
                   if unitFrame.DotMasterCheckTimer then
-                    unitFrame.DotMasterCheckTimer:Cancel()
-                    unitFrame.DotMasterCheckTimer = nil
+                    unitFrame.DotMasterCheckTimer:Cancel(); unitFrame.DotMasterCheckTimer = nil;
                   end
                 end
               end)
             end
           end
-
-          return true
+          return true -- Border handled, we are done.
         end
       else
-        -- DIRECT APPROACH: Bypass Plater's color system entirely and set the color directly
+        -- FILL MODE LOGIC
+        -- Skip applying DM fill color only if FTC already handled the fill
+        if ftcTookOverFill then
+          DM:NameplateDebug("FTC handled fill color, skipping DM fill color application for %s", unitToken)
+          -- Still need to potentially setup the flash timer *check*
+          -- The timer itself will respect the FTC override flag
+          if DM.settings.flashExpiring then
+            if not unitFrame.DotMasterCheckTimer then
+              self:SetupFillFlashTimer(nameplate, unitToken, unitFrame)
+            end
+          end
+          return true -- FTC handled fill, potential timer check started.
+        end
+
+        -- FTC did not take over, proceed with applying DM color to fill
         DM:NameplateDebug("Directly setting color for %s: %.2f, %.2f, %.2f", unitToken, color[1], color[2], color[3])
 
         -- Store our color in the DotMaster system
@@ -740,107 +801,13 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
         -- Create flash animation for this nameplate if needed
         if DM.settings.flashExpiring then
           -- Call check immediately to set initial state (it will handle flag reset)
-          self:CheckForExpiringDoTs(unitToken)
+          -- Removed CheckForExpiringDoTs call here as timer handles init
 
           -- Set up a repeating timer to check AND APPLY flash
           if not unitFrame.DotMasterCheckTimer then
-            DM:NameplateDebug("Creating DotMasterCheckTimer for fill mode: %s", unitToken)
-            unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Increased frequency
-              if not nameplate or not nameplate:IsShown() or not unitFrame or not unitFrame.healthBar then
-                -- Clean up timer if the nameplate is gone
-                if unitFrame.DotMasterCheckTimer then
-                  unitFrame.DotMasterCheckTimer:Cancel()
-                  unitFrame.DotMasterCheckTimer = nil
-                end
-                -- Ensure flag is reset on cleanup
-                if unitFrame.DotMasterIsFlashingFill then
-                  unitFrame.DotMasterIsFlashingFill = false
-                end
-                return
-              end
-
-              -- Get expiration state from the function
-              local shouldFlash, flashColor = self:CheckForExpiringDoTs(unitToken)
-              local texture = unitFrame.healthBar:GetStatusBarTexture()
-
-              if texture then
-                if shouldFlash and flashColor then
-                  -- Flash is needed
-                  unitFrame.DotMasterIsFlashingFill = true
-
-                  -- Determine alpha based on time (simple toggle for now)
-                  local alpha = (math.floor(GetTime() * 4) % 2 == 0) and 1.0 or 0.5 -- ~0.25s cycle
-                  local r, g, b = flashColor[1], flashColor[2], flashColor[3]
-
-                  -- Apply flash color/alpha
-                  unitFrame.DotMasterAllowChange = true
-                  texture:SetVertexColor(r, g, b, alpha)
-                  unitFrame.DotMasterAllowChange = nil
-                  DM:NameplateDebug("Timer applying fill flash for %s, Alpha: %.1f", unitToken, alpha)
-                else
-                  -- Flash is NOT needed, ensure state is restored
-                  if unitFrame.DotMasterIsFlashingFill then
-                    DM:NameplateDebug("Timer ending flash for %s", unitToken)
-                    unitFrame.DotMasterIsFlashingFill = false
-
-                    -- Restore correct color immediately
-                    local _, currentDotColor = self:GetHighestPriorityDotColor(unitToken)
-                    if currentDotColor then
-                      unitFrame.DotMasterAllowChange = true
-                      texture:SetVertexColor(currentDotColor[1], currentDotColor[2], currentDotColor[3],
-                        currentDotColor[4] or 1)
-                      unitFrame.DotMasterAllowChange = nil
-                    else
-                      self:RestoreDefaultColor(nameplate, unitToken)
-                    end
-                  end
-                  -- If not previously flashing, do nothing (normal color is handled elsewhere)
-                end
-              else
-                -- If texture somehow disappears, try to clean up
-                if unitFrame.DotMasterCheckTimer then
-                  unitFrame.DotMasterCheckTimer:Cancel()
-                  unitFrame.DotMasterCheckTimer = nil
-                end
-                unitFrame.DotMasterIsFlashingFill = false
-              end
-            end)
+            self:SetupFillFlashTimer(nameplate, unitToken, unitFrame)
           end
         end
-
-        -- Setup periodic reapplication of color
-        if not unitFrame.DotMasterForceColorTimer then
-          unitFrame.DotMasterForceColorTimer = C_Timer.NewTicker(0.1, function()
-            if not nameplate:IsShown() or not unitFrame:IsShown() then
-              unitFrame.DotMasterForceColorTimer:Cancel()
-              unitFrame.DotMasterForceColorTimer = nil
-              return
-            end
-
-            -- <<< ADD CHECK: Don't run if flashing >>>
-            if unitFrame.DotMasterIsFlashingFill then
-              DM:NameplateDebug("ForceColorTimer: Skipping reapplication, flash active for %s", unitToken)
-              return
-            end
-
-            if DM.coloredPlates[unitToken] and DM.dotColors[unitToken] then
-              local dotColor = DM.dotColors[unitToken]
-              local texture = healthBar:GetStatusBarTexture()
-
-              -- Re-apply directly to the texture
-              if texture then
-                unitFrame.DotMasterAllowChange = true
-                texture:SetVertexColor(dotColor[1], dotColor[2], dotColor[3], dotColor[4] or 1)
-                unitFrame.DotMasterAllowChange = nil
-              end
-
-              -- Re-apply to the statusbar
-              healthBar:SetStatusBarColor(dotColor[1], dotColor[2], dotColor[3], dotColor[4] or 1)
-            end
-          end)
-        end
-
-        return true
       end
     else
       return false
@@ -1210,3 +1177,71 @@ combatEventFrame:SetScript("OnEvent", function(self, event)
     end)
   end
 end)
+
+-- Helper function to setup the fill flash timer (to avoid code duplication)
+function DM:SetupFillFlashTimer(nameplate, unitToken, unitFrame)
+  DM:NameplateDebug("Creating/Ensuring DotMasterCheckTimer for fill mode: %s", unitToken)
+  unitFrame.DotMasterCheckTimer = C_Timer.NewTicker(0.25, function() -- Increased frequency
+    if not nameplate or not nameplate:IsShown() or not unitFrame or not unitFrame.healthBar then
+      if unitFrame.DotMasterCheckTimer then
+        unitFrame.DotMasterCheckTimer:Cancel(); unitFrame.DotMasterCheckTimer = nil;
+      end
+      if unitFrame.DotMasterIsFlashingFill then unitFrame.DotMasterIsFlashingFill = false; end
+      return
+    end
+
+    -- <<< START FTC CHECK >>>
+    local ftcOverride = false
+    if DM.settings.forceColor then
+      local isThreatSituation = self:ApplyThreatColor(unitFrame, unitToken)
+      if isThreatSituation then
+        ftcOverride = true
+        if unitFrame.DotMasterIsFlashingFill then
+          DM:NameplateDebug("Timer stopping flash for %s due to FTC override.", unitToken)
+          unitFrame.DotMasterIsFlashingFill = false
+        end
+        -- Don't return yet, let logic below handle state if needed
+      end
+    end
+    -- <<< END FTC CHECK >>>
+
+    -- Get expiration state
+    local shouldFlash, flashColor = self:CheckForExpiringDoTs(unitToken)
+    local texture = unitFrame.healthBar:GetStatusBarTexture()
+
+    -- Only proceed if FTC is NOT overriding
+    if not ftcOverride then
+      if texture then
+        if shouldFlash and flashColor then
+          unitFrame.DotMasterIsFlashingFill = true
+          local alpha = (math.floor(GetTime() * 4) % 2 == 0) and 1.0 or 0.5
+          local r, g, b = flashColor[1], flashColor[2], flashColor[3]
+          unitFrame.DotMasterAllowChange = true
+          texture:SetVertexColor(r, g, b, alpha)
+          unitFrame.DotMasterAllowChange = nil
+          --DM:NameplateDebug("Timer applying fill flash for %s, Alpha: %.1f", unitToken, alpha)
+        else
+          -- Flash is NOT needed (and FTC not overriding)
+          if unitFrame.DotMasterIsFlashingFill then
+            DM:NameplateDebug("Timer ending flash for %s (no threat, no expiry)", unitToken)
+            unitFrame.DotMasterIsFlashingFill = false
+            local _, currentDotColor = self:GetHighestPriorityDotColor(unitToken)
+            if currentDotColor then
+              unitFrame.DotMasterAllowChange = true
+              texture:SetVertexColor(currentDotColor[1], currentDotColor[2], currentDotColor[3], currentDotColor[4] or 1)
+              unitFrame.DotMasterAllowChange = nil
+            else
+              self:RestoreDefaultColor(nameplate, unitToken)
+            end
+          end
+        end
+      else
+        -- Texture lost mid-timer
+        if unitFrame.DotMasterCheckTimer then
+          unitFrame.DotMasterCheckTimer:Cancel(); unitFrame.DotMasterCheckTimer = nil;
+        end
+        unitFrame.DotMasterIsFlashingFill = false
+      end
+    end -- end if not ftcOverride
+  end)
+end

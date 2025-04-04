@@ -138,3 +138,37 @@ function DM:ProcessDotsForUnit(unit)
     self:CheckForExpiringDoTs(unit)
   end
 end
+
+-- Runs a specific hook from a Plater script if it exists
+function DM:RunPlaterScriptHook(modName, hookName, unitId, unitFrame, modTable)
+  if not self.compiledScripts or not self.compiledScripts[modName] or not self.compiledScripts[modName][hookName] then
+    --DM:DebugMsg("Hook '%s' not found or not compiled for mod '%s'", hookName, modName)
+    return
+  end
+
+  -- Ensure necessary components are available
+  if not self.ErrorHandler then
+    DM:DebugMsg("Error handler not available, cannot run Plater script hook.")
+    return
+  end
+
+  -- Create env table
+  local env = {
+    isFTCEnabled = DM.settings and DM.settings.forceColor or false,
+    -- other env variables if needed
+  }
+
+  -- Execute the script for the current hook
+  local func = self.compiledScripts[modName][hookName]
+  if func then
+    -- Pass env table to the script
+    local success, err = xpcall(func, self.ErrorHandler, modTable, unitId, unitFrame, env, modTable)
+    if not success then
+      DM:DebugMsg("Error executing Plater script '%s' hook '%s': %s", modName, hookName, tostring(err))
+    end
+  else
+    -- This case should technically be caught by the check at the top,
+    -- but added for extra safety.
+    DM:DebugMsg("Cannot run hook '%s': Compiled script function is nil for mod '%s'", hookName, modName)
+  end
+end

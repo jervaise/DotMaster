@@ -17,7 +17,7 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "1.0.1",
+  version = "1.0.2",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -264,12 +264,12 @@ do
   local function InitializePlaterIntegration()
     -- Check if Plater is loaded
     if not _G["Plater"] then
-      DM:Debug("Plater not found, will retry initialization later")
+      DM:DebugMsg("Plater not found, will retry initialization later")
       C_Timer.After(2, InitializePlaterIntegration)
       return
     end
 
-    DM:Debug("Initializing Plater integration")
+    DM:DebugMsg("Initializing Plater integration")
 
     -- First and most important: Hook NPC Colors system to prevent conflicts
     DM:HookPlaterNpcColors()
@@ -286,19 +286,19 @@ do
         if _G["Plater"] then
           -- Check if our hooks are intact
           if not DM.platerNpcColorsHooked then
-            DM:Debug("Reapplying Plater NPC Colors hook after loading screen")
+            DM:DebugMsg("Reapplying Plater NPC Colors hook after loading screen")
             DM:HookPlaterNpcColors()
           end
 
           if not DM.platerFunctionsHooked then
-            DM:Debug("Reapplying general Plater hooks after loading screen")
+            DM:DebugMsg("Reapplying general Plater hooks after loading screen")
             DM:HookPlaterFunctions()
           end
         end
       end)
     end)
 
-    DM:Debug("Plater integration initialized successfully")
+    DM:DebugMsg("Plater integration initialized successfully")
   end
   -- In bootstrap.lua, add this after Plater is loaded:
   if DM.InstallPlaterDirectMod then
@@ -319,7 +319,7 @@ function DM:Initialize()
   DM.defaults = {
     enabled = true,
     debug = false,
-    version = "1.0.1",
+    version = "1.0.2",
     flashExpiring = false,
     flashThresholdSeconds = 3.0,
   }

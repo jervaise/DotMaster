@@ -525,9 +525,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevented `DotMasterForceColorTimer` from interfering with expiry flash visuals.
 - Removed delayed `Plater.RefreshNameplateColor` call from `RestoreDefaultColor` to potentially fix color flickering on reset.
 
-### Version 1.0.0 (2024-07-01)
+### Version 1.0.2 (YYYY-MM-DD)
 #### Added
-- Initial stable release.
-- Core features: Nameplate coloring, Find My Dots, Spell Database, Config UI, Plater pseudo-mod integration.
+- Force Threat Color (FTC) feature now respects Border-Only mode (applies threat to fill, DM color to border).
+
+#### Changed
+- Refactored `ApplyColorToNameplate` and timer logic to correctly handle interactions between FTC, Border-Only, and Flashing settings.
+
+#### Fixed
+- Corrected logic flaw where FTC could prevent border coloring/flashing when active in Border-Only mode.
+- Fixed recursion error in `CheckForExpiringDoTs` by removing unnecessary `UpdateSingleNameplate` call.
+- Resolved initialization error (`attempt to call method 'Debug' (a table value)`) by using `DebugMsg` in early Plater integration steps.
+- Fixed broken border flashing caused by previous refactor.
 
 *(Previous version notes remain unchanged)* 

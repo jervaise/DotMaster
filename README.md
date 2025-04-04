@@ -2,7 +2,7 @@
 
 **Tired of losing track of your Damage over Time effects in the heat of battle? DotMaster enhances your awareness by intelligently coloring enemy nameplates based on *your* active DoTs!**
 
-**Current Version:** 1.0.1
+**Current Version:** 1.0.2
 **Compatible with:** World of Warcraft 10.2.x (Likely compatible with future versions, adjust Interface version in `.toc` if needed)
 
 <p align="center">
