@@ -212,11 +212,13 @@ function DM:CheckForExpiringDoTs(unitToken)
     if unitFrame.DotMasterBorderPulseTimer then
       unitFrame.DotMasterBorderPulseTimer:Cancel()
       unitFrame.DotMasterBorderPulseTimer = nil
+      DM:NameplateDebug("Stopping border flash timer - no DoTs found")
     end
 
     if unitFrame.DotMasterFlash then
       unitFrame.DotMasterFlash:Stop()
       unitFrame.DotMasterFlash = nil
+      DM:NameplateDebug("Stopping full nameplate flash - no DoTs found")
     end
     return
   end
@@ -229,13 +231,21 @@ function DM:CheckForExpiringDoTs(unitToken)
   local now = GetTime()
   local threshold = DM.settings.flashThresholdSeconds or 3.0
 
+  -- Debug flag to force flashing for testing
+  local forceFlash = false
+
   for spellID, dotInfo in pairs(activeDots) do
     remainingTime = dotInfo.expirationTime - now
 
-    if remainingTime > 0 and remainingTime <= threshold then
+    DM:NameplateDebug("Checking spell %s (%d) - remaining time: %.1f, threshold: %.1f",
+      dotInfo.name or "Unknown", spellID, remainingTime, threshold)
+
+    if remainingTime > 0 and (remainingTime <= threshold or forceFlash) then
       expiringFound = true
       expiringDoTName = dotInfo.name
       expiringDoTColor = dotInfo.color
+      DM:NameplateDebug("Found expiring DoT: %s - %.1f seconds remaining",
+        expiringDoTName or "Unknown", remainingTime)
       break
     end
   end
@@ -247,34 +257,60 @@ function DM:CheckForExpiringDoTs(unitToken)
     -- Check the flashing mode (border or full)
     if DM.settings.borderOnly then
       -- Border-only mode
-      -- Check if we have a health flash frame
-      if not unitFrame.healthBar.canHealthFlash and not nameplate.UnitFrame then
-        -- Create health flash frame if missing
-        if _G["Plater"] and unitFrame.PlateFrame then
-          _G["Plater"].CreateHealthFlashFrame(unitFrame.PlateFrame)
-        end
+      -- First, ensure we have a health bar with flash capability
+      local healthBar = unitFrame.healthBar
+      if not healthBar then return end
+
+      -- Access the Plater object
+      local Plater = _G["Plater"]
+      if not Plater then return end
+
+      -- Make sure we have the HealthFlashFrame
+      if not healthBar.HealthFlashFrame then
+        DM:NameplateDebug("Creating missing HealthFlashFrame")
+        Plater.CreateHealthFlashFrame(unitFrame.PlateFrame)
       end
 
-      -- Direct method to flash the border repeatedly
-      if unitFrame.healthBar.canHealthFlash and unitFrame.healthBar.PlayHealthFlash then
-        -- First flash immediately
-        unitFrame.healthBar.PlayHealthFlash(0.15)
+      -- Direct access to the flash frame
+      local flashFrame = healthBar.HealthFlashFrame
+      if not flashFrame then
+        DM:NameplateDebug("Failed to create or access HealthFlashFrame")
+        return
+      end
 
-        -- Set up a repeating pulse timer if not already flashing
-        if not unitFrame.DotMasterBorderPulseTimer then
-          unitFrame.DotMasterBorderPulseTimer = C_Timer.NewTicker(0.3, function()
-            if unitFrame and unitFrame:IsShown() and unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
-              unitFrame.healthBar.canHealthFlash = true -- Reset this flag in case it was set to false
-              unitFrame.healthBar.PlayHealthFlash(0.15)
-            else
-              -- Clean up timer if frame is gone
-              if unitFrame.DotMasterBorderPulseTimer then
-                unitFrame.DotMasterBorderPulseTimer:Cancel()
-                unitFrame.DotMasterBorderPulseTimer = nil
+      -- Set up a repeating pulse timer if not already flashing
+      if not unitFrame.DotMasterBorderPulseTimer then
+        DM:NameplateDebug("Setting up border pulse timer for %s", unitToken)
+
+        -- Create a new timer that will continuously pulse the border
+        unitFrame.DotMasterBorderPulseTimer = C_Timer.NewTicker(0.3, function()
+          if unitFrame and unitFrame:IsShown() and healthBar and flashFrame then
+            -- Force the canHealthFlash flag to true
+            healthBar.canHealthFlash = true
+
+            -- Direct manipulation of flash animation
+            local animation = flashFrame.animation
+            if animation then
+              -- If animation is not playing, show the frame and play
+              if not animation:IsPlaying() then
+                flashFrame:Show()
+                animation:Play()
+                DM:NameplateDebug("Playing direct flash animation")
               end
+            elseif healthBar.PlayHealthFlash then
+              -- Fallback to the PlayHealthFlash function if available
+              healthBar.PlayHealthFlash(0.15)
+              DM:NameplateDebug("Using PlayHealthFlash fallback")
             end
-          end)
-        end
+          else
+            -- Clean up timer if frame is gone
+            if unitFrame.DotMasterBorderPulseTimer then
+              unitFrame.DotMasterBorderPulseTimer:Cancel()
+              unitFrame.DotMasterBorderPulseTimer = nil
+              DM:NameplateDebug("Canceling border pulse timer - frame no longer visible")
+            end
+          end
+        end)
       end
     else
       -- Full nameplate mode
@@ -290,6 +326,7 @@ function DM:CheckForExpiringDoTs(unitToken)
         -- Create flash using Plater's API
         if _G["Plater"] and _G["Plater"].CreateFlash then
           unitFrame.DotMasterFlash = _G["Plater"].CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
+          DM:NameplateDebug("Created full nameplate flash animation")
         end
       end
 
@@ -303,11 +340,13 @@ function DM:CheckForExpiringDoTs(unitToken)
     if unitFrame.DotMasterBorderPulseTimer then
       unitFrame.DotMasterBorderPulseTimer:Cancel()
       unitFrame.DotMasterBorderPulseTimer = nil
+      DM:NameplateDebug("Stopping border pulse timer - no expiring DoTs")
     end
 
     if unitFrame.DotMasterFlash then
       unitFrame.DotMasterFlash:Stop()
       unitFrame.DotMasterFlash = nil
+      DM:NameplateDebug("Stopping full nameplate flash - no expiring DoTs")
     end
   end
 end
