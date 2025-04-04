@@ -79,72 +79,55 @@ function DM:CreateCombinationsTab(parent)
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     container,
     "DoT Combinations",
-    "Create combinations of DoTs to apply unique visual effects when multiple spells are active on the same target. Combinations always take priority over individual spell tracking."
+    "Create combinations of DoTs to apply nameplate colors. Combinations always take priority over individual spells."
   )
 
-  -- Ensure title is centered if not already
-  local title = infoArea:GetChildren()
-  if title and title:IsObjectType("FontString") then
-    title:ClearAllPoints()
-    title:SetPoint("TOP", infoArea, "TOP", 0, -5)
-    title:SetJustifyH("CENTER")
-  end
-
-  -- Main content area
+  -- Main content area with no vertical gap between info area and content
   local contentFrame = CreateFrame("Frame", nil, container)
-  contentFrame:SetPoint("TOP", infoArea, "BOTTOM", 0, -10)
+  contentFrame:SetPoint("TOP", infoArea, "BOTTOM", 0, 0) -- No vertical gap
   contentFrame:SetPoint("LEFT", container, "LEFT", 10, 0)
   contentFrame:SetPoint("RIGHT", container, "RIGHT", -10, 0)
   contentFrame:SetPoint("BOTTOM", container, "BOTTOM", 0, 10)
 
   -- Create combinations list
   local listFrame = CreateFrame("Frame", nil, contentFrame)
-  listFrame:SetPoint("TOP", contentFrame, "TOP", 0, 0)
+  listFrame:SetPoint("TOP", contentFrame, "TOP", 0, 0)    -- Remove any top margin
   listFrame:SetPoint("BOTTOM", contentFrame, "BOTTOM", 0, 40)
   listFrame:SetWidth(430)                                 -- Set to 430px exactly
   listFrame:SetPoint("CENTER", contentFrame, "TOP", 0, 0) -- Center align at top
 
-  -- List header
+  -- List header - Eliminate any space between infoArea and header
   local headerFrame = CreateFrame("Frame", nil, listFrame)
   headerFrame:SetPoint("TOP", listFrame, "TOP", 0, 0)
   headerFrame:SetPoint("LEFT", listFrame, "LEFT", 0, 0)
   headerFrame:SetPoint("RIGHT", listFrame, "RIGHT", 0, 0)
-  headerFrame:SetHeight(25)
+  headerFrame:SetHeight(20) -- Match tracked spells tab header height
 
-  -- Style the header
+  -- Style the header with dark semi-transparent background like tracked spells tab
   local headerBg = headerFrame:CreateTexture(nil, "BACKGROUND")
   headerBg:SetAllPoints()
-  headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
+  headerBg:SetColorTexture(0, 0, 0, 0.6) -- Dark semi-transparent background to match tracked spells
 
-  -- Header text
-  local headerText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  headerText:SetPoint("LEFT", headerFrame, "LEFT", 10, 0)
-  headerText:SetText("Combination Name")
-  headerText:SetTextColor(1, 0.82, 0)
+  -- Create header labels with similar style to tracked spells tab
+  local function CreateHeaderLabel(text, xPosition)
+    local label = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("LEFT", headerFrame, "LEFT", xPosition, 0)
+    label:SetText(text)
+    label:SetTextColor(1, 0.82, 0) -- Gold text color
+    return label
+  end
 
-  -- Priority column
-  local priorityText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  priorityText:SetPoint("LEFT", headerFrame, "LEFT", 180, 0)
-  priorityText:SetText("Priority")
-  priorityText:SetTextColor(1, 0.82, 0)
-
-  -- Color column
-  local colorText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  colorText:SetPoint("LEFT", headerFrame, "LEFT", 240, 0)
-  colorText:SetText("Color")
-  colorText:SetTextColor(1, 0.82, 0)
-
-  -- Action column
-  local actionText = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  actionText:SetPoint("LEFT", headerFrame, "LEFT", 310, 0)
-  actionText:SetText("Actions")
-  actionText:SetTextColor(1, 0.82, 0)
+  -- Header text - match tracked spells positioning
+  CreateHeaderLabel("COMBINATION NAME", 10)
+  CreateHeaderLabel("COLOR", 240)
+  CreateHeaderLabel("ORDER", 290)
+  CreateHeaderLabel("ACTIONS", 350)
 
   -- Create a scrollable list for combinations
   local scrollFrame = CreateFrame("ScrollFrame", nil, listFrame, "UIPanelScrollFrameTemplate")
-  scrollFrame:SetPoint("TOP", headerFrame, "BOTTOM", 0, -1)
+  scrollFrame:SetPoint("TOP", headerFrame, "BOTTOM", 0, -2) -- Changed from -1 to -2 to match tracked spells tab
   scrollFrame:SetPoint("LEFT", listFrame, "LEFT", 0, 0)
-  scrollFrame:SetPoint("RIGHT", listFrame, "RIGHT", 0, 0) -- No space for scrollbar
+  scrollFrame:SetPoint("RIGHT", listFrame, "RIGHT", 0, 0)   -- No space for scrollbar
   scrollFrame:SetPoint("BOTTOM", listFrame, "BOTTOM", 0, 0)
 
   -- Hide scrollbar
@@ -189,8 +172,12 @@ function DM:CreateCombinationsTab(parent)
   -- Function to update the combinations list
   local function UpdateCombinationsList()
     -- Clear existing rows
-    for _, row in ipairs(combinationRows) do
-      row:Hide()
+    for i = 1, #combinationRows do
+      local row = combinationRows[i]
+      if row then
+        row:Hide()
+        row:ClearAllPoints()
+      end
     end
 
     -- Reset scroll content height
@@ -236,17 +223,70 @@ function DM:CreateCombinationsTab(parent)
       return
     end
 
-    -- Sort combinations by priority
-    local sortedCombos = {}
-    for id, combo in pairs(DM.combinations.data) do
-      table.insert(sortedCombos, { id = id, priority = combo.priority or 999, data = combo })
+    -- Get combinations and sort them by priority
+    local combos = {}
+    if DM.combinations and DM.combinations.data then
+      for id, data in pairs(DM.combinations.data) do
+        table.insert(combos, { id = id, data = data })
+      end
     end
 
-    table.sort(sortedCombos, function(a, b) return a.priority < b.priority end)
+    -- Normalize priorities to ensure sequential ordering
+    table.sort(combos, function(a, b)
+      if a.data.priority and b.data.priority then
+        return a.data.priority < b.data.priority
+      elseif a.data.priority then
+        return true
+      elseif b.data.priority then
+        return false
+      else
+        return a.data.name < b.data.name
+      end
+    end)
+
+    -- Reassign priorities to ensure they are consecutive numbers
+    local prioritiesChanged = false
+    for i, combo in ipairs(combos) do
+      -- Ensure every combination has a valid priority
+      if not combo.data.priority then
+        DM.combinations.data[combo.id].priority = i
+        prioritiesChanged = true
+        -- Check if priority needs reassignment to maintain consecutive order
+      elseif combo.data.priority ~= i then
+        DM.combinations.data[combo.id].priority = i
+        prioritiesChanged = true
+      end
+    end
+
+    -- Save if priorities were changed
+    if prioritiesChanged then
+      DM:SaveCombinationsDB()
+      self:DebugMsg("Normalized combination priorities")
+    end
+
+    -- Re-sort with potentially updated priorities
+    local sortedCombos = {}
+    if DM.combinations and DM.combinations.data then
+      for id, data in pairs(DM.combinations.data) do
+        table.insert(sortedCombos, { id = id, data = data })
+      end
+    end
+
+    table.sort(sortedCombos, function(a, b)
+      if a.data.priority and b.data.priority then
+        return a.data.priority < b.data.priority
+      elseif a.data.priority then
+        return true
+      elseif b.data.priority then
+        return false
+      else
+        return (a.data.name or "") < (b.data.name or "")
+      end
+    end)
 
     -- Create or update rows for each combination
     local rowHeight = 30
-    local yOffset = 0
+    local yOffset = 2 -- Changed from 0 to 2 to match tracked spells tab's spacing
 
     for index, comboInfo in ipairs(sortedCombos) do
       local row = combinationRows[index]
@@ -267,10 +307,94 @@ function DM:CreateCombinationsTab(parent)
         nameText:SetJustifyH("LEFT")
         row.nameText = nameText
 
-        -- Priority text
-        local priorityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        priorityText:SetPoint("LEFT", row, "LEFT", 180, 0)
-        row.priorityText = priorityText
+        -- Order text (was Priority text)
+        local orderText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        orderText:SetPoint("LEFT", row, "LEFT", 290, 0)
+        row.orderText = orderText
+
+        -- Add Up Arrow Button
+        local upArrow = CreateFrame("Button", nil, row)
+        upArrow:SetSize(20, 20) -- Match tracked spells tab size
+        upArrow:SetPoint("RIGHT", orderText, "RIGHT", 15, 0)
+        upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
+        upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
+        upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+        -- Disable up arrow for first item
+        if index == 1 then
+          upArrow:Disable()
+          upArrow:SetAlpha(0.5)
+        else
+          upArrow:Enable()
+          upArrow:SetAlpha(1.0)
+        end
+
+        -- Up arrow click handler
+        upArrow:SetScript("OnClick", function()
+          if index > 1 then
+            local prevComboInfo = sortedCombos[index - 1]
+            local currentComboID = comboInfo.id
+            local prevComboID = prevComboInfo.id
+
+            -- Get current priorities
+            local currentPriority = DM.combinations.data[currentComboID].priority
+            local prevPriority = DM.combinations.data[prevComboID].priority
+
+            -- Swap priorities
+            DM.combinations.data[currentComboID].priority = prevPriority
+            DM.combinations.data[prevComboID].priority = currentPriority
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+              currentComboID, prevPriority, prevComboID, currentPriority))
+
+            -- Refresh the combinations list
+            UpdateCombinationsList()
+          end
+        end)
+
+        -- Add Down Arrow Button
+        local downArrow = CreateFrame("Button", nil, row)
+        downArrow:SetSize(20, 20)                           -- Match tracked spells tab size
+        downArrow:SetPoint("RIGHT", upArrow, "LEFT", -2, 0) -- 2px gap between arrows
+        downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+        downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+        downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+        -- Disable down arrow for last item
+        if index == #sortedCombos then
+          downArrow:Disable()
+          downArrow:SetAlpha(0.5)
+        else
+          downArrow:Enable()
+          downArrow:SetAlpha(1.0)
+        end
+
+        -- Down arrow click handler
+        downArrow:SetScript("OnClick", function()
+          if index < #sortedCombos then
+            local nextComboInfo = sortedCombos[index + 1]
+            local currentComboID = comboInfo.id
+            local nextComboID = nextComboInfo.id
+
+            -- Get current priorities
+            local currentPriority = DM.combinations.data[currentComboID].priority
+            local nextPriority = DM.combinations.data[nextComboID].priority
+
+            -- Swap priorities
+            DM.combinations.data[currentComboID].priority = nextPriority
+            DM.combinations.data[nextComboID].priority = currentPriority
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+              currentComboID, nextPriority, nextComboID, currentPriority))
+
+            -- Refresh the combinations list
+            UpdateCombinationsList()
+          end
+        end)
 
         -- Color swatch
         local colorSwatch = CreateFrame("Button", nil, row)
@@ -378,7 +502,7 @@ function DM:CreateCombinationsTab(parent)
         -- Edit button
         local editButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
         editButton:SetSize(60, 20)
-        editButton:SetPoint("LEFT", row, "LEFT", 310, 0)
+        editButton:SetPoint("LEFT", row, "LEFT", 350, 0)
         editButton:SetText("Edit")
         row.editButton = editButton
 
@@ -407,7 +531,7 @@ function DM:CreateCombinationsTab(parent)
 
       -- Update text fields
       row.nameText:SetText(combo.name or "Unnamed")
-      row.priorityText:SetText(combo.priority or "")
+      row.orderText:SetText(combo.priority or "")
 
       -- Update color swatch
       if combo.color then
