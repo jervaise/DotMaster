@@ -73,7 +73,17 @@
     "FauxScrollFrame_Update",
     "FauxScrollFrame_OnVerticalScroll",
     "FauxScrollFrame_GetOffset",
-    "FauxScrollFrame_SetOffset"
+    "FauxScrollFrame_SetOffset",
+    "NineSliceUtil",
+    "TOOLTIP_UPDATE_TIME",
+    "LE_EXPANSION_WRATH_OF_THE_LICH_KING",
+    "CLOSE",
+    "SetDesaturation",
+    "OKAY",
+    "NOT_BOUND",
+    "CreateTexturePool",
+    "CreateFramePool",
+    "GetCVarNumberOrDefault"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {
@@ -88,6 +98,6 @@
     "utf8": "disable"
   },
   "Lua.workspace.library": [
-    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.18.2\\Annotations"
+    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.19.1\\Annotations"
   ]
 }

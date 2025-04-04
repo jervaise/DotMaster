@@ -42,10 +42,55 @@ function Components.CreateDatabaseTab(parentFrame)
   buttonContainer:SetSize(parentFrame:GetWidth() - 20, 50)
   buttonContainer:SetPoint("BOTTOM", 0, 10)
 
-  -- Find My Dots button (Now Centered)
+  -- Reset Database Button (left side)
+  local resetDbButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  resetDbButton:SetSize(150, 30)
+  resetDbButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
+  resetDbButton:SetText("Reset Database")
+
+  -- Reset database button tooltip and click handler
+  resetDbButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Reset Database", 1, 1, 1)
+    GameTooltip:AddLine("Clear all spells from the database. This cannot be undone!", 1, 0.3, 0.3, true)
+    GameTooltip:Show()
+  end)
+
+  resetDbButton:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
+  end)
+
+  resetDbButton:SetScript("OnClick", function()
+    -- Confirmation prompt
+    StaticPopupDialogs["DOTMASTER_RESET_DB_CONFIRM"] = {
+      text = "Are you sure you want to reset the database?\nThis will remove ALL spells and cannot be undone!",
+      button1 = "Yes, Reset",
+      button2 = "Cancel",
+      OnAccept = function()
+        DM:DatabaseDebug("Resetting Database from Database Tab")
+        DM:ResetDMSpellsDB()
+        DM:SaveDMSpellsDB()
+        -- Refresh relevant UI
+        if DM.GUI and DM.GUI.RefreshDatabaseTabList then
+          DM.GUI:RefreshDatabaseTabList()
+        end
+        if DM.GUI and DM.GUI.RefreshTrackedSpellTabList then
+          DM.GUI:RefreshTrackedSpellTabList()
+        end
+        DM:DatabaseDebug("Database has been reset and UI refreshed.")
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("DOTMASTER_RESET_DB_CONFIRM")
+  end)
+
+  -- Find My Dots button (right side)
   local findMyDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
   findMyDotsButton:SetSize(150, 30)
-  findMyDotsButton:SetPoint("CENTER", 0, 0) -- Changed from RIGHT to CENTER
+  findMyDotsButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
   findMyDotsButton:SetText("Find My Dots")
   findMyDotsButton:SetScript("OnClick", function()
     DM:StartFindMyDots()

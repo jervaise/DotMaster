@@ -17,7 +17,7 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "0.9.7"
+  version = "0.9.8"
 }
 
 -- Debug categories (minimal initial setup)
@@ -236,3 +236,12 @@ function DM:CompleteInitialization()
   -- At this point we would initialize everything else
   DM:DebugMsg("Addon fully initialized")
 end
+
+DM.Meta = {
+  addonName = "DotMaster",
+  displayName = "|cFFB54AC9DotMaster|r",
+  version = "0.9.8",
+  author = "Your Name",
+  website = "https://github.com/yourusername/DotMaster",
+  slash = "/dm"
+}

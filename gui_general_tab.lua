@@ -179,35 +179,193 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings()
   end)
 
-  -- Create info section below the checkboxes
+  -- Container for bottom buttons (moved up before it's referenced)
+  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
+  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
+  bottomButtonContainer:SetPoint("BOTTOM", 0, 10)
+
+  -- Create info section container with fixed height
   local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
-  infoSection:SetSize(350, 100)
-  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -190)
+  infoSection:SetSize(350, 140) -- Changed from 100px to 140px
+  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -180)
   infoSection:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 12,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    edgeFile = nil,
+    edgeSize = 0,
+    insets = { left = 0, right = 0, top = 0, bottom = 0 },
   })
-  infoSection:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
-  infoSection:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+  infoSection:SetBackdropColor(0.05, 0.05, 0.05, 0.5)
 
-  -- Add a title for the info section
-  local infoTitle = infoSection:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  infoTitle:SetPoint("TOPLEFT", infoSection, "TOPLEFT", 12, -10)
-  infoTitle:SetText("Threat Color Information")
-  infoTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
+  -- Array to store panels for easier management
+  local panels = {}
 
-  -- Add explanatory text with better formatting
-  local infoText = infoSection:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  infoText:SetPoint("TOPLEFT", infoTitle, "BOTTOMLEFT", 0, -8)
-  infoText:SetPoint("BOTTOMRIGHT", infoSection, "BOTTOMRIGHT", -12, 10)
-  infoText:SetText(
-    "Highlight targets with threat colors when they have DoTs (aggro warning for DPS, lost aggro warning for tanks)")
-  infoText:SetJustifyH("LEFT")
-  infoText:SetJustifyV("TOP")
-  infoText:SetTextColor(0.8, 0.8, 0.8)
-  infoText:SetSpacing(2) -- Add some line spacing for readability
+  -- Function to update panel positions and visibility
+  local function UpdatePanelPositions()
+    local currentOffset = 0
+
+    for i, panel in ipairs(panels) do
+      -- Reposition header
+      panel.header:ClearAllPoints()
+      panel.header:SetPoint("TOPLEFT", infoSection, "TOPLEFT", 0, -currentOffset)
+
+      -- Update offset for next panel
+      currentOffset = currentOffset + panel.headerHeight
+
+      -- Position and show/hide content
+      panel.content:ClearAllPoints()
+      panel.content:SetPoint("TOPLEFT", panel.header, "BOTTOMLEFT", 12, -4)
+
+      if panel.isExpanded then
+        panel.indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
+        panel.content:Show()
+        currentOffset = currentOffset + panel.contentHeight + 8 -- Add padding
+      else
+        panel.indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
+        panel.content:Hide()
+      end
+    end
+  end
+
+  -- Function to expand a specific panel and collapse others
+  local function ExpandPanel(panelIndex)
+    for i, panel in ipairs(panels) do
+      panel.isExpanded = (i == panelIndex)
+    end
+    UpdatePanelPositions()
+  end
+
+  -- Function to create an accordion panel
+  local function CreateAccordionPanel(title, description, isExpanded)
+    local panel = {}
+    panel.isExpanded = isExpanded
+
+    -- Create header button
+    local header = CreateFrame("Button", nil, infoSection, "BackdropTemplate")
+    header:SetSize(350, 30)
+    header:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+
+    -- Set up background
+    header:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = nil,
+      edgeSize = 0,
+      insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+    header:SetBackdropColor(0.075, 0.075, 0.075, 0.7)
+
+    -- Create expand/collapse indicator
+    local indicator = header:CreateTexture(nil, "OVERLAY")
+    indicator:SetSize(16, 16)
+    indicator:SetPoint("LEFT", header, "LEFT", 8, 0)
+    panel.indicator = indicator
+
+    -- Create title text
+    local titleText = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("LEFT", indicator, "RIGHT", 6, 0)
+    titleText:SetText(title)
+    titleText:SetTextColor(classColor.r, classColor.g, classColor.b)
+
+    -- Create content frame
+    local content = CreateFrame("Frame", nil, infoSection)
+    content:SetSize(326, 0) -- Width with margins, height set later
+
+    -- Create or update the description text
+    local descText
+
+    -- Check if this is the DoT Combinations panel (index 2)
+    if title == "DoT Combinations" then
+      -- Using a single text element with normal color
+      descText = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+      descText:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
+      descText:SetWidth(326)
+      descText:SetText(
+        "Create powerful combinations requiring two or more DoTs to be active simultaneously before applying nameplate colors. Combinations always take priority over individual spells.")
+      descText:SetJustifyH("LEFT")
+      descText:SetJustifyV("TOP")
+      descText:SetTextColor(0.8, 0.8, 0.8) -- Normal text color
+      descText:SetSpacing(2)
+
+      -- Set content height based on text
+      content:SetHeight(descText:GetStringHeight() + 8)
+    else
+      -- Regular text for other panels
+      descText = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+      descText:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
+      descText:SetWidth(326)
+      descText:SetText(description)
+      descText:SetJustifyH("LEFT")
+      descText:SetJustifyV("TOP")
+      descText:SetTextColor(0.8, 0.8, 0.8)
+      descText:SetSpacing(2)
+
+      -- Set content height based on text
+      content:SetHeight(descText:GetStringHeight() + 8)
+    end
+
+    -- Store panel elements
+    panel.header = header
+    panel.content = content
+    panel.headerHeight = header:GetHeight()
+    panel.contentHeight = content:GetHeight()
+
+    -- Add click handler
+    header:SetScript("OnClick", function()
+      -- Toggle this panel
+      panel.isExpanded = not panel.isExpanded
+
+      -- If expanding, collapse others
+      if panel.isExpanded then
+        for i, otherPanel in ipairs(panels) do
+          if otherPanel ~= panel then
+            otherPanel.isExpanded = false
+          end
+        end
+      end
+
+      UpdatePanelPositions()
+    end)
+
+    return panel
+  end
+
+  -- Create the three info panels
+  local threatColorPanel = CreateAccordionPanel(
+    "Threat Color Information",
+    "Automatically applies threat colors to nameplates with your DoTs for instant combat feedback (shows aggro warnings for DPS, lost aggro alerts for tanks)",
+    true -- First panel expanded by default
+  )
+  table.insert(panels, threatColorPanel)
+
+  local combinationsPanel = CreateAccordionPanel(
+    "DoT Combinations",
+    "", -- Description handled specially inside the CreateAccordionPanel function
+    false
+  )
+  table.insert(panels, combinationsPanel)
+
+  local borderModePanel = CreateAccordionPanel(
+    "Border Color Mode",
+    "DotMaster can modify nameplate borders instead of the entire nameplate color. This less intrusive option preserves other nameplate visuals while still providing DoT tracking.",
+    false
+  )
+  table.insert(panels, borderModePanel)
+
+  -- Initial positioning update
+  UpdatePanelPositions()
+
+  -- Ensure the info section doesn't overflow its container
+  infoSection:SetClipsChildren(true)
+
+  -- Add a warning about Plater integration (moved to bottom button area)
+  local platerWarning = bottomButtonContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  platerWarning:SetPoint("CENTER", bottomButtonContainer, "CENTER", 0, 0)
+  platerWarning:SetWidth(350)
+  platerWarning:SetText(
+    "WARNING: If using Plater, disable any Plater scripts or mods that modify nameplate colors for proper DotMaster functionality.")
+  platerWarning:SetTextColor(1, 0.82, 0) -- Gold text for warning
+  platerWarning:SetJustifyH("CENTER")
+  platerWarning:SetJustifyV("TOP")
+  platerWarning:SetSpacing(2)
 
   -- Register for PLAYER_ENTERING_WORLD to restore checkbox texts after loading screens
   local restoreTextFrame = CreateFrame("Frame")
@@ -223,76 +381,4 @@ function DM:CreateGeneralTab(parent)
 
   -- Store the function to allow manual restoration
   DM.RestoreCheckboxTexts = RestoreCheckboxTexts
-
-  -- Container for bottom buttons
-  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
-  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
-  bottomButtonContainer:SetPoint("BOTTOM", 0, 10)
-
-  -- Reset Database Button (left side)
-  local resetDbButton = CreateFrame("Button", nil, bottomButtonContainer, "UIPanelButtonTemplate")
-  resetDbButton:SetSize(150, 30)
-  resetDbButton:SetPoint("RIGHT", bottomButtonContainer, "CENTER", -5, 0)
-  resetDbButton:SetText("Reset Database")
-
-  -- Debug Console Button (right side)
-  local debugConsoleButton = CreateFrame("Button", nil, bottomButtonContainer, "UIPanelButtonTemplate")
-  debugConsoleButton:SetSize(150, 30)
-  debugConsoleButton:SetPoint("LEFT", bottomButtonContainer, "CENTER", 5, 0)
-  debugConsoleButton:SetText("Debug Console")
-  debugConsoleButton:SetScript("OnClick", function()
-    -- Toggle debug window visibility
-    DM.Debug:ToggleWindow()
-
-    -- Position the debug window next to the main UI if it's visible
-    if DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown() then
-      -- Get the parent frame (DotMasterOptionsFrame)
-      local optionsFrame = parent:GetParent()
-      if optionsFrame then
-        -- Clear any previous anchor points
-        DM.GUI.debugFrame:ClearAllPoints()
-        -- Anchor the debug window's top right to the main UI's top left
-        DM.GUI.debugFrame:SetPoint("TOPRIGHT", optionsFrame, "TOPLEFT", -5, 0)
-      end
-    end
-  end)
-
-  -- Add tooltip
-  resetDbButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Reset Database", 1, 1, 1)
-    GameTooltip:AddLine("Clear all spells from the database. This cannot be undone!", 1, 0.3, 0.3, true)
-    GameTooltip:Show()
-  end)
-
-  resetDbButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
-
-  resetDbButton:SetScript("OnClick", function()
-    -- Confirmation prompt (Copied from Database Tab)
-    StaticPopupDialogs["DOTMASTER_RESET_DB_CONFIRM"] = {
-      text = "Are you sure you want to reset the database?\nThis will remove ALL spells and cannot be undone!",
-      button1 = "Yes, Reset",
-      button2 = "Cancel",
-      OnAccept = function()
-        DM:DatabaseDebug("Resetting Database from General Tab")
-        DM:ResetDMSpellsDB()
-        DM:SaveDMSpellsDB()
-        -- Refresh relevant UI if open
-        if DM.GUI and DM.GUI.RefreshDatabaseTabList then
-          DM.GUI:RefreshDatabaseTabList()
-        end
-        if DM.GUI and DM.GUI.RefreshTrackedSpellTabList then
-          DM.GUI:RefreshTrackedSpellTabList()
-        end
-        DM:DatabaseDebug("Database has been reset and UI refreshed.")
-      end,
-      timeout = 0,
-      whileDead = true,
-      hideOnEscape = true,
-      preferredIndex = 3,
-    }
-    StaticPopup_Show("DOTMASTER_RESET_DB_CONFIRM")
-  end)
 end

@@ -75,20 +75,6 @@ function DM:CreateCombinationsTab(parent)
   local container = CreateFrame("Frame", nil, parent)
   container:SetAllPoints(parent)
 
-  -- Add tab shown/hidden hooks to close dialogs when tab is changed
-  container:SetScript("OnHide", function()
-    -- Close any open dialogs when the combinations tab is hidden
-    if DM.GUI.combinationDialog and DM.GUI.combinationDialog:IsShown() then
-      DM.GUI.combinationDialog:Hide()
-      DM:DebugMsg("Closed combination dialog because combinations tab was hidden")
-    end
-
-    if DM.GUI.comboSpellSelectionFrame and DM.GUI.comboSpellSelectionFrame:IsShown() then
-      DM.GUI.comboSpellSelectionFrame:Hide()
-      DM:DebugMsg("Closed spell selection window because combinations tab was hidden")
-    end
-  end)
-
   -- Create the info area at the top of the tab
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     container,
@@ -122,15 +108,6 @@ function DM:CreateCombinationsTab(parent)
   headerBg:SetAllPoints()
   headerBg:SetColorTexture(0, 0, 0, 0.6) -- Dark semi-transparent background to match tracked spells
 
-  -- Define standardized column positions that match the tracked spells tab exactly
-  -- These values must match the gui_tracked_spells_tab.lua positions
-  local COLUMN_POSITIONS = {
-    NAME = 20,    -- Moved 10px left (from 30)
-    COLOR = 240,  -- Moved 30px right (from 210)
-    ORDER = 310,  -- Moved 15px right (from 295)
-    ACTIONS = 367 -- Moved 7px right (from 360)
-  }
-
   -- Create header labels with similar style to tracked spells tab
   local function CreateHeaderLabel(text, xPosition)
     local label = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -140,11 +117,11 @@ function DM:CreateCombinationsTab(parent)
     return label
   end
 
-  -- Header text with exact positioning
-  CreateHeaderLabel("COMBINATION NAME", COLUMN_POSITIONS.NAME - 10 + 20 - 25) -- Move COMBINATION NAME 10px left originally, now 20px right from that, then 25px left
-  CreateHeaderLabel("COLOR", COLUMN_POSITIONS.COLOR + 15 + 15 + 2 - 2)        -- Move COLOR 15px right originally, now 15px more to the right, plus 2px more, then 2px left
-  CreateHeaderLabel("ORDER", COLUMN_POSITIONS.ORDER + 7 - 1)                  -- Move ORDER 7px right originally, now 1px left from that
-  CreateHeaderLabel("ACTIONS", COLUMN_POSITIONS.ACTIONS)
+  -- Header text - match tracked spells positioning
+  CreateHeaderLabel("COMBINATION NAME", 10)
+  CreateHeaderLabel("COLOR", 240)
+  CreateHeaderLabel("ORDER", 290)
+  CreateHeaderLabel("ACTIONS", 350)
 
   -- Create a scrollable list for combinations
   local scrollFrame = CreateFrame("ScrollFrame", nil, listFrame, "UIPanelScrollFrameTemplate")
@@ -181,7 +158,7 @@ function DM:CreateCombinationsTab(parent)
   -- Add New Combination button
   local addButton = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
   addButton:SetPoint("BOTTOM", contentFrame, "BOTTOM", 0, 10)
-  addButton:SetSize(150, 30)                                  -- Changed from 200 to 150 to match Find My Dots button
+  addButton:SetSize(200, 25)
   addButton:SetText("Create New Combination")
   addButton:SetPoint("CENTER", contentFrame, "BOTTOM", 0, 10) -- Center align at bottom
 
@@ -195,7 +172,7 @@ function DM:CreateCombinationsTab(parent)
   -- Function to update the layout when combinations are expanded/collapsed
   local function UpdateCombinationsLayout()
     local yOffset = 2         -- Start with small offset like in tracked spells tab
-    local rowHeight = 40      -- Combination row height (changed from 30 to 40)
+    local rowHeight = 30      -- Combination row height
     local spellRowHeight = 25 -- Spell row height
     local spacing = 2         -- Small spacing between rows
 
@@ -357,8 +334,8 @@ function DM:CreateCombinationsTab(parent)
     end)
 
     -- Create or update rows for each combination
-    local rowHeight = 40 -- Changed from 30 to 40 to match class header height
-    local yOffset = 2    -- Changed from 0 to 2 to match tracked spells tab's spacing
+    local rowHeight = 30
+    local yOffset = 2 -- Changed from 0 to 2 to match tracked spells tab's spacing
 
     -- Initialize tracking arrays for rows and spell frames
     local allRows = {}
@@ -388,7 +365,7 @@ function DM:CreateCombinationsTab(parent)
         -- Collapse/Expand Indicator
         local indicator = row:CreateTexture(nil, "OVERLAY")
         indicator:SetSize(16, 16)
-        indicator:SetPoint("LEFT", row, "LEFT", 10, 0) -- Positioned 10px from left edge
+        indicator:SetPoint("LEFT", row, "LEFT", 5, 0)
 
         -- Store ID and data for later use
         row.comboID = id
@@ -418,26 +395,110 @@ function DM:CreateCombinationsTab(parent)
 
         -- Name text - similar to class names in tracked spells tab
         local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        nameText:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.NAME + 15, 0) -- Moved 15px right
-        nameText:SetWidth(140)                                                -- Width for name text
+        nameText:SetPoint("LEFT", row, "LEFT", 28, 0) -- Shifted right to make room for indicator
+        nameText:SetWidth(140)                        -- Reduced width to accommodate indicator
         nameText:SetJustifyH("LEFT")
         row.nameText = nameText
 
         -- Initialize spellFrames array to track child frames
         row.spellFrames = {}
 
-        -- Color swatch - positioned at COLOR column
+        -- Add arrow buttons exactly as in tracked spells tab
+        -- First down arrow, then up arrow (in reverse order from tracked spells)
+        local downArrow = CreateFrame("Button", nil, row)
+        downArrow:SetSize(20, 20)
+        downArrow:SetPoint("RIGHT", row, "RIGHT", -140, 0) -- Position matching tracked spells tab
+        downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+        downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+        downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+        -- Disable down arrow for last item
+        if index == #sortedCombos then
+          downArrow:Disable()
+          downArrow:SetAlpha(0.5)
+        else
+          downArrow:Enable()
+          downArrow:SetAlpha(1.0)
+        end
+
+        -- Down arrow click handler
+        downArrow:SetScript("OnClick", function()
+          if index < #sortedCombos then
+            local nextComboInfo = sortedCombos[index + 1]
+            local currentComboID = comboInfo.id
+            local nextComboID = nextComboInfo.id
+
+            -- Get current priorities
+            local currentPriority = DM.combinations.data[currentComboID].priority
+            local nextPriority = DM.combinations.data[nextComboID].priority
+
+            -- Swap priorities
+            DM.combinations.data[currentComboID].priority = nextPriority
+            DM.combinations.data[nextComboID].priority = currentPriority
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+              currentComboID, nextPriority, nextComboID, currentPriority))
+
+            -- Refresh the combinations list
+            UpdateCombinationsList()
+          end
+        end)
+
+        -- Up arrow (positioned to the right of down arrow with 2px gap)
+        local upArrow = CreateFrame("Button", nil, row)
+        upArrow:SetSize(20, 20)
+        upArrow:SetPoint("RIGHT", downArrow, "LEFT", -2, 0) -- 2px gap between arrows
+        upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
+        upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
+        upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+        -- Disable up arrow for first item
+        if index == 1 then
+          upArrow:Disable()
+          upArrow:SetAlpha(0.5)
+        else
+          upArrow:Enable()
+          upArrow:SetAlpha(1.0)
+        end
+
+        -- Up arrow click handler
+        upArrow:SetScript("OnClick", function()
+          if index > 1 then
+            local prevComboInfo = sortedCombos[index - 1]
+            local currentComboID = comboInfo.id
+            local prevComboID = prevComboInfo.id
+
+            -- Get current priorities
+            local currentPriority = DM.combinations.data[currentComboID].priority
+            local prevPriority = DM.combinations.data[prevComboID].priority
+
+            -- Swap priorities
+            DM.combinations.data[currentComboID].priority = prevPriority
+            DM.combinations.data[prevComboID].priority = currentPriority
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+              currentComboID, prevPriority, prevComboID, currentPriority))
+
+            -- Refresh the combinations list
+            UpdateCombinationsList()
+          end
+        end)
+
+        -- Color swatch
         local colorSwatch = CreateFrame("Button", nil, row)
         colorSwatch:SetSize(20, 20)
-        colorSwatch:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.COLOR + 35, 0) -- Moved 35px right from COLOR position
-        colorSwatch:SetFrameLevel(row:GetFrameLevel() + 5)                        -- Increase frame level to appear above row
+        colorSwatch:SetPoint("LEFT", row, "LEFT", 240, 0)
 
         local colorTexture = colorSwatch:CreateTexture(nil, "OVERLAY")
         colorTexture:SetAllPoints()
         row.colorTexture = colorTexture
         row.colorSwatch = colorSwatch
 
-        -- Add click handler for the color swatch
+        -- Add click handler for the color swatch that was missing
         colorSwatch:SetScript("OnClick", function()
           -- Store the combo ID for reference
           local comboID = row.comboID
@@ -530,131 +591,7 @@ function DM:CreateCombinationsTab(parent)
           end
         end)
 
-        -- Order buttons - positioned at ORDER column
-        -- First DOWN arrow at ORDER position, then UP arrow (same as tracked spells tab)
-        local downArrow = CreateFrame("Button", nil, row)
-        downArrow:SetSize(20, 20)
-        downArrow:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.ORDER, 0) -- Position at ORDER column
-        downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
-        downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
-        downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        downArrow:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-
-        -- Disable down arrow for last item
-        if index == #sortedCombos then
-          downArrow:Disable()
-          downArrow:SetAlpha(0.5)
-        else
-          downArrow:Enable()
-          downArrow:SetAlpha(1.0)
-        end
-
-        -- Down arrow click handler
-        downArrow:SetScript("OnClick", function()
-          if index < #sortedCombos then
-            local nextComboInfo = sortedCombos[index + 1]
-            local currentComboID = comboInfo.id
-            local nextComboID = nextComboInfo.id
-
-            -- Get current priorities
-            local currentPriority = DM.combinations.data[currentComboID].priority
-            local nextPriority = DM.combinations.data[nextComboID].priority
-
-            -- Swap priorities
-            DM.combinations.data[currentComboID].priority = nextPriority
-            DM.combinations.data[nextComboID].priority = currentPriority
-
-            -- Save changes to database
-            DM:SaveCombinationsDB()
-            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
-              currentComboID, nextPriority, nextComboID, currentPriority))
-
-            -- Refresh the combinations list
-            UpdateCombinationsList()
-          end
-        end)
-
-        -- Up arrow (positioned to the right of down arrow with 2px gap)
-        local upArrow = CreateFrame("Button", nil, row)
-        upArrow:SetSize(20, 20)
-        upArrow:SetPoint("LEFT", downArrow, "RIGHT", 2, 0) -- 2px gap between arrows
-        upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
-        upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
-        upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        upArrow:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-
-        -- Disable up arrow for first item
-        if index == 1 then
-          upArrow:Disable()
-          upArrow:SetAlpha(0.5)
-        else
-          upArrow:Enable()
-          upArrow:SetAlpha(1.0)
-        end
-
-        -- Up arrow click handler
-        upArrow:SetScript("OnClick", function()
-          if index > 1 then
-            local prevComboInfo = sortedCombos[index - 1]
-            local currentComboID = comboInfo.id
-            local prevComboID = prevComboInfo.id
-
-            -- Get current priorities
-            local currentPriority = DM.combinations.data[currentComboID].priority
-            local prevPriority = DM.combinations.data[prevComboID].priority
-
-            -- Swap priorities
-            DM.combinations.data[currentComboID].priority = prevPriority
-            DM.combinations.data[prevComboID].priority = currentPriority
-
-            -- Save changes to database
-            DM:SaveCombinationsDB()
-            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
-              currentComboID, prevPriority, prevComboID, currentPriority))
-
-            -- Refresh the combinations list
-            UpdateCombinationsList()
-          end
-        end)
-
-        -- Action buttons - positioned at ACTIONS column
-        -- Edit button positioned at ACTIONS column
-        local editButton = CreateFrame("Button", nil, row)
-        editButton:SetSize(20, 20)
-        editButton:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.ACTIONS, 0) -- Align with ACTIONS header
-        editButton:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
-        editButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        editButton:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-        row.editButton = editButton
-
-        -- Add tooltip to edit button
-        editButton:SetScript("OnEnter", function(self)
-          GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-          GameTooltip:SetText("Edit Combination")
-          GameTooltip:Show()
-        end)
-        editButton:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end)
-
-        -- Delete button - positioned after edit button
-        local deleteButton = CreateFrame("Button", nil, row)
-        deleteButton:SetSize(20, 20)
-        deleteButton:SetPoint("LEFT", editButton, "RIGHT", 5, 0) -- Position relative to edit button
-        deleteButton:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
-        deleteButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        deleteButton:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-        row.deleteButton = deleteButton
-
-        -- Add tooltip to delete button
-        deleteButton:SetScript("OnEnter", function(self)
-          GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-          GameTooltip:SetText("Delete Combination")
-          GameTooltip:Show()
-        end)
-        deleteButton:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end)
+        -- Delete button\r\n        local deleteButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")\r\n        deleteButton:SetSize(45, 22)\r\n        deleteButton:SetPoint("LEFT", row, "LEFT", 350, 0)\r\n        deleteButton:SetText("Delete")\r\n        row.deleteButton = deleteButton\r\n\r\n        -- Edit button\r\n        local editButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")\r\n        editButton:SetSize(60, 20)\r\n        editButton:SetPoint("LEFT", deleteButton, "RIGHT", 5, 0)\r\n        editButton:SetText("Edit")\r\n        row.editButton = editButton
 
         combinationRows[index] = row
 
@@ -875,7 +812,7 @@ function DM:CreateCombinationsTab(parent)
             end
 
             -- Add indent to indicate this is a child item
-            local indent = 10 -- Use fixed small indentation instead of aligning with name column
+            local indent = 25
 
             -- Spell Icon
             local icon = spellFrame:CreateTexture(nil, "ARTWORK")

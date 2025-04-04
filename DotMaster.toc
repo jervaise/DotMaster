@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Track your DoTs on enemy nameplates
 ## Author: Your Name
-## Version: 0.9.7
+## Version: 0.9.8
 ## SavedVariables: DotMasterDB
 ## X-Category: Combat
 ## X-License: All Rights Reserved

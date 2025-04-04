@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.8 (2023-06-15)
+- Improved General tab UI with accordion-style information panels
+- Adjusted combination bars height to 40px for consistency with class headers
+- Removed Debug Console button (now only accessible via /dmdebug command)
+- Added Find My Dots button to the Tracked Spells tab
+- Fixed various UI layout and spacing issues
+- Improved warning message visibility
+
 ### Version 0.9.7 (2023-04-18)
 
 #### Fixed

@@ -58,64 +58,30 @@ function Components.CreateTrackedSpellsTab(parentFrame)
   buttonContainer:SetSize(parentFrame:GetWidth() - 20, 50)
   buttonContainer:SetPoint("BOTTOM", 0, 10)
 
-  -- Add from Database button (formerly Find My Dots)
+  -- Add from Database button
   local addFromDatabaseButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
   addFromDatabaseButton:SetSize(150, 30)
-  addFromDatabaseButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
+  addFromDatabaseButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
   addFromDatabaseButton:SetText("Add from Database")
+
   addFromDatabaseButton:SetScript("OnClick", function()
-    -- Simulate clicking the Database tab (ID 3)
-    if _G["DotMasterTab3"] then
-      _G["DotMasterTab3"]:Click()
+    -- Try to find and click on the Database tab
+    local databaseTabButton = _G["DotMasterTab4"]
+    if databaseTabButton and databaseTabButton.Click then
+      databaseTabButton:Click()
       DM:GUIDebug("Switched to Database tab via 'Add from Database' button")
     else
-      DM:GUIDebug("ERROR: Could not find Database tab button (DotMasterTab3)")
+      DM:GUIDebug("ERROR: Could not find Database tab button (DotMasterTab4)")
     end
   end)
 
-  -- Untrack All button
-  local untrackAllButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
-  untrackAllButton:SetSize(150, 30)
-  untrackAllButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
-  untrackAllButton:SetText("Untrack All")
-
-  -- Add tooltip
-  untrackAllButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Untrack All Spells", 1, 1, 1)
-    GameTooltip:AddLine("Remove all spells from the tracked list", 1, 0.3, 0.3, true)
-    GameTooltip:Show()
-  end)
-
-  untrackAllButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
-
-  untrackAllButton:SetScript("OnClick", function()
-    -- Confirmation prompt
-    StaticPopupDialogs["DOTMASTER_UNTRACK_ALL_CONFIRM"] = {
-      text = "Are you sure you want to untrack all spells?\nThis will remove all spells from tracking.",
-      button1 = "Yes, Untrack All",
-      button2 = "Cancel",
-      OnAccept = function()
-        -- Set tracked=0 for all spells
-        for spellID, config in pairs(DM.dmspellsdb) do
-          config.tracked = 0
-        end
-
-        DM:SaveDMSpellsDB()
-
-        -- Refresh the tracked spells tab
-        GUI:RefreshTrackedSpellTabList()
-
-        DM:DatabaseDebug("All spells have been untracked.")
-      end,
-      timeout = 0,
-      whileDead = true,
-      hideOnEscape = true,
-      preferredIndex = 3,
-    }
-    StaticPopup_Show("DOTMASTER_UNTRACK_ALL_CONFIRM")
+  -- Find My Dots button (right side)
+  local findMyDotsButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
+  findMyDotsButton:SetSize(150, 30)
+  findMyDotsButton:SetPoint("LEFT", buttonContainer, "CENTER", 5, 0)
+  findMyDotsButton:SetText("Find My Dots")
+  findMyDotsButton:SetScript("OnClick", function()
+    DM:StartFindMyDots()
   end)
 
   -- Create Header Frame (Centered, Fixed Width 430px)
@@ -161,7 +127,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
   CreateHeaderLabel("SPELL", "LEFT", COLUMN_POSITIONS.ID - 10)
   CreateHeaderLabel("COLOR", "LEFT", colorSwatchStart + (swatchWidth / 2) - 15) -- Center with color swatch
   CreateHeaderLabel("ORDER", "CENTER", arrowCenter + 5)                         -- Center with arrows, moved slightly right
-  CreateHeaderLabel("TRACKED", "CENTER", untrackStart + (untrackWidth / 2) - 2) -- Center with untrack button, moved slightly left
+  CreateHeaderLabel("TRACKED", "CENTER", untrackStart + (untrackWidth / 2) + 1) -- Center with untrack button, moved 3px right
 
   -- Main scroll frame setup
   local scrollFrame = CreateFrame("ScrollFrame", nil, parentFrame, "UIPanelScrollFrameTemplate")
