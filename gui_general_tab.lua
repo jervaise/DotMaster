@@ -44,7 +44,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create a styled content panel with border
   local contentPanel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-  contentPanel:SetSize(410, 450) -- Increased height from 350 to 450
+  contentPanel:SetSize(410, 420) -- Reduced height from 450 to 420 (30px less)
   contentPanel:SetPoint("TOP", infoArea, "BOTTOM", 0, -15)
 
   -- Apply a subtle backdrop
