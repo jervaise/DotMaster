@@ -63,12 +63,12 @@ function DM:CreateGeneralTab(parent)
 
   -- Create an image and settings layout with flex positioning
   local imagePanel = CreateFrame("Frame", nil, contentPanel)
-  imagePanel:SetSize(150, 150)
+  imagePanel:SetSize(150, 170) -- Increased from 150x150 to 150x170 to fit the checkbox area
   imagePanel:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 30, -25)
 
   -- Add panda image with a subtle border
   local imageBorder = CreateFrame("Frame", nil, imagePanel, "BackdropTemplate")
-  imageBorder:SetSize(128, 128)
+  imageBorder:SetSize(140, 140) -- Increased from 128x128 to 140x140
   imageBorder:SetPoint("CENTER", imagePanel, "CENTER")
   imageBorder:SetBackdrop({
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -78,7 +78,7 @@ function DM:CreateGeneralTab(parent)
   imageBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.6)
 
   local pandaImage = imageBorder:CreateTexture(nil, "ARTWORK")
-  pandaImage:SetSize(110, 110)
+  pandaImage:SetSize(120, 120) -- Increased from 110x110 to 120x120
   pandaImage:SetPoint("CENTER")
   pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
@@ -145,7 +145,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create minimap checkbox
   local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
-    checkboxContainer, enableCheckbox, -8, "Show Minimap Icon")
+    checkboxContainer, enableCheckbox, -5, "Show Minimap Icon")
   minimapCheckbox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
   minimapCheckbox:SetScript("OnClick", function(self)
     if not DotMasterDB or not DotMasterDB.minimap then return end
@@ -166,7 +166,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create force threat color checkbox
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
-    checkboxContainer, minimapCheckbox, -8, "Force Threat Color")
+    checkboxContainer, minimapCheckbox, -5, "Force Threat Color")
   if DM.settings == nil then DM.settings = {} end
   if DM.settings.forceColor == nil then DM.settings.forceColor = false end
   forceColorCheckbox:SetChecked(DM.settings.forceColor)
@@ -181,7 +181,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create border-only checkbox and thickness control together
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    checkboxContainer, forceColorCheckbox, -8, "Border-only")
+    checkboxContainer, forceColorCheckbox, -5, "Border-only")
   if DM.settings.borderOnly == nil then DM.settings.borderOnly = false end
   borderOnlyCheckbox:SetChecked(DM.settings.borderOnly)
 
@@ -253,9 +253,34 @@ function DM:CreateGeneralTab(parent)
     thicknessContainer:Hide()
   end
 
+  -- Set up the border-only checkbox handler
+  borderOnlyCheckbox:SetScript("OnClick", function(self)
+    DM.settings.borderOnly = self:GetChecked()
+    DM:PrintMessage("Border-only " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
+
+    -- Show/hide the thickness control based on checkbox state
+    if thicknessContainer then
+      if self:GetChecked() then
+        thicknessContainer:Show()
+      else
+        thicknessContainer:Hide()
+      end
+    end
+
+    if DM.enabled then
+      DM:UpdateAllNameplates()
+    end
+    DM:SaveSettings()
+  end)
+
+  -- Container for bottom buttons
+  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
+  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
+  bottomButtonContainer:SetPoint("BOTTOM", 0, 40) -- 30px up from bottom
+
   -- Add flashing checkbox
   local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
-    checkboxContainer, borderOnlyCheckbox, -8, "Expiry Flash")
+    checkboxContainer, borderOnlyCheckbox, -5, "Expiry Flash") -- Changed from -8 to -5
   if DM.settings.flashExpiring == nil then DM.settings.flashExpiring = false end
   flashingCheckbox:SetChecked(DM.settings.flashExpiring)
 
@@ -329,35 +354,10 @@ function DM:CreateGeneralTab(parent)
     DM:SaveSettings()
   end)
 
-  -- Set up the border-only checkbox handler
-  borderOnlyCheckbox:SetScript("OnClick", function(self)
-    DM.settings.borderOnly = self:GetChecked()
-    DM:PrintMessage("Border-only " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
-
-    -- Show/hide the thickness control based on checkbox state
-    if thicknessContainer then
-      if self:GetChecked() then
-        thicknessContainer:Show()
-      else
-        thicknessContainer:Hide()
-      end
-    end
-
-    if DM.enabled then
-      DM:UpdateAllNameplates()
-    end
-    DM:SaveSettings()
-  end)
-
-  -- Container for bottom buttons (moved up before it's referenced)
-  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
-  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
-  bottomButtonContainer:SetPoint("BOTTOM", 0, 10)
-
   -- Create info section container with fixed height
   local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
   infoSection:SetSize(350, 140)                             -- Maintaining the 140px height
-  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -190) -- Changed from -220 to -190 to move it up by 30px
+  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -220) -- Changed from -190 to -220 (30px down)
   infoSection:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = nil,
