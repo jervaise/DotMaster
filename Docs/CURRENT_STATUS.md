@@ -5,12 +5,13 @@
 The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on enemy nameplates and providing visual feedback to the player.
 
 - **Release Status**: Beta
-- **Current Version**: 1.0.0
+- **Current Version**: 1.0.0 (Beta)
 - **Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Branches
 
 - **main**: Stable release (v1.0.0)
+- **beta**: Current beta release (v1.0.0)
 - **develop**: Active development branch (v1.0.0)
 - **feature/X**: Various feature branches for specific components
 
@@ -18,16 +19,17 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 1.0.0
-- **Status**: Active Development
-- **Last Updated**: July 15, 2023
+- **Current Version**: 1.0.0 (Beta)
+- **Status**: Beta Testing
+- **Last Updated**: April 4, 2024
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 1.0.0
+- **Current Version**: 1.0.0 (Beta)
 - **Branch Status**:
   - **main**: Contains the latest stable release (v1.0.0)
+  - **beta**: Current beta release (v1.0.0)
   - **develop**: Active development branch (v1.0.0)
     - This branch is always used for in-game testing
 
@@ -37,7 +39,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 |---------|--------|-------|
 | Core Framework | ✅ STABLE | Reverted to v0.4.0 stable codebase |
 | Nameplate Tracking | ✅ STABLE | Visual indicators, duration, position |
-| Border-only Coloring | ✅ NEW | Option to color just the nameplate border |
+| Border-only Coloring | ✅ STABLE | Option to color just the nameplate border |
 | Find My Dots | ✅ STABLE | Window showing all active DoTs grouped by target |
 | Spell Database | ✅ STABLE | Pre-defined database of DoT spells for all classes |
 | Configuration UI | ✅ STABLE | Options panel with profile support |
@@ -50,13 +52,10 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 
 ## Current Development Focus
 
+- Gathering feedback from beta testers on version 1.0.0
 - Ensuring compatibility with World of Warcraft 11.1.0 (The War Within)
-- Adapting to UI changes and new nameplate implementation in The War Within
-- Improving the addon initialization process and SavedVariables handling
-- Testing the new database system with various spell data
-- Ensuring proper loading sequence for saved data
-- Enhancing debug capabilities for better troubleshooting
-- Perfecting the new border coloring feature
+- Fixing any issues reported during beta testing
+- Preparing for release candidate after beta period
 
 ## Known Issues
 
@@ -66,17 +65,19 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 
 ## Next Development Steps
 
-1. Further refine the database structure for better performance
+1. Address beta feedback and fix reported issues
 2. Optimize nameplate processing for improved framerates
 3. Enhance UI responsiveness in high-stress scenarios
 4. Add more comprehensive error recovery mechanisms
 5. Implement more user-requested quality of life features
-6. Add GUI controls for the border-only coloring feature
+6. Prepare for release candidate and final release
 
 ## Recent Changes
 
 The most significant recent changes include:
 
+- ✅ **Beta Release**: Released version 1.0.0 as beta on April 4, 2024
+- ✅ **Release Documentation**: Added comprehensive release documentation
 - ✅ **Border-only Coloring**: Added option to color just the nameplate border instead of the entire nameplate
 - ✅ **Configurable Border Thickness**: Added control for border thickness when using border-only coloring
 - ✅ **Improved Plater Integration**: Enhanced compatibility with Plater's border system
@@ -86,15 +87,6 @@ The most significant recent changes include:
 - ✅ **Player Class Coloring**: Main UI now uses player's class color for border and title text
 - ✅ **Enhanced Search**: Improved database tab search to include class and spec names
 - ✅ **Development Features**: Added auto-opening debug console option in development environment
-- ✅ **Plater Integration**: Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
-- ✅ **Color Picker Functionality**: Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
-- ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks
-
-Prior to that:
-- ✅ **Tracked Spells UI Redesign**: Completely redesigned the tracked spells interface with improved usability, better layout, and immediate save functionality
-- ✅ **WoW 11.1.0 Update**: Started compatibility updates for The War Within expansion
-- ✅ **TOC Update**: Updated Interface version to 110100 for The War Within
-- ✅ **Initialization System Refactoring**: Implemented bootstrap.lua for proper SavedVariables loading sequence
 
 Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 
@@ -105,20 +97,20 @@ Refer to the [CHANGELOG.md](CHANGELOG.md) for a more detailed list of changes.
 - Testing Environments: Solo play, Dungeons, Raids, World content
 - Test Classes: Warlock, Shadow Priest, Affliction Warlock
 
-## Version 0.6.9
+## Beta Testing Program
 
-The addon has been updated with significant UI improvements to the Tracked Spells tab. The new design addresses issues with scrollbar overlapping, improves element spacing and alignment, and enhances the overall user experience. Key improvements include:
+The beta testing phase for version 1.0.0 runs from April 4, 2024 to May 1, 2024. During this period:
 
-1. **Fixed scrollbar overlap** - Properly accounted for scrollbar width in all calculations
-2. **Improved spacing and proportions** - Optimized column widths and spacing for better readability
-3. **Clearer terminology** - Renamed elements for better clarity ("Untrack" → "Tracking"/"Remove")
-4. **Better alignment** - Centered elements and improved alignment of all UI components
-5. **Enhanced spell name display** - Increased the width allocation for spell names to prevent truncation
+1. Beta testers can access the addon via the beta branch
+2. Feedback and bug reports should be submitted via GitHub issues
+3. Weekly updates will be provided based on beta feedback
+4. A release candidate will be prepared after the beta period
 
-These improvements follow professional UI/UX design principles, creating a more polished and user-friendly interface.
+For more information on the beta testing program, see [RELEASE.md](RELEASE.md).
 
 ## Upcoming Tasks
 
+- Address beta feedback and fix reported issues
 - Continue enhancing the Find My Dots window UI
 - Implement spell auto-detection improvements
 - Add additional spell database entries

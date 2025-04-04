@@ -2,8 +2,20 @@
 
 An addon for World of Warcraft that helps track your DoTs (Damage over Time effects).
 
-**Current Version: 1.0.0**
+**Current Version: 1.0.0 (Beta)**
 **Compatible with World of Warcraft: The War Within (11.1.0)**
+
+## Beta Release
+
+DotMaster 1.0.0 is now in beta! The beta testing period runs from April 4, 2024 to May 1, 2024.
+
+### How to Access Beta
+
+1. Clone the repository: `git clone https://github.com/jervaise/DotMaster.git`
+2. Switch to the beta branch: `git checkout beta`
+3. Copy the DotMaster folder to your `World of Warcraft\_retail_\Interface\AddOns\` directory
+
+For more information about the beta, see [Docs/RELEASE.md](Docs/RELEASE.md).
 
 ## Features
 
@@ -83,6 +95,7 @@ All detailed documentation is available in the `Docs/` directory:
 - **Project Scope**: [Docs/PROJECT_SCOPE.md](Docs/PROJECT_SCOPE.md)
 - **Current Status**: [Docs/CURRENT_STATUS.md](Docs/CURRENT_STATUS.md)
 - **Changelog**: [Docs/CHANGELOG.md](Docs/CHANGELOG.md)
+- **Release Information**: [Docs/RELEASE.md](Docs/RELEASE.md)
 
 ### Required Libraries
 
@@ -97,6 +110,15 @@ DotMaster depends on the following libraries (included in the Libs directory):
 1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
 2. **Performance**: May experience frame drops during combat with many targets
 3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
+
+## Reporting Issues
+
+Please report any issues found during beta testing by:
+
+1. Opening an issue on GitHub
+2. Including detailed steps to reproduce the issue
+3. Attaching any relevant error messages or screenshots
+4. Mentioning your WoW version, other installed addons, and system specs
 
 ## License
 
