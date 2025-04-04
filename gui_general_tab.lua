@@ -44,7 +44,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create a styled content panel with border
   local contentPanel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-  contentPanel:SetSize(410, 350)
+  contentPanel:SetSize(410, 450) -- Increased height from 350 to 450
   contentPanel:SetPoint("TOP", infoArea, "BOTTOM", 0, -15)
 
   -- Apply a subtle backdrop
@@ -145,7 +145,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create minimap checkbox
   local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
-    checkboxContainer, enableCheckbox, -18, "Show Minimap Icon")
+    checkboxContainer, enableCheckbox, -8, "Show Minimap Icon")
   minimapCheckbox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
   minimapCheckbox:SetScript("OnClick", function(self)
     if not DotMasterDB or not DotMasterDB.minimap then return end
@@ -166,13 +166,101 @@ function DM:CreateGeneralTab(parent)
 
   -- Create force threat color checkbox
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
-    checkboxContainer, minimapCheckbox, -18, "Force Threat Color")
+    checkboxContainer, minimapCheckbox, -8, "Force Threat Color")
   if DM.settings == nil then DM.settings = {} end
   if DM.settings.forceColor == nil then DM.settings.forceColor = false end
   forceColorCheckbox:SetChecked(DM.settings.forceColor)
   forceColorCheckbox:SetScript("OnClick", function(self)
     DM.settings.forceColor = self:GetChecked()
     DM:PrintMessage("Force Threat Color " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
+    if DM.enabled then
+      DM:UpdateAllNameplates()
+    end
+    DM:SaveSettings()
+  end)
+
+  -- Create border-only checkbox and thickness control together
+  local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
+    checkboxContainer, forceColorCheckbox, -8, "Border-only")
+  if DM.settings.borderOnly == nil then DM.settings.borderOnly = false end
+  borderOnlyCheckbox:SetChecked(DM.settings.borderOnly)
+
+  -- Initialize thickness value if needed
+  if DM.settings.borderThickness == nil then DM.settings.borderThickness = 2 end
+
+  -- Create a compact thickness control next to the border-only checkbox
+  local thicknessContainer = CreateFrame("Frame", nil, checkboxContainer)
+  thicknessContainer:SetSize(70, 26)
+  thicknessContainer:SetPoint("LEFT", borderOnlyCheckbox.labelText, "RIGHT", 10, 0)
+
+  -- Create the thickness value display
+  local thicknessValue = thicknessContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  thicknessValue:SetPoint("LEFT", thicknessContainer, "LEFT", 0, 0)
+  thicknessValue:SetText(DM.settings.borderThickness .. " px")
+
+  -- Create decrease button
+  local decreaseButton = CreateFrame("Button", nil, thicknessContainer)
+  decreaseButton:SetSize(18, 18)
+  decreaseButton:SetPoint("LEFT", thicknessValue, "RIGHT", 2, 0)
+  decreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
+  decreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
+  decreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  decreaseButton:SetScript("OnClick", function()
+    if DM.settings.borderThickness > 1 then
+      DM.settings.borderThickness = DM.settings.borderThickness - 1
+      thicknessValue:SetText(DM.settings.borderThickness .. " px")
+      if DM.enabled then
+        DM:UpdateAllNameplates()
+      end
+      DM:SaveSettings()
+    end
+  end)
+
+  -- Create increase button
+  local increaseButton = CreateFrame("Button", nil, thicknessContainer)
+  increaseButton:SetSize(18, 18)
+  increaseButton:SetPoint("LEFT", decreaseButton, "RIGHT", 2, 0)
+  increaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
+  increaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
+  increaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  increaseButton:SetScript("OnClick", function()
+    if DM.settings.borderThickness < 4 then
+      DM.settings.borderThickness = DM.settings.borderThickness + 1
+      thicknessValue:SetText(DM.settings.borderThickness .. " px")
+      if DM.enabled then
+        DM:UpdateAllNameplates()
+      end
+      DM:SaveSettings()
+    end
+  end)
+
+  -- Make sure texture is shown properly
+  local decreaseTexture = decreaseButton:GetNormalTexture()
+  local increaseTexture = increaseButton:GetNormalTexture()
+  if decreaseTexture then decreaseTexture:SetTexCoord(0, 1, 0, 1) end
+  if increaseTexture then increaseTexture:SetTexCoord(0, 1, 0, 1) end
+
+  -- Initially hide or show the thickness control based on checkbox state
+  if DM.settings.borderOnly then
+    thicknessContainer:Show()
+  else
+    thicknessContainer:Hide()
+  end
+
+  -- Set up the border-only checkbox handler
+  borderOnlyCheckbox:SetScript("OnClick", function(self)
+    DM.settings.borderOnly = self:GetChecked()
+    DM:PrintMessage("Border-only " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
+
+    -- Show/hide the thickness control based on checkbox state
+    if thicknessContainer then
+      if self:GetChecked() then
+        thicknessContainer:Show()
+      else
+        thicknessContainer:Hide()
+      end
+    end
+
     if DM.enabled then
       DM:UpdateAllNameplates()
     end
@@ -186,8 +274,8 @@ function DM:CreateGeneralTab(parent)
 
   -- Create info section container with fixed height
   local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
-  infoSection:SetSize(350, 140) -- Changed from 100px to 140px
-  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -180)
+  infoSection:SetSize(350, 180)                             -- Changed from 200px to 180px
+  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -220) -- Changed from -200 to -220
   infoSection:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = nil,

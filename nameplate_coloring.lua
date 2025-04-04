@@ -58,6 +58,19 @@ function DM:SetNameplateBorderColor(unitFrame, color)
     return false
   end
 
+  -- Store original border thickness if we haven't already
+  local unitToken = unitFrame.unit
+  if unitToken and not DM.originalBorderThickness then
+    DM.originalBorderThickness = {}
+  end
+
+  if unitToken and not DM.originalBorderThickness[unitToken] then
+    -- Try to get current thickness from Plater DB or use 1 as default
+    local currentThickness = Plater.db and Plater.db.profile and Plater.db.profile.border_thickness or 1
+    DM.originalBorderThickness[unitToken] = currentThickness
+    DM:NameplateDebug("Stored original border thickness for %s: %d", unitToken, currentThickness)
+  end
+
   -- Set the border color
   border:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
 
@@ -171,11 +184,34 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
     -- Log for debugging
     DM:NameplateDebug("RestoreDefaultColor for Plater nameplate: %s", nameplate:GetName() or "unnamed")
 
-    -- If we were in border-only mode, clear the custom border color
+    -- If we were in border-only mode, restore default Plater border settings
     if DM.settings and DM.settings.borderOnly then
-      -- Reset custom border color
+      -- Reset custom border color flag
       unitFrame.customBorderColor = nil
+
+      -- Get the original border thickness if we stored it
+      local borderThickness = 1 -- Fallback default
+      if DM.originalBorderThickness and DM.originalBorderThickness[unitToken] then
+        borderThickness = DM.originalBorderThickness[unitToken]
+        DM:NameplateDebug("Using stored original border thickness: %d", borderThickness)
+        -- Clear the stored value
+        DM.originalBorderThickness[unitToken] = nil
+      else
+        -- Fallback to Plater's default border thickness from its DB
+        borderThickness = Plater.db and Plater.db.profile and Plater.db.profile.border_thickness or 1
+        DM:NameplateDebug("No stored thickness found, using Plater default: %d", borderThickness)
+      end
+
+      -- Reset border thickness to original
+      if healthBar.border then
+        healthBar.border:SetBorderSizes(borderThickness, borderThickness, borderThickness, borderThickness)
+        healthBar.border:UpdateSizes()
+        DM:NameplateDebug("Reset border thickness to: %d", borderThickness)
+      end
+
+      -- Restore default border color
       Plater.UpdateBorderColor(unitFrame)
+      DM:NameplateDebug("Reset border color to Plater default")
     else
       -- Reset Plater's color control flags - this is critical
       unitFrame.UsingCustomColor = nil

@@ -27,6 +27,11 @@ function DM:NameplateRemoved(unitToken)
   self.activePlates[unitToken] = nil
   self.coloredPlates[unitToken] = nil
   self.originalColors[unitToken] = nil
+
+  -- Also clean up any stored border thickness data
+  if self.originalBorderThickness and self.originalBorderThickness[unitToken] then
+    self.originalBorderThickness[unitToken] = nil
+  end
 end
 
 -- Handle aura changes on nameplates
