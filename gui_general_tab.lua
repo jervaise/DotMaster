@@ -344,8 +344,8 @@ function DM:CreateGeneralTab(parent)
 
   -- Create info section container with fixed height
   local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
-  infoSection:SetSize(350, 140)                             -- Changed from 180px to 140px
-  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -220) -- Keeping the same top position
+  infoSection:SetSize(350, 140)                             -- Maintaining the 140px height
+  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -190) -- Changed from -220 to -190 to move it up by 30px
   infoSection:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = nil,
