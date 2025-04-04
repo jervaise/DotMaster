@@ -209,12 +209,9 @@ function DM:CheckForExpiringDoTs(unitToken)
   if not activeDots or not next(activeDots) then
     -- If no dots found, stop any existing flash
     local unitFrame = nameplate.unitFrame
-    if unitFrame.DotMasterBorderFlashing then
-      if unitFrame.DotMasterBorderFlashTimer then
-        unitFrame.DotMasterBorderFlashTimer:Cancel()
-        unitFrame.DotMasterBorderFlashTimer = nil
-      end
-      unitFrame.DotMasterBorderFlashing = nil
+    if unitFrame.DotMasterBorderPulseTimer then
+      unitFrame.DotMasterBorderPulseTimer:Cancel()
+      unitFrame.DotMasterBorderPulseTimer = nil
     end
 
     if unitFrame.DotMasterFlash then
@@ -250,26 +247,30 @@ function DM:CheckForExpiringDoTs(unitToken)
     -- Check the flashing mode (border or full)
     if DM.settings.borderOnly then
       -- Border-only mode
-      -- Set a flag to indicate we're already flashing the border
-      unitFrame.DotMasterBorderFlashing = true
+      -- Check if we have a health flash frame
+      if not unitFrame.healthBar.canHealthFlash and not nameplate.UnitFrame then
+        -- Create health flash frame if missing
+        if _G["Plater"] and unitFrame.PlateFrame then
+          _G["Plater"].CreateHealthFlashFrame(unitFrame.PlateFrame)
+        end
+      end
 
-      -- Trigger an immediate border flash
-      if unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
-        -- First, flash using Plater's built-in function
-        Plater.FlashNameplateBorder(unitFrame, 0.15)
+      -- Direct method to flash the border repeatedly
+      if unitFrame.healthBar.canHealthFlash and unitFrame.healthBar.PlayHealthFlash then
+        -- First flash immediately
+        unitFrame.healthBar.PlayHealthFlash(0.15)
 
-        -- If we don't already have a flashing timer, create one
-        if not unitFrame.DotMasterBorderFlashTimer then
-          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.3, function()
-            -- Only flash if the frame still exists and is shown
+        -- Set up a repeating pulse timer if not already flashing
+        if not unitFrame.DotMasterBorderPulseTimer then
+          unitFrame.DotMasterBorderPulseTimer = C_Timer.NewTicker(0.3, function()
             if unitFrame and unitFrame:IsShown() and unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
-              Plater.FlashNameplateBorder(unitFrame, 0.15)
+              unitFrame.healthBar.canHealthFlash = true -- Reset this flag in case it was set to false
+              unitFrame.healthBar.PlayHealthFlash(0.15)
             else
-              -- Clean up the timer if the frame is gone or hidden
-              if unitFrame.DotMasterBorderFlashTimer then
-                unitFrame.DotMasterBorderFlashTimer:Cancel()
-                unitFrame.DotMasterBorderFlashTimer = nil
-                unitFrame.DotMasterBorderFlashing = nil
+              -- Clean up timer if frame is gone
+              if unitFrame.DotMasterBorderPulseTimer then
+                unitFrame.DotMasterBorderPulseTimer:Cancel()
+                unitFrame.DotMasterBorderPulseTimer = nil
               end
             end
           end)
@@ -286,30 +287,27 @@ function DM:CheckForExpiringDoTs(unitToken)
           r, g, b = r / maxChannel, g / maxChannel, b / maxChannel
         end
 
-        -- Create flash using Plater's API with proper settings
-        unitFrame.DotMasterFlash = Plater.CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
+        -- Create flash using Plater's API
+        if _G["Plater"] and _G["Plater"].CreateFlash then
+          unitFrame.DotMasterFlash = _G["Plater"].CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
+        end
       end
 
-      -- Play the animation
+      -- Play the animation if we have it
       if unitFrame.DotMasterFlash then
         unitFrame.DotMasterFlash:Play()
       end
     end
   else
     -- No expiring DoT, stop any flashing
-    if DM.settings.borderOnly then
-      -- Clean up border flash timer if it exists
-      if unitFrame.DotMasterBorderFlashTimer then
-        unitFrame.DotMasterBorderFlashTimer:Cancel()
-        unitFrame.DotMasterBorderFlashTimer = nil
-        unitFrame.DotMasterBorderFlashing = nil
-      end
-    else
-      -- Stop full nameplate flashing
-      if unitFrame.DotMasterFlash then
-        unitFrame.DotMasterFlash:Stop()
-        unitFrame.DotMasterFlash = nil
-      end
+    if unitFrame.DotMasterBorderPulseTimer then
+      unitFrame.DotMasterBorderPulseTimer:Cancel()
+      unitFrame.DotMasterBorderPulseTimer = nil
+    end
+
+    if unitFrame.DotMasterFlash then
+      unitFrame.DotMasterFlash:Stop()
+      unitFrame.DotMasterFlash = nil
     end
   end
 end
@@ -437,10 +435,9 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
     end
 
     -- Stop any border flash timer
-    if unitFrame.DotMasterBorderFlashTimer then
-      unitFrame.DotMasterBorderFlashTimer:Cancel()
-      unitFrame.DotMasterBorderFlashTimer = nil
-      unitFrame.DotMasterBorderFlashing = nil
+    if unitFrame.DotMasterBorderPulseTimer then
+      unitFrame.DotMasterBorderPulseTimer:Cancel()
+      unitFrame.DotMasterBorderPulseTimer = nil
     end
 
     -- Stop full nameplate flashing
