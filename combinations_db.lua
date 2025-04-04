@@ -235,8 +235,9 @@ function DM:CreateCombination(name, spells, color)
     color = color or { r = 1, g = 0, b = 0, a = 1 },
     priority = priority,
     enabled = true,
-    threshold = "all", -- "all" or numeric value
-    isExpanded = false -- ALWAYS start collapsed
+    threshold = "all",             -- "all" or numeric value
+    isExpanded = false,            -- ALWAYS start collapsed
+    wowclass = DM.GetPlayerClass() -- Add class field to store the combination's class
   }
 
   -- Debug message to confirm expanded state is set correctly
@@ -374,14 +375,17 @@ function DM:CheckCombinationsOnUnit(unit)
 
   -- Safe early returns if combinations system is not ready
   if not unit or not UnitExists(unit) then
+    DM:DebugMsg("CheckCombinationsOnUnit: Invalid unit or unit doesn't exist")
     return nil
   end
 
   if not DM.combinations.settings or not DM.combinations.settings.enabled then
+    DM:DebugMsg("CheckCombinationsOnUnit: Combinations not enabled in settings")
     return nil
   end
 
   if not DM.combinations.data then
+    DM:DebugMsg("CheckCombinationsOnUnit: No combinations data available")
     return nil
   end
 
@@ -390,38 +394,83 @@ function DM:CheckCombinationsOnUnit(unit)
 
   -- Sort combinations by priority
   local sortedCombos = {}
+  local playerClass = DM.GetPlayerClass()
+
   for id, combo in pairs(DM.combinations.data) do
+    -- Only include combinations for the current player's class
+    -- If wowclass isn't set (backward compatibility), include it but set the class
     if combo and combo.enabled then
-      table.insert(sortedCombos, { id = id, priority = combo.priority or 999, data = combo })
+      if not combo.wowclass then
+        combo.wowclass = playerClass -- Set missing class to current player's class for backward compatibility
+      end
+
+      if combo.wowclass == playerClass then
+        table.insert(sortedCombos, { id = id, priority = combo.priority or 999, data = combo })
+      end
     end
   end
 
   -- If no combos, early return
   if #sortedCombos == 0 then
+    DM:DebugMsg("CheckCombinationsOnUnit: No enabled combinations found for class: " .. playerClass)
     return nil
   end
 
   table.sort(sortedCombos, function(a, b) return a.priority < b.priority end)
+  DM:DebugMsg("CheckCombinationsOnUnit: Checking %d enabled combinations on %s", #sortedCombos, unit)
 
   -- Check each combination
   for _, comboInfo in ipairs(sortedCombos) do
     local combo = comboInfo.data
+    local comboID = comboInfo.id
+
     if combo and combo.spells then
       local required = combo.threshold == "all" and #combo.spells or tonumber(combo.threshold) or #combo.spells
       local count = 0
+      local activeSpells = {}
+
+      DM:DebugMsg("Checking combination: %s (ID: %s, Priority: %d)",
+        combo.name or "Unnamed", comboID, comboInfo.priority)
+      DM:DebugMsg("Required spells: %d out of %d total", required, #combo.spells)
 
       -- Check how many spells from this combination are active
-      for _, spellID in ipairs(combo.spells) do
+      for i, spellID in ipairs(combo.spells) do
         -- Safely call HasPlayerDotOnUnit
-        if DM.HasPlayerDotOnUnit and DM:HasPlayerDotOnUnit(unit, spellID) then
-          count = count + 1
+        local spellName = "Unknown"
+        -- Use C_Spell.GetSpellInfo instead of global GetSpellInfo per README requirements
+        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        if spellInfo then
+          spellName = spellInfo.name
         end
+        local hasDoT = false
+
+        if DM.HasPlayerDotOnUnit and DM:HasPlayerDotOnUnit(unit, spellID) then
+          hasDoT = true
+          count = count + 1
+          table.insert(activeSpells, { id = spellID, name = spellName })
+        end
+
+        DM:DebugMsg("  Spell %d: %s (ID: %d) - %s",
+          i, spellName, spellID, hasDoT and "ACTIVE" or "not active")
       end
 
       -- If we have enough active spells, use this combination
       if count >= required then
+        DM:DebugMsg("FOUND ACTIVE COMBINATION: %s with %d/%d required spells",
+          combo.name or comboID, count, required)
+
+        -- Log all active spells in this combination
+        if #activeSpells > 0 then
+          DM:DebugMsg("Active spells in combination:")
+          for i, spell in ipairs(activeSpells) do
+            DM:DebugMsg("  %d. %s (ID: %d)", i, spell.name, spell.id)
+          end
+        end
+
         activeCombo = comboInfo
         break
+      else
+        DM:DebugMsg("Combination not active: %d/%d required spells found", count, required)
       end
     end
   end
@@ -430,6 +479,7 @@ function DM:CheckCombinationsOnUnit(unit)
     return activeCombo.id, activeCombo.data
   end
 
+  DM:DebugMsg("No active combinations found on unit %s", unit)
   return nil
 end
 

@@ -297,9 +297,21 @@ function DM:CreateCombinationsTab(parent)
 
     -- Get combinations and sort them by priority
     local combos = {}
+    local playerClass = DM.GetPlayerClass()
+
     if DM.combinations and DM.combinations.data then
       for id, data in pairs(DM.combinations.data) do
-        table.insert(combos, { id = id, data = data })
+        -- Only include combinations for the current player's class
+        -- If wowclass isn't set (backward compatibility), set it to current player's class
+        if not data.wowclass then
+          data.wowclass = playerClass -- Set missing class to current player for backward compatibility
+          DM:DebugMsg("Setting missing class for combination: " .. (data.name or "Unnamed") .. " to " .. playerClass)
+        end
+
+        -- Only show combinations for the current class
+        if data.wowclass == playerClass then
+          table.insert(combos, { id = id, data = data })
+        end
       end
     end
 
@@ -1207,6 +1219,7 @@ function DM:ShowCombinationDialog(comboID)
       local name = dialog.nameEditBox:GetText()
       local color = dialog.selectedColor
       local spells = dialog.selectedSpells or {}
+      local playerClass = DM.GetPlayerClass()
 
       -- Validate
       if name == "" then
@@ -1270,19 +1283,23 @@ function DM:ShowCombinationDialog(comboID)
           name = name,
           color = color,
           spells = spells,
-          isExpanded = dialog.isExpanded -- Preserve expanded state
+          isExpanded = dialog.isExpanded, -- Preserve expanded state
+          wowclass = playerClass          -- Update class
         })
         self:DebugMsg("Updated combination with ID: " ..
-          dialog.comboID .. ", isExpanded state preserved as: " .. tostring(dialog.isExpanded))
+          dialog.comboID ..
+          ", isExpanded state preserved as: " .. tostring(dialog.isExpanded) .. ", class: " .. playerClass)
       else
         -- Create new
         local newID = DM:CreateCombination(name, spells, color)
-        self:DebugMsg("Created new combination with ID: " .. tostring(newID) .. ", isExpanded set to false by default")
+        self:DebugMsg("Created new combination with ID: " .. tostring(newID) ..
+          ", isExpanded set to false by default, class: " .. playerClass)
 
         -- Force immediate flag setting in case the UI refreshes before database is saved
         if DM.combinations and DM.combinations.data and DM.combinations.data[newID] then
           DM.combinations.data[newID].isExpanded = false
-          self:DebugMsg("Explicitly set isExpanded=false for new combination")
+          DM.combinations.data[newID].wowclass = playerClass
+          self:DebugMsg("Explicitly set isExpanded=false and wowclass=" .. playerClass .. " for new combination")
         end
       end
 

@@ -4,7 +4,7 @@
 local DM = DotMaster
 
 -- Function to get the player's current class
-local function GetPlayerClass()
+function DM.GetPlayerClass()
   local _, class = UnitClass("player")
   return class
 end
@@ -15,49 +15,118 @@ function DM:HasPlayerDotOnUnit(unitToken, spellID)
 
   DM:NameplateDebug("HasPlayerDotOnUnit called: %s, SpellID: %d", unitToken, spellID)
 
-  -- Check if we can use the C_UnitAuras API (newer clients)
-  if C_UnitAuras and C_UnitAuras.GetAuraDataByUnit then
-    -- Get all auras on the unit and check for our spell
-    local auras = C_UnitAuras.GetAuraDataByUnit(unitToken, "HARMFUL")
-    if auras then
-      for _, auraData in ipairs(auras) do
-        if auraData.spellId == spellID and auraData.sourceUnit == "player" then
-          return true
+  local dotFound = false
+  local errorMsg = nil
+
+  -- Method 1: Check if we can use the C_UnitAuras API (newer clients)
+  if C_UnitAuras then
+    DM:NameplateDebug("Trying C_UnitAuras API")
+
+    if C_UnitAuras.GetAuraDataByUnit then
+      local success, result = pcall(function()
+        local auras = C_UnitAuras.GetAuraDataByUnit(unitToken, "HARMFUL")
+        if auras then
+          for _, auraData in ipairs(auras) do
+            if auraData.spellId == spellID and auraData.sourceUnit == "player" then
+              DM:NameplateDebug("Found DoT with C_UnitAuras: %s", auraData.name or "Unknown")
+              return true
+            end
+          end
+        end
+        return false
+      end)
+
+      if success then
+        dotFound = result
+        if dotFound then return true end
+      else
+        errorMsg = "Error in C_UnitAuras: " .. tostring(result)
+        DM:NameplateDebug(errorMsg)
+      end
+    else
+      DM:NameplateDebug("GetAuraDataByUnit not available, trying GetAuraDataBySpellID")
+
+      -- Try GetAuraDataBySpellID as an alternative
+      if C_UnitAuras.GetAuraDataBySpellID then
+        local success, result = pcall(function()
+          local auraData = C_UnitAuras.GetAuraDataBySpellID(unitToken, spellID)
+          if auraData and auraData.sourceUnit == "player" then
+            DM:NameplateDebug("Found DoT with GetAuraDataBySpellID: %s", auraData.name or "Unknown")
+            return true
+          end
+          return false
+        end)
+
+        if success then
+          dotFound = result
+          if dotFound then return true end
+        else
+          errorMsg = "Error in GetAuraDataBySpellID: " .. tostring(result)
+          DM:NameplateDebug(errorMsg)
         end
       end
-    end
-  elseif AuraUtil and AuraUtil.ForEachAura then
-    -- Use AuraUtil.ForEachAura which works on all client versions
-    local found = false
-    AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, caster, _, _, id)
-      if id == spellID and caster == "player" then
-        found = true
-        return true -- Stop iteration
-      end
-    end)
-
-    if found then
-      return true
-    end
-  else
-    -- Fallback to UnitAura for legacy support
-    local success, result = pcall(function()
-      for i = 1, 40 do
-        local name, _, _, _, _, _, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
-        if not name then break end
-
-        if auraSpellID == spellID and source == "player" then
-          return true
-        end
-      end
-      return false
-    end)
-
-    if success and result then
-      return true
     end
   end
 
+  -- Method 2: Try AuraUtil.ForEachAura which works on most client versions
+  if not dotFound and AuraUtil and AuraUtil.ForEachAura then
+    DM:NameplateDebug("Trying AuraUtil.ForEachAura")
+
+    local success, result = pcall(function()
+      local found = false
+      AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, caster, _, _, id)
+        if id == spellID and caster == "player" then
+          DM:NameplateDebug("Found DoT with ForEachAura: %s", name or "Unknown")
+          found = true
+          return true -- Stop iteration
+        end
+      end)
+      return found
+    end)
+
+    if success then
+      dotFound = result
+      if dotFound then return true end
+    else
+      errorMsg = "Error in AuraUtil.ForEachAura: " .. tostring(result)
+      DM:NameplateDebug(errorMsg)
+    end
+  end
+
+  -- Method 3: Fallback to AuraUtil only since UnitAura is not available
+  if not dotFound then
+    DM:NameplateDebug("Trying final AuraUtil fallback")
+
+    local success, result = pcall(function()
+      local found = false
+
+      -- Skip UnitAura completely and just use AuraUtil as final fallback
+      if AuraUtil and AuraUtil.ForEachAura then
+        DM:NameplateDebug("Using AuraUtil.ForEachAura as final fallback")
+        AuraUtil.ForEachAura(unitToken, "HARMFUL", nil, function(name, _, _, _, _, _, caster, _, _, id)
+          if id == spellID and caster == "player" then
+            DM:NameplateDebug("Found DoT with final AuraUtil fallback: %s", name or "Unknown")
+            found = true
+            return true
+          end
+        end)
+      else
+        DM:NameplateDebug("No fallback available - AuraUtil unavailable")
+      end
+
+      return found
+    end)
+
+    if success then
+      dotFound = result
+      if dotFound then return true end
+    else
+      errorMsg = "Error in final fallback: " .. tostring(result)
+      DM:NameplateDebug(errorMsg)
+    end
+  end
+
+  DM:NameplateDebug("DoT not found for SpellID: %d on unit %s", spellID, unitToken)
   return false
 end
 
@@ -66,6 +135,9 @@ function DM:CheckForTrackedDebuffs(unitToken)
   if not unitToken or not UnitExists(unitToken) then return nil end
 
   DM:NameplateDebug("CheckForTrackedDebuffs called: %s", unitToken)
+
+  -- Get current player class
+  local playerClass = DM.GetPlayerClass()
 
   -- First, check for combinations if the feature is enabled
   if DM.combinations and DM.combinations.settings.enabled then
@@ -88,22 +160,19 @@ function DM:CheckForTrackedDebuffs(unitToken)
   -- If no spell database is present, early return
   if not self.dmspellsdb or not next(self.dmspellsdb) then return nil end
 
-  -- Get current player class
-  local playerClass = GetPlayerClass()
-
   -- Check each spell config in priority order (if available)
   local sortedConfigs = {}
   for spellID, config in pairs(self.dmspellsdb) do
     -- Only include spells that are:
     -- 1. Enabled (for nameplate coloring)
     -- 2. Tracked (for display)
-    -- 3. Belong to the player's current class
+    -- 3. Belong to the player's current class or are unknown class
     if config.enabled == 1 and
         config.tracked == 1 and
-        config.wowclass == playerClass then
+        (config.wowclass == playerClass or config.wowclass == "UNKNOWN") then
       table.insert(sortedConfigs, { id = spellID, priority = config.priority or 999, config = config })
       DM:NameplateDebug("Added spell to check list: %d (%s) for class %s",
-        spellID, config.spellname or "Unknown", playerClass)
+        spellID, config.spellname or "Unknown", config.wowclass or "Unknown")
     end
   end
 
@@ -134,95 +203,39 @@ function DM:CheckForTrackedDebuffs(unitToken)
   return nil
 end
 
--- Gets all active DoTs on a unit with their expiration times and colors
+-- Get all tracked and enabled DoTs on a unit (returns a table of spell IDs)
 function DM:GetActiveDots(unitToken)
   if not unitToken or not UnitExists(unitToken) then return {} end
 
-  DM:NameplateDebug("GetActiveDots called: %s", unitToken)
+  DM:NameplateDebug("GetActiveDots called for unit: %s", unitToken)
 
-  -- If no spell database is present, early return
-  if not self.dmspellsdb or not next(self.dmspellsdb) then return {} end
-
-  -- Return value: table of active DoTs indexed by spellID
   local activeDots = {}
 
   -- Get current player class
-  local playerClass = GetPlayerClass()
+  local playerClass = DM.GetPlayerClass()
+  DM:NameplateDebug("Checking active dots for class: %s", playerClass)
 
-  -- First identify which spells we need to check
-  local spellsToCheck = {}
+  -- If no spell database is present, early return
+  if not self.dmspellsdb or not next(self.dmspellsdb) then
+    DM:NameplateDebug("No spell database present")
+    return activeDots
+  end
+
+  -- First scan all tracked and enabled spells
   for spellID, config in pairs(self.dmspellsdb) do
-    -- Only include spells that are:
-    -- 1. Enabled (for nameplate coloring)
-    -- 2. Tracked (for display)
-    -- 3. Belong to the player's current class
-    if config.enabled == 1 and
-        config.tracked == 1 and
-        config.wowclass == playerClass then
-      spellsToCheck[spellID] = config
+    -- Convert to numbers for comparison if they are strings
+    local tracked = tonumber(config.tracked) or 0
+    local enabled = tonumber(config.enabled) or 0
+
+    -- Only check for dots belonging to the player's class
+    if tracked == 1 and enabled == 1 and (config.wowclass == playerClass or config.wowclass == "UNKNOWN") then
+      if self:HasPlayerDotOnUnit(unitToken, spellID) then
+        table.insert(activeDots, spellID)
+        DM:NameplateDebug("Found active dot: %d (%s)", spellID, config.spellname or "Unknown")
+      end
     end
   end
 
-  -- Now check each spell for presence and gather expiration info
-  -- First try the C_UnitAuras API (newer clients)
-  if C_UnitAuras and C_UnitAuras.GetAuraDataByUnit then
-    -- Get all auras on the unit
-    local auras = C_UnitAuras.GetAuraDataByUnit(unitToken, "HARMFUL")
-    if auras then
-      for _, auraData in ipairs(auras) do
-        local spellID = auraData.spellId
-        -- Only track if it's a spell we care about and it's cast by the player
-        if spellsToCheck[spellID] and auraData.sourceUnit == "player" then
-          -- If we get here, we found one of our DoTs
-          activeDots[spellID] = {
-            name = auraData.name,
-            icon = auraData.icon,
-            duration = auraData.duration,
-            expirationTime = auraData.expirationTime,
-            applications = auraData.applications or 1,
-            color = spellsToCheck[spellID].color
-          }
-        end
-      end
-    end
-  elseif AuraUtil and AuraUtil.ForEachAura then
-    -- Use AuraUtil.ForEachAura which works on all client versions
-    AuraUtil.ForEachAura(unitToken, "HARMFUL", nil,
-      function(name, icon, count, _, duration, expirationTime, caster, _, _, id, _, _, _, _, _)
-        if spellsToCheck[id] and caster == "player" then
-          -- If we get here, we found one of our DoTs
-          activeDots[id] = {
-            name = name,
-            icon = icon,
-            duration = duration,
-            expirationTime = expirationTime,
-            applications = count or 1,
-            color = spellsToCheck[id].color
-          }
-        end
-      end)
-  else
-    -- Fallback to UnitAura for legacy support
-    pcall(function()
-      for i = 1, 40 do
-        local name, icon, count, _, duration, expirationTime, source, _, _, auraSpellID = UnitAura(unitToken, i,
-          "HARMFUL")
-        if not name then break end
-
-        if spellsToCheck[auraSpellID] and source == "player" then
-          -- If we get here, we found one of our DoTs
-          activeDots[auraSpellID] = {
-            name = name,
-            icon = icon,
-            duration = duration,
-            expirationTime = expirationTime,
-            applications = count or 1,
-            color = spellsToCheck[auraSpellID].color
-          }
-        end
-      end
-    end)
-  end
-
+  DM:NameplateDebug("GetActiveDots found %d active dots for class %s", #activeDots, playerClass)
   return activeDots
 end

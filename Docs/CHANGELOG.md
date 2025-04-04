@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 1.0.1 (2024-07-10)
+- **Fixed**: Problem where DotMaster GUI wouldn't open when Plater's color picker was active
+- **Fixed**: Unnecessary database saving when color picker was interacted with but colors weren't changed
+- **Enhanced**: Class-specific filtering for combinations and spell tracking
+- **Enhanced**: Border flashing colors now use more pronounced brightness for better visibility
+- **Added**: Force threat mode now properly disables flashing when active (non-border mode only)
+- **Added**: Better error handling for color picker interactions
+- **Technical**: Improved frame level management for GUI windows
+- **Documentation**: Updated README with more comprehensive features and usage information
+
 ### Version 1.0.0 (2024-07-01)
 - **Major Release**: First stable release of DotMaster
 - **API Stability**: All features are now considered stable and production-ready

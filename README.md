@@ -1,102 +1,93 @@
 # DotMaster
 
-An addon for World of Warcraft that helps track your DoTs (Damage over Time effects).
+An advanced addon for World of Warcraft that tracks Damage over Time (DoT) effects on enemy nameplates and provides comprehensive visual feedback.
 
-**Current Version: 1.0.0**
+**Current Version: 1.0.1**
 **Compatible with World of Warcraft: The War Within (11.1.0)**
 
-## Features
+## Key Features
 
-- **Nameplate Coloring**: Visually track your DoTs on enemy nameplates
-- **Find My Dots**: Window showing all active DoTs grouped by target
-- **Spell Database**: Pre-defined database of DoT spells for all classes
-- **Configuration UI**: Customize colors and tracking settings
-- **Profile Support**: Save different configurations for different characters
-- **Debug Console**: Comprehensive debug system with filtering options
+- **Dynamic Nameplate Coloring**: Customize colors for all your DoTs on enemy nameplates
+  - **Border-Only Mode**: Option to color just the nameplate border for subtle indication
+  - **Force Threat Color**: Automatically prioritize threat colors for tanks and DPS when needed
+  - **Expiration Flashing**: Visual warning when DoTs are about to expire
+
+- **DoT Combinations**: Create and track custom combinations of multiple DoTs
+  - **Custom Thresholds**: Set specific requirements for how many DoTs trigger a combination
+  - **Priority System**: Higher priority combinations override lower ones
+  - **Class-Specific**: Combinations are filtered by your current class for relevance
+
+- **Find My DoTs Window**: Real-time view of all your active DoTs grouped by target
+  - **Target Sorting**: Organizes targets by distance and relationship
+  - **Time Remaining**: Shows exact time left on each DoT
+  - **Stack Count**: Displays number of stacks for applicable DoTs
+
+- **Comprehensive Database**: Pre-defined database covering all classes and specs
+  - **Class Filtering**: Only shows spells relevant to your current class
+  - **Priority System**: Set custom priorities for which DoTs take visual precedence
+  - **Customization**: Personalize colors, tracking settings, and more
+
+- **User-Friendly Interface**:
+  - **Class-Colored UI**: Interface adapts to your character's class colors
+  - **Minimap Button**: Quick access to all features
+  - **Debug Console**: In-depth troubleshooting tools when needed
+
+## Requirements
+
+- **[Plater Nameplates](https://www.curseforge.com/wow/addons/plater-nameplates)**: This addon requires Plater to function
 
 ## Installation
 
-1. Download the latest release
+1. Download the latest release from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster) or [Wago.io](https://addons.wago.io/addons/dotmaster)
 2. Extract the DotMaster folder to your `World of Warcraft\_retail_\Interface\AddOns\` directory
 3. Restart World of Warcraft if it's running
-4. Verify the addon is enabled in the addon list
+4. Ensure both Plater and DotMaster are enabled in your addon list
 
 ## Usage
 
 - Type `/dm` or `/dotmaster` to open the configuration panel
-- Type `/dmdebug` to open the debug console or access debug options
-- Click the minimap button to quickly toggle the "Find My Dots" window
-- Configure which spells to track in the Tracked Spells tab
-- Customize colors and visual options in the General tab
+- Type `/dmdebug` to open the Debug Console
+- Click the minimap button to toggle the "Find My DoTs" window
 
-## Development Process
+### Quick Start
 
-When the prompt "increment, success" is received, it triggers an automated version increment process through the AI coder, which:
-1. Increments the PATCH version (third decimal place)
-2. Updates version numbers in all relevant files
-3. Adds documentation notes about the changes
-4. Commits and pushes changes to the GitHub develop branch
-5. Ensures the local environment remains on the develop branch
+1. Open the configuration panel with `/dm`
+2. Visit the "Database" tab to add spells you want to track
+3. Customize colors and priorities in the "Tracked Spells" tab
+4. Create DoT combinations in the "Combinations" tab if desired
+5. Configure visual options in the "General" tab
 
-The developer should never commit and push before explicitly receiving this command. This ensures all changes are properly tested before being committed.
+## Features In-Depth
 
-## For Developers
+### Nameplate Coloring
 
-### ⚠️ Critical Development Notes
+DotMaster changes the color of enemy nameplates based on your active DoTs:
+- Choose between full nameplate coloring or border-only mode
+- Set custom priorities to determine which DoT's color takes precedence
+- Configure border thickness when using border-only mode
+- Enable flashing when DoTs are about to expire with customizable thresholds
 
-- **CRITICAL API REQUIREMENT**: Always use `C_Spell.GetSpellInfo()` instead of the global `GetSpellInfo()` function
-- Run the `dmcheck` validation script before testing to catch common errors
+### DoT Combinations
 
-```lua
--- INCORRECT - Do not use:
-local name, _, icon = GetSpellInfo(spellID)
+Create powerful visual indicators when specific combinations of DoTs are active:
+- Set up a combination of multiple DoTs that changes nameplate color when active
+- Choose between "All" spells or a specific number of spells required
+- Assign custom colors and priorities to combinations
+- Combinations are class-specific for better organization
 
--- CORRECT - Always use:
-local spellInfo = C_Spell.GetSpellInfo(spellID)
-local name = spellInfo and spellInfo.name
-local icon = spellInfo and spellInfo.iconFileID
-```
+### Find My DoTs Window
 
-### Project Structure
-
-```
-DotMaster/
-├── Docs/               - Comprehensive documentation
-├── Libs/               - Required external libraries
-├── Media/              - Icons and textures
-├── Scripts/            - Validation and utility scripts
-├── DotMaster.toc       - Addon Table of Contents
-├── embeds.xml          - Library embedding information
-├── *.lua               - Core Lua files (initialization, settings, core logic, GUI, nameplates, spells, utilities)
-├── README.md           - This file
-└── dmcheck.bat         - Validation script helper (Windows)
-```
-
-### Documentation
-
-All detailed documentation is available in the `Docs/` directory:
-
-- **Developer Guide**: [Docs/DEVELOPER_GUIDE.md](Docs/DEVELOPER_GUIDE.md)
-- **Debug System**: [Docs/DEBUG_SYSTEM.md](Docs/DEBUG_SYSTEM.md)
-- **Code Structure**: [Docs/CODE_STRUCTURE.md](Docs/CODE_STRUCTURE.md)
-- **Current Files**: [Docs/CURRENT_FILES.md](Docs/CURRENT_FILES.md)
-- **Project Scope**: [Docs/PROJECT_SCOPE.md](Docs/PROJECT_SCOPE.md)
-- **Current Status**: [Docs/CURRENT_STATUS.md](Docs/CURRENT_STATUS.md)
-- **Changelog**: [Docs/CHANGELOG.md](Docs/CHANGELOG.md)
-
-### Required Libraries
-
-DotMaster depends on the following libraries (included in the Libs directory):
-- LibStub
-- CallbackHandler-1.0
-- LibDataBroker-1.1
-- LibDBIcon-1.0
+A dedicated window that shows all your active DoTs across all targets:
+- Groups DoTs by target for easy tracking
+- Shows remaining time on each DoT
+- Updates in real-time as DoTs are applied or expire
+- Sortable by various criteria
 
 ## Known Issues
 
-1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
-2. **Performance**: May experience frame drops during combat with many targets
-3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
+1. In rare cases, nameplates may not update immediately when DoTs are applied
+2. Performance impact may be noticeable in very crowded scenarios with many nameplates
+3. Custom border coloring may not be visible with some Plater profiles
 
 ## License
 
@@ -104,4 +95,5 @@ All rights reserved.
 
 ## Acknowledgements
 
-Thanks to all contributors and testers who have helped improve DotMaster. 
+- Thanks to the Plater Nameplates team for creating an excellent nameplate addon
+- Special thanks to all beta testers and contributors 

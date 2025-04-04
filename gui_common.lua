@@ -73,6 +73,7 @@ function DM:CreateGUI()
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", frame.StartMoving)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetToplevel(true) -- Make sure this frame appears on top
 
     -- Register with UI special frames to enable Escape key closing
     tinsert(UISpecialFrames, "DotMasterOptionsFrame")
@@ -115,6 +116,30 @@ function DM:CreateGUI()
 
     -- Store the frame reference
     DM.GUI.frame = frame
+
+    -- Add a check for ColorPickerFrame when showing the frame
+    local originalShow = frame.Show
+    frame.Show = function(self)
+      -- Check if ColorPickerFrame is showing, and if so, wait until it's closed
+      if ColorPickerFrame and ColorPickerFrame:IsShown() then
+        DM:DebugMsg("ColorPickerFrame is open - waiting to show DotMaster error GUI")
+
+        -- Create a timer to check when ColorPickerFrame is closed
+        local waitTimer
+        waitTimer = C_Timer.NewTicker(0.2, function()
+          if not ColorPickerFrame:IsShown() then
+            DM:DebugMsg("ColorPickerFrame closed - showing DotMaster error GUI")
+            originalShow(self)
+            waitTimer:Cancel()
+          end
+        end)
+        return
+      end
+
+      -- Normal show behavior
+      originalShow(self)
+    end
+
     return frame
   end
 
@@ -133,6 +158,30 @@ function DM:CreateGUI()
   frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
   frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+  frame:SetToplevel(true) -- Make sure this frame appears on top
+
+  -- Add a check for ColorPickerFrame when showing the frame
+  local originalShow = frame.Show
+  frame.Show = function(self)
+    -- Check if ColorPickerFrame is showing, and if so, wait until it's closed
+    if ColorPickerFrame and ColorPickerFrame:IsShown() then
+      DM:DebugMsg("ColorPickerFrame is open - waiting to show DotMaster GUI")
+
+      -- Create a timer to check when ColorPickerFrame is closed
+      local waitTimer
+      waitTimer = C_Timer.NewTicker(0.2, function()
+        if not ColorPickerFrame:IsShown() then
+          DM:DebugMsg("ColorPickerFrame closed - showing DotMaster GUI")
+          originalShow(self)
+          waitTimer:Cancel()
+        end
+      end)
+      return
+    end
+
+    -- Normal show behavior
+    originalShow(self)
+  end
 
   -- Register with UI special frames to enable Escape key closing
   tinsert(UISpecialFrames, "DotMasterOptionsFrame")
