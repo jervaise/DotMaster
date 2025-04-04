@@ -96,169 +96,105 @@ function DM:CreateNameplateFlash(unitFrame, color)
   local Plater = _G["Plater"]
   if not Plater then return nil end
 
-  -- For border only mode, directly use Plater's border flash functionality
-  if DM.settings.borderOnly then
-    -- Create a wrapper for the border flash
-    return {
-      Play = function()
-        -- Use Plater's built-in border flash function
-        if unitFrame and unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
-          -- Single immediate flash
-          unitFrame.healthBar.PlayHealthFlash(0.15)
+  -- Create a direct flash wrapper using Plater's built-in functionality
+  return {
+    Play = function()
+      if not unitFrame or not unitFrame.healthBar then return end
 
-          -- Set up timer for continuous flashing
-          -- First cancel any existing timer
-          if unitFrame.DotMasterBorderFlashTimer then
-            unitFrame.DotMasterBorderFlashTimer:Cancel()
-            unitFrame.DotMasterBorderFlashTimer = nil
-          end
-
-          -- Create new timer for repeated flashes
-          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.35, function()
-            if unitFrame and unitFrame.healthBar and unitFrame.healthBar.canHealthFlash then
-              unitFrame.healthBar.PlayHealthFlash(0.15)
-            end
-          end)
-        end
-      end,
-
-      Stop = function()
-        -- Cancel the timer if it exists
-        if unitFrame and unitFrame.DotMasterBorderFlashTimer then
+      -- For border only mode
+      if DM.settings.borderOnly then
+        -- Cancel any existing flash timer
+        if unitFrame.DotMasterBorderFlashTimer then
           unitFrame.DotMasterBorderFlashTimer:Cancel()
           unitFrame.DotMasterBorderFlashTimer = nil
         end
-      end
-    }
-  else
-    -- For full nameplate mode, create a custom flash overlay
-    -- that doesn't affect text or health value display
 
-    -- Get the healthbar
-    local healthBar = unitFrame.healthBar
-    if not healthBar then return nil end
+        -- Create new flash
+        if unitFrame.healthBar.canHealthFlash then
+          -- Use direct Plater API for border flash
+          Plater.FlashNameplateBorder(unitFrame, 0.25)
 
-    -- Create a parent frame for our flash effect
-    local parentFrame = CreateFrame("Frame", nil, healthBar)
-    parentFrame:SetFrameLevel(healthBar:GetFrameLevel() + 2)
-    parentFrame:SetAllPoints(healthBar)
-    parentFrame:Hide()
-
-    -- This mask will make our flash respect the current health value
-    local maskFrame = CreateFrame("Frame", nil, parentFrame)
-    maskFrame:SetFrameLevel(parentFrame:GetFrameLevel())
-    maskFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    maskFrame:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
-    maskFrame:Hide()
-
-    -- Create the flash texture (this goes over the health bar portion only)
-    local flashTexture = maskFrame:CreateTexture(nil, "OVERLAY")
-    flashTexture:SetAllPoints()
-
-    -- Maximize color brightness for better visibility
-    local r, g, b = color[1], color[2], color[3]
-    local maxComponent = math.max(r, g, b)
-    if maxComponent > 0 then
-      r, g, b = r / maxComponent, g / maxComponent, b / maxComponent
-    end
-
-    flashTexture:SetColorTexture(r, g, b, 0.7)
-    flashTexture:SetBlendMode("ADD")
-
-    -- Create the animation group
-    local animGroup = flashTexture:CreateAnimationGroup()
-    animGroup:SetLooping("REPEAT")
-
-    -- Alpha animations (fade in/out)
-    local fadeIn = animGroup:CreateAnimation("Alpha")
-    fadeIn:SetFromAlpha(0.1)
-    fadeIn:SetToAlpha(0.8)
-    fadeIn:SetDuration(0.3)
-    fadeIn:SetOrder(1)
-
-    local fadeOut = animGroup:CreateAnimation("Alpha")
-    fadeOut:SetFromAlpha(0.8)
-    fadeOut:SetToAlpha(0.1)
-    fadeOut:SetDuration(0.3)
-    fadeOut:SetOrder(2)
-
-    -- Function to update the flash width based on current health
-    local function UpdateMaskWidth()
-      if healthBar and healthBar:IsVisible() then
-        local min, max = healthBar:GetMinMaxValues()
-        if max and max > 0 then
-          local value = healthBar:GetValue() or 0
-          local width = healthBar:GetWidth() * (value / max)
-          maskFrame:SetWidth(width)
+          -- Set up ongoing flash
+          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.35, function()
+            if unitFrame and unitFrame.healthBar and unitFrame:IsShown() then
+              Plater.FlashNameplateBorder(unitFrame, 0.25)
+            else
+              -- If the unitFrame is gone or hidden, cancel the timer
+              if unitFrame.DotMasterBorderFlashTimer then
+                unitFrame.DotMasterBorderFlashTimer:Cancel()
+                unitFrame.DotMasterBorderFlashTimer = nil
+              end
+            end
+          end)
         end
-      end
-    end
+      else
+        -- For full nameplate mode
+        -- Cancel any existing animation
+        if unitFrame.DotMasterFlashAnimation then
+          unitFrame.DotMasterFlashAnimation:Stop()
+        end
 
-    -- Set up update handler
-    maskFrame:SetScript("OnUpdate", UpdateMaskWidth)
+        -- Get brightened color
+        local r, g, b = color[1], color[2], color[3]
+        local maxChannel = math.max(r, g, b)
+        if maxChannel > 0 then
+          r, g, b = r / maxChannel, g / maxChannel, b / maxChannel
+        end
 
-    -- Set animation callbacks
-    animGroup:SetScript("OnPlay", function()
-      parentFrame:Show()
-      maskFrame:Show()
-      UpdateMaskWidth()
+        -- Use Plater's built-in flash animation
+        unitFrame.DotMasterFlashAnimation = Plater.CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
 
-      -- Store any nameplate text elements that need protection
-      parentFrame.textElements = {}
+        -- Hook into the OnPlay to ensure text stays visible
+        if unitFrame.DotMasterFlashAnimation then
+          -- Store original OnPlay function
+          local originalOnPlay = unitFrame.DotMasterFlashAnimation.Anim_OnPlay
 
-      -- Find and protect text elements from the flash
-      if unitFrame.healthBar.unitName then
-        table.insert(parentFrame.textElements, unitFrame.healthBar.unitName)
-      end
+          -- Override with our own that preserves text elements
+          unitFrame.DotMasterFlashAnimation.Anim_OnPlay = function(...)
+            -- Call original first
+            if originalOnPlay then
+              originalOnPlay(...)
+            end
 
-      if unitFrame.healthBar.lifePercent then
-        table.insert(parentFrame.textElements, unitFrame.healthBar.lifePercent)
-      end
-
-      -- Add any other text elements you find
-      if unitFrame.NameplateThreatValue then
-        table.insert(parentFrame.textElements, unitFrame.NameplateThreatValue)
-      end
-
-      -- Bring text elements above the flash
-      for _, textElement in ipairs(parentFrame.textElements) do
-        if textElement:GetObjectType() == "FontString" then
-          local currentDrawLayer = textElement:GetDrawLayer()
-          if currentDrawLayer ~= "OVERLAY" then
-            textElement._oldDrawLayer = currentDrawLayer
-            textElement:SetDrawLayer("OVERLAY", 7)
+            -- Then protect text elements
+            if unitFrame.healthBar.unitName then
+              unitFrame.healthBar.unitName:SetDrawLayer("OVERLAY", 7)
+            end
+            if unitFrame.healthBar.lifePercent then
+              unitFrame.healthBar.lifePercent:SetDrawLayer("OVERLAY", 7)
+            end
           end
+
+          -- Start the animation
+          unitFrame.DotMasterFlashAnimation:Play()
         end
       end
-    end)
+    end,
 
-    animGroup:SetScript("OnStop", function()
-      parentFrame:Hide()
-      maskFrame:Hide()
+    Stop = function()
+      if not unitFrame then return end
 
-      -- Restore text elements
-      if parentFrame.textElements then
-        for _, textElement in ipairs(parentFrame.textElements) do
-          if textElement:GetObjectType() == "FontString" and textElement._oldDrawLayer then
-            textElement:SetDrawLayer(textElement._oldDrawLayer)
-            textElement._oldDrawLayer = nil
-          end
-        end
-        wipe(parentFrame.textElements)
+      -- Stop border flash timer
+      if unitFrame.DotMasterBorderFlashTimer then
+        unitFrame.DotMasterBorderFlashTimer:Cancel()
+        unitFrame.DotMasterBorderFlashTimer = nil
       end
-    end)
 
-    -- Return the animation controller
-    return {
-      Play = function()
-        UpdateMaskWidth()
-        animGroup:Play()
-      end,
-      Stop = function()
-        animGroup:Stop()
+      -- Stop nameplate flash animation
+      if unitFrame.DotMasterFlashAnimation then
+        unitFrame.DotMasterFlashAnimation:Stop()
+        unitFrame.DotMasterFlashAnimation = nil
       end
-    }
-  end
+
+      -- Restore any text layers
+      if unitFrame.healthBar and unitFrame.healthBar.unitName then
+        unitFrame.healthBar.unitName:SetDrawLayer("OVERLAY", 6)
+      end
+      if unitFrame.healthBar and unitFrame.healthBar.lifePercent then
+        unitFrame.healthBar.lifePercent:SetDrawLayer("OVERLAY", 6)
+      end
+    end
+  }
 end
 
 -- Check for expiring DoTs and trigger flashes
@@ -299,7 +235,7 @@ function DM:CheckForExpiringDoTs(unitToken)
 
   for spellID, dotInfo in pairs(activeDots) do
     local remainingTime = dotInfo.expirationTime - now
-    DM:NameplateDebug("DoT %s has %s seconds remaining", dotInfo.name, remainingTime)
+    DM:NameplateDebug("DoT %s has %s seconds remaining", dotInfo.name or "Unknown", remainingTime)
 
     if remainingTime > 0 and remainingTime <= threshold then
       expiringFound = true
@@ -317,7 +253,8 @@ function DM:CheckForExpiringDoTs(unitToken)
   if expiringFound then
     -- Only create a new flash or restart if we don't already have one
     if not currentlyFlashing then
-      DM:NameplateDebug("Starting new flash for %s (%.1f seconds left)", expiringDoTName, expiringDoTTime)
+      DM:NameplateDebug("Starting new flash for %s (%.1f seconds left)", expiringDoTName or "Unknown",
+      expiringDoTTime or 0)
       local flash = self:CreateNameplateFlash(unitFrame, expiringDoTColor)
       if flash then
         self.flashAnimations[unitToken] = flash
