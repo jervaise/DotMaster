@@ -209,9 +209,10 @@ function DM:CheckForExpiringDoTs(unitToken)
   if not activeDots or not next(activeDots) then
     -- If no dots found, stop any existing flash
     local unitFrame = nameplate.unitFrame
-    if unitFrame.DotMasterBorderPulseTimer then
-      unitFrame.DotMasterBorderPulseTimer:Cancel()
-      unitFrame.DotMasterBorderPulseTimer = nil
+    if unitFrame.DotMasterBorderFlashTimer then
+      unitFrame.DotMasterBorderFlashTimer:Cancel()
+      unitFrame.DotMasterBorderFlashTimer = nil
+      unitFrame.DotMasterIsFlashing = nil
       DM:NameplateDebug("Stopping border flash timer - no DoTs found")
     end
 
@@ -231,16 +232,13 @@ function DM:CheckForExpiringDoTs(unitToken)
   local now = GetTime()
   local threshold = DM.settings.flashThresholdSeconds or 3.0
 
-  -- Debug flag to force flashing for testing
-  local forceFlash = false
-
   for spellID, dotInfo in pairs(activeDots) do
     remainingTime = dotInfo.expirationTime - now
 
     DM:NameplateDebug("Checking spell %s (%d) - remaining time: %.1f, threshold: %.1f",
       dotInfo.name or "Unknown", spellID, remainingTime, threshold)
 
-    if remainingTime > 0 and (remainingTime <= threshold or forceFlash) then
+    if remainingTime > 0 and remainingTime <= threshold then
       expiringFound = true
       expiringDoTName = dotInfo.name
       expiringDoTColor = dotInfo.color
@@ -256,61 +254,77 @@ function DM:CheckForExpiringDoTs(unitToken)
   if expiringFound then
     -- Check the flashing mode (border or full)
     if DM.settings.borderOnly then
-      -- Border-only mode
-      -- First, ensure we have a health bar with flash capability
+      -- Border-only mode - use a simple alternating color approach
       local healthBar = unitFrame.healthBar
-      if not healthBar then return end
+      if not healthBar or not healthBar.border then return end
 
-      -- Access the Plater object
-      local Plater = _G["Plater"]
-      if not Plater then return end
-
-      -- Make sure we have the HealthFlashFrame
-      if not healthBar.HealthFlashFrame then
-        DM:NameplateDebug("Creating missing HealthFlashFrame")
-        Plater.CreateHealthFlashFrame(unitFrame.PlateFrame)
+      -- Store the original color for restoration
+      if not unitFrame.DotMasterOrigBorderColor then
+        if healthBar.border.originalColor then
+          unitFrame.DotMasterOrigBorderColor = {
+            healthBar.border.originalColor[1],
+            healthBar.border.originalColor[2],
+            healthBar.border.originalColor[3],
+            healthBar.border.originalColor[4] or 1
+          }
+        else
+          -- Default to black if we can't find the original
+          unitFrame.DotMasterOrigBorderColor = { 0, 0, 0, 1 }
+        end
       end
 
-      -- Direct access to the flash frame
-      local flashFrame = healthBar.HealthFlashFrame
-      if not flashFrame then
-        DM:NameplateDebug("Failed to create or access HealthFlashFrame")
-        return
+      -- Get the DoT color for the flash
+      local r, g, b = expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3]
+
+      -- Store the flash color
+      if not unitFrame.DotMasterFlashColor then
+        unitFrame.DotMasterFlashColor = { r, g, b, 1 }
       end
 
-      -- Set up a repeating pulse timer if not already flashing
-      if not unitFrame.DotMasterBorderPulseTimer then
-        DM:NameplateDebug("Setting up border pulse timer for %s", unitToken)
+      -- Set up a repeating alternating color timer if not already flashing
+      if not unitFrame.DotMasterIsFlashing then
+        DM:NameplateDebug("Starting border flash for %s", unitToken)
+        unitFrame.DotMasterIsFlashing = true
 
-        -- Create a new timer that will continuously pulse the border
-        unitFrame.DotMasterBorderPulseTimer = C_Timer.NewTicker(0.3, function()
-          if unitFrame and unitFrame:IsShown() and healthBar and flashFrame then
-            -- Force the canHealthFlash flag to true
-            healthBar.canHealthFlash = true
+        -- Apply the first flash immediately
+        if healthBar.border and healthBar.border.SetVertexColor then
+          healthBar.border:SetVertexColor(r, g, b, 1)
+        end
 
-            -- Direct manipulation of flash animation
-            local animation = flashFrame.animation
-            if animation then
-              -- If animation is not playing, show the frame and play
-              if not animation:IsPlaying() then
-                flashFrame:Show()
-                animation:Play()
-                DM:NameplateDebug("Playing direct flash animation")
+        -- Create a timer that will alternate border colors
+        if not unitFrame.DotMasterBorderFlashTimer then
+          unitFrame.DotMasterBorderFlashTimer = C_Timer.NewTicker(0.25, function()
+            if not unitFrame or not unitFrame:IsShown() or not healthBar or not healthBar.border then
+              -- Clean up timer if frame is gone
+              if unitFrame and unitFrame.DotMasterBorderFlashTimer then
+                unitFrame.DotMasterBorderFlashTimer:Cancel()
+                unitFrame.DotMasterBorderFlashTimer = nil
+                unitFrame.DotMasterIsFlashing = nil
+                DM:NameplateDebug("Canceling border flash timer - frame no longer visible")
               end
-            elseif healthBar.PlayHealthFlash then
-              -- Fallback to the PlayHealthFlash function if available
-              healthBar.PlayHealthFlash(0.15)
-              DM:NameplateDebug("Using PlayHealthFlash fallback")
+              return
             end
-          else
-            -- Clean up timer if frame is gone
-            if unitFrame.DotMasterBorderPulseTimer then
-              unitFrame.DotMasterBorderPulseTimer:Cancel()
-              unitFrame.DotMasterBorderPulseTimer = nil
-              DM:NameplateDebug("Canceling border pulse timer - frame no longer visible")
+
+            -- Toggle between flash color and original/DoT color
+            if unitFrame.DotMasterBorderState then
+              -- Use original/DoT color
+              local origColor = unitFrame.DotMasterOrigBorderColor
+              if healthBar.border.SetVertexColor then
+                healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
+                DM:NameplateDebug("Flashing border - original color")
+              end
+              unitFrame.DotMasterBorderState = false
+            else
+              -- Use flash color (bright white or bright DoT color)
+              if healthBar.border.SetVertexColor then
+                -- Make a brighter version of the DoT color
+                healthBar.border:SetVertexColor(1, 1, 1, 1)
+                DM:NameplateDebug("Flashing border - white")
+              end
+              unitFrame.DotMasterBorderState = true
             end
-          end
-        end)
+          end)
+        end
       end
     else
       -- Full nameplate mode
@@ -337,10 +351,21 @@ function DM:CheckForExpiringDoTs(unitToken)
     end
   else
     -- No expiring DoT, stop any flashing
-    if unitFrame.DotMasterBorderPulseTimer then
-      unitFrame.DotMasterBorderPulseTimer:Cancel()
-      unitFrame.DotMasterBorderPulseTimer = nil
-      DM:NameplateDebug("Stopping border pulse timer - no expiring DoTs")
+    if unitFrame.DotMasterBorderFlashTimer then
+      unitFrame.DotMasterBorderFlashTimer:Cancel()
+      unitFrame.DotMasterBorderFlashTimer = nil
+      unitFrame.DotMasterIsFlashing = nil
+
+      -- Restore original border color
+      local healthBar = unitFrame.healthBar
+      if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
+        local origColor = unitFrame.DotMasterOrigBorderColor
+        if healthBar.border.SetVertexColor then
+          healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
+        end
+      end
+
+      DM:NameplateDebug("Stopping border flash timer - no expiring DoTs")
     end
 
     if unitFrame.DotMasterFlash then
@@ -474,9 +499,18 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
     end
 
     -- Stop any border flash timer
-    if unitFrame.DotMasterBorderPulseTimer then
-      unitFrame.DotMasterBorderPulseTimer:Cancel()
-      unitFrame.DotMasterBorderPulseTimer = nil
+    if unitFrame.DotMasterBorderFlashTimer then
+      unitFrame.DotMasterBorderFlashTimer:Cancel()
+      unitFrame.DotMasterBorderFlashTimer = nil
+      unitFrame.DotMasterIsFlashing = nil
+
+      -- Restore original border color
+      if healthBar and healthBar.border and unitFrame.DotMasterOrigBorderColor then
+        local origColor = unitFrame.DotMasterOrigBorderColor
+        if healthBar.border.SetVertexColor then
+          healthBar.border:SetVertexColor(origColor[1], origColor[2], origColor[3], origColor[4])
+        end
+      end
     end
 
     -- Stop full nameplate flashing
