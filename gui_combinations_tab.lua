@@ -100,9 +100,9 @@ function DM:CreateCombinationsTab(parent)
   -- Create combinations list
   local listFrame = CreateFrame("Frame", nil, contentFrame)
   listFrame:SetPoint("TOP", contentFrame, "TOP", 0, 0)
-  listFrame:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
   listFrame:SetPoint("BOTTOM", contentFrame, "BOTTOM", 0, 40)
-  listFrame:SetWidth(contentFrame:GetWidth() - 20)
+  listFrame:SetWidth(430)                                 -- Set to 430px exactly
+  listFrame:SetPoint("CENTER", contentFrame, "TOP", 0, 0) -- Center align at top
 
   -- List header
   local headerFrame = CreateFrame("Frame", nil, listFrame)
@@ -144,7 +144,7 @@ function DM:CreateCombinationsTab(parent)
   local scrollFrame = CreateFrame("ScrollFrame", nil, listFrame, "UIPanelScrollFrameTemplate")
   scrollFrame:SetPoint("TOP", headerFrame, "BOTTOM", 0, -1)
   scrollFrame:SetPoint("LEFT", listFrame, "LEFT", 0, 0)
-  scrollFrame:SetPoint("RIGHT", listFrame, "RIGHT", -20, 0)
+  scrollFrame:SetPoint("RIGHT", listFrame, "RIGHT", 0, 0) -- No space for scrollbar
   scrollFrame:SetPoint("BOTTOM", listFrame, "BOTTOM", 0, 0)
 
   -- Hide scrollbar
@@ -168,7 +168,8 @@ function DM:CreateCombinationsTab(parent)
 
   -- Content frame inside the scroll frame
   local scrollContent = CreateFrame("Frame", nil, scrollFrame)
-  scrollContent:SetSize(scrollFrame:GetWidth(), 1000) -- Will be adjusted dynamically
+  scrollContent:SetWidth(scrollFrame:GetWidth())
+  scrollContent:SetHeight(1000) -- Will be adjusted dynamically
   scrollFrame:SetScrollChild(scrollContent)
 
   -- Add New Combination button
@@ -176,6 +177,7 @@ function DM:CreateCombinationsTab(parent)
   addButton:SetPoint("BOTTOM", contentFrame, "BOTTOM", 0, 10)
   addButton:SetSize(200, 25)
   addButton:SetText("Create New Combination")
+  addButton:SetPoint("CENTER", contentFrame, "BOTTOM", 0, 10) -- Center align at bottom
 
   addButton:SetScript("OnClick", function()
     DM:ShowCombinationDialog()
@@ -199,7 +201,9 @@ function DM:CreateCombinationsTab(parent)
       -- Create error message
       local messageFrame = CreateFrame("Frame", nil, scrollContent)
       messageFrame:SetSize(scrollContent:GetWidth(), 80)
-      messageFrame:SetPoint("CENTER", scrollContent, "CENTER")
+      messageFrame:SetPoint("TOP", scrollContent, "TOP", 0, -20)
+      messageFrame:SetPoint("LEFT", scrollContent, "LEFT", 0, 0)
+      messageFrame:SetPoint("RIGHT", scrollContent, "RIGHT", 0, 0)
 
       local messageBg = messageFrame:CreateTexture(nil, "BACKGROUND")
       messageBg:SetAllPoints()
@@ -209,11 +213,13 @@ function DM:CreateCombinationsTab(parent)
       messageText:SetPoint("CENTER", messageFrame, "CENTER", 0, 10)
       messageText:SetText("Combinations database not initialized")
       messageText:SetTextColor(1, 0.3, 0.3)
+      messageText:SetWidth(messageFrame:GetWidth() - 20)
+      messageText:SetJustifyH("CENTER")
 
       -- Add a button to force initialization
       local initButton = CreateFrame("Button", nil, messageFrame, "UIPanelButtonTemplate")
       initButton:SetSize(200, 24)
-      initButton:SetPoint("CENTER", messageFrame, "CENTER", 0, -15)
+      initButton:SetPoint("TOP", messageText, "BOTTOM", 0, -10)
       initButton:SetText("Initialize Combinations Database")
 
       initButton:SetScript("OnClick", function()
@@ -392,7 +398,7 @@ function DM:CreateCombinationsTab(parent)
 
       -- Position the row
       row:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
-      row:SetPoint("RIGHT", scrollContent, "RIGHT", 0, 0)
+      row:SetWidth(scrollContent:GetWidth()) -- Match scroll content width
 
       -- Background color (alternating)
       local rowBg = row:GetRegions()
@@ -807,6 +813,14 @@ function DM:ShowCombinationDialog(comboID)
     child:SetParent(nil)
   end
 
+  -- Also explicitly remove any FontStrings that might be attached directly
+  for _, region in ipairs({ dialog.spellsContent:GetRegions() }) do
+    if region:GetObjectType() == "FontString" then
+      region:Hide()
+      region:SetText("")
+    end
+  end
+
   -- If editing existing combo, load data
   if comboID and DM.combinations and DM.combinations.data[comboID] then
     local combo = DM.combinations.data[comboID]
@@ -840,6 +854,9 @@ function DM:ShowCombinationDialog(comboID)
   else
     dialog.title:SetText("New Combination")
     dialog.comboID = nil
+
+    -- Show the empty state message
+    DM:UpdateCombinationSpellList(dialog)
   end
 
   -- Show the dialog
@@ -868,9 +885,18 @@ function DM:UpdateCombinationSpellList(dialog)
     return
   end
 
-  -- Clear current spell list
-  for _, child in pairs({ dialog.spellsContent:GetChildren() }) do
+  -- First, make sure to clean up any previously created region (like FontStrings)
+  for _, region in ipairs({ dialog.spellsContent:GetRegions() }) do
+    if region:GetObjectType() == "FontString" then
+      region:Hide()
+      region:ClearAllPoints()
+    end
+  end
+
+  -- Clean up any frame children as well
+  for _, child in ipairs({ dialog.spellsContent:GetChildren() }) do
     child:Hide()
+    child:SetParent(nil)
   end
 
   -- Exit if no spells
@@ -878,8 +904,10 @@ function DM:UpdateCombinationSpellList(dialog)
     self:DebugMsg("UpdateCombinationSpellList: No spells in combination")
     local noSpellsText = dialog.spellsContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     noSpellsText:SetPoint("CENTER", dialog.spellsContent, "CENTER")
-    noSpellsText:SetText("No spells added to this combination")
-    noSpellsText:SetTextColor(0.7, 0.7, 0.7)
+    noSpellsText:SetText("Add spells to the combination using the button below")
+    noSpellsText:SetTextColor(1, 0.82, 0) -- Gold color for better visibility
+    noSpellsText:SetWidth(dialog.spellsContent:GetWidth() - 20)
+    noSpellsText:SetJustifyH("CENTER")
     return
   end
 
@@ -958,8 +986,8 @@ function DM:UpdateCombinationSpellList(dialog)
 
     -- Remove button
     local removeButton = CreateFrame("Button", nil, row)
-    removeButton:SetSize(16, 16)
-    removeButton:SetPoint("RIGHT", row, "RIGHT", -5, 0)
+    removeButton:SetSize(24, 24)                        -- Increased from 16x16 to 24x24
+    removeButton:SetPoint("RIGHT", row, "RIGHT", -8, 0) -- Better positioning
     removeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
     removeButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
 
@@ -975,7 +1003,7 @@ function DM:UpdateCombinationSpellList(dialog)
         local mouseX, mouseY = x - left, y - bottom
 
         -- Check if click is not in remove button area
-        if mouseX < (width - 20) then
+        if mouseX < (width - 30) then -- Adjusted for larger button (was 20)
           -- Remove spell on row click
           for i, id in ipairs(dialog.selectedSpells) do
             if id == spellID then
@@ -1107,8 +1135,8 @@ function DM:ShowSpellSelectionForCombo(parent)
     local filteredSpells = {}
 
     for spellIDStr, spellData in pairs(DM.dmspellsdb) do
-      -- Class match check (player class or ALL)
-      if (spellData.wowclass and (spellData.wowclass == playerClass or spellData.wowclass == "ALL")) then
+      -- Class match check (player class or ALL) AND tracked=1
+      if (spellData.wowclass and (spellData.wowclass == playerClass or spellData.wowclass == "ALL") and spellData.tracked == 1) then
         -- Add to filtered list
         table.insert(filteredSpells, { id = tonumber(spellIDStr), data = spellData })
       end
@@ -1125,6 +1153,28 @@ function DM:ShowSpellSelectionForCombo(parent)
     local buttonHeight = 44
     local yOffset = 0
 
+    -- Check if we have any spells after filtering and add guidance if none found
+    if #filteredSpells == 0 then
+      -- Create a help message frame
+      local helpFrame = CreateFrame("Frame", nil, scrollContent)
+      helpFrame:SetSize(scrollContent:GetWidth(), 120)
+      helpFrame:SetPoint("TOP", scrollContent, "TOP", 0, -10)
+
+      -- Add message text
+      local helpText = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      helpText:SetPoint("TOP", helpFrame, "TOP", 0, 0)
+      helpText:SetWidth(scrollContent:GetWidth() - 40)
+      helpText:SetText(
+        "No tracked spells available.\n\nYou need to mark spells as 'tracked' in the Database tab, or use Find My Dots to add spells to your database.")
+      helpText:SetTextColor(1, 0.82, 0)
+      helpText:SetJustifyH("CENTER")
+      helpText:SetJustifyV("TOP")
+      helpText:SetSpacing(5)
+
+      scrollContent:SetHeight(120)
+      return
+    end
+
     for index, spellInfo in ipairs(filteredSpells) do
       local spellID = spellInfo.id
       local spellData = spellInfo.data
@@ -1139,11 +1189,11 @@ function DM:ShowSpellSelectionForCombo(parent)
       local bg = button:CreateTexture(nil, "BACKGROUND")
       bg:SetAllPoints()
 
-      -- Set background color - slightly brighter if selected
+      -- Set background color - much darker for unselected rows
       local isSelected = selectedSpells[spellID] or false
-      local baseColor = index % 2 == 0 and 0.2 or 0.15
-      local bgColor = isSelected and baseColor + 0.1 or baseColor
-      bg:SetColorTexture(bgColor, bgColor, bgColor, 0.8)
+      local baseColor = index % 2 == 0 and 0.12 or 0.08 -- Much darker base colors
+      local bgColor = isSelected and 0.3 or baseColor   -- Bright for selected, dark for unselected
+      bg:SetColorTexture(bgColor, bgColor, bgColor, 0.9)
 
       -- Checkbox
       local checkbox = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
@@ -1164,11 +1214,11 @@ function DM:ShowSpellSelectionForCombo(parent)
         if isChecked then
           selectedSpells[spellID] = true
           -- Update background color when selected
-          bg:SetColorTexture(baseColor + 0.1, baseColor + 0.1, baseColor + 0.1, 0.8)
+          bg:SetColorTexture(baseColor + 0.1, baseColor + 0.1, baseColor + 0.1, 0.9)
         else
           selectedSpells[spellID] = nil
           -- Restore normal background color
-          bg:SetColorTexture(baseColor, baseColor, baseColor, 0.8)
+          bg:SetColorTexture(baseColor, baseColor, baseColor, 0.9)
         end
       end)
 
@@ -1184,26 +1234,6 @@ function DM:ShowSpellSelectionForCombo(parent)
       else
         icon:SetTexture(134400) -- Question mark
       end
-
-      -- Mouseover highlight
-      button:SetScript("OnEnter", function()
-        -- Brighten the background slightly on hover
-        if not selectedSpells[spellID] then
-          bg:SetColorTexture(baseColor + 0.05, baseColor + 0.05, baseColor + 0.05, 0.8)
-        else
-          -- If selected, brighten a bit more on hover
-          bg:SetColorTexture(baseColor + 0.15, baseColor + 0.15, baseColor + 0.15, 0.8)
-        end
-      end)
-
-      button:SetScript("OnLeave", function()
-        -- Restore appropriate background based on selection state
-        if selectedSpells[spellID] then
-          bg:SetColorTexture(baseColor + 0.1, baseColor + 0.1, baseColor + 0.1, 0.8)
-        else
-          bg:SetColorTexture(baseColor, baseColor, baseColor, 0.8)
-        end
-      end)
 
       -- Spell name with ID in parentheses
       local name = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -1256,7 +1286,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     -- Title - centered at top with more space
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", frame, "TOP", 0, -20)
-    title:SetText("Select Spells for Combination")
+    title:SetText("Tracked Spells Available")
     title:SetWidth(frame:GetWidth() - 40)
     title:SetJustifyH("CENTER")
 
