@@ -188,12 +188,12 @@ function DM:GetActiveDots(unitToken)
   elseif AuraUtil and AuraUtil.ForEachAura then
     -- Use AuraUtil.ForEachAura which works on all client versions
     AuraUtil.ForEachAura(unitToken, "HARMFUL", nil,
-      function(name, _, count, _, duration, expirationTime, caster, _, _, id, _, _, _, _, _)
+      function(name, icon, count, _, duration, expirationTime, caster, _, _, id, _, _, _, _, _)
         if spellsToCheck[id] and caster == "player" then
           -- If we get here, we found one of our DoTs
           activeDots[id] = {
             name = name,
-            icon = GetSpellTexture(id),
+            icon = icon,
             duration = duration,
             expirationTime = expirationTime,
             applications = count or 1,
@@ -205,14 +205,15 @@ function DM:GetActiveDots(unitToken)
     -- Fallback to UnitAura for legacy support
     pcall(function()
       for i = 1, 40 do
-        local name, _, count, _, duration, expirationTime, source, _, _, auraSpellID = UnitAura(unitToken, i, "HARMFUL")
+        local name, icon, count, _, duration, expirationTime, source, _, _, auraSpellID = UnitAura(unitToken, i,
+          "HARMFUL")
         if not name then break end
 
         if spellsToCheck[auraSpellID] and source == "player" then
           -- If we get here, we found one of our DoTs
           activeDots[auraSpellID] = {
             name = name,
-            icon = GetSpellTexture(auraSpellID),
+            icon = icon,
             duration = duration,
             expirationTime = expirationTime,
             applications = count or 1,
