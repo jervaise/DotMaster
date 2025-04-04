@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.12 (2023-07-25)
+- **Added**: Flashing feature for DoTs that are about to expire
+- **Added**: Configurable threshold (1-8 seconds) for when to start flashing
+- **Enhanced**: Flash animation supports both border-only and full nameplate coloring modes
+- **Technical**: Integrated with Plater's flash animation system for smooth visual feedback
+
 ### Version 0.9.11 (2023-07-15)
 - **Added**: Border-only coloring mode that colors just the nameplate border instead of the entire nameplate
 - **Added**: Configurable border thickness when using border-only coloring

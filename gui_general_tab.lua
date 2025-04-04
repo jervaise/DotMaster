@@ -247,6 +247,76 @@ function DM:CreateGeneralTab(parent)
     thicknessContainer:Hide()
   end
 
+  -- Add flashing checkbox
+  local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
+    checkboxContainer, borderOnlyCheckbox, -8, "Flashing")
+  if DM.settings.flashExpiring == nil then DM.settings.flashExpiring = false end
+  flashingCheckbox:SetChecked(DM.settings.flashExpiring)
+
+  -- Create a container for the seconds input
+  local secondsContainer = CreateFrame("Frame", nil, checkboxContainer)
+  secondsContainer:SetSize(70, 26)
+  secondsContainer:SetPoint("LEFT", flashingCheckbox.labelText, "RIGHT", 10, 0)
+
+  -- Create the seconds input display
+  local secondsValue = secondsContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  secondsValue:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
+  secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
+
+  -- Create decrease button for seconds
+  local secondsDecreaseButton = CreateFrame("Button", nil, secondsContainer)
+  secondsDecreaseButton:SetSize(18, 18)
+  secondsDecreaseButton:SetPoint("LEFT", secondsValue, "RIGHT", 2, 0)
+  secondsDecreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
+  secondsDecreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
+  secondsDecreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  secondsDecreaseButton:SetScript("OnClick", function()
+    if DM.settings.flashThresholdSeconds > 1 then
+      DM.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds - 0.5
+      secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
+      DM:SaveSettings()
+    end
+  end)
+
+  -- Create increase button for seconds
+  local secondsIncreaseButton = CreateFrame("Button", nil, secondsContainer)
+  secondsIncreaseButton:SetSize(18, 18)
+  secondsIncreaseButton:SetPoint("LEFT", secondsDecreaseButton, "RIGHT", 2, 0)
+  secondsIncreaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
+  secondsIncreaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
+  secondsIncreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  secondsIncreaseButton:SetScript("OnClick", function()
+    if DM.settings.flashThresholdSeconds < 8 then
+      DM.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds + 0.5
+      secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
+      DM:SaveSettings()
+    end
+  end)
+
+  -- Initially hide or show the seconds control based on checkbox state
+  if DM.settings.flashExpiring then
+    secondsContainer:Show()
+  else
+    secondsContainer:Hide()
+  end
+
+  -- Set up the flashing checkbox handler
+  flashingCheckbox:SetScript("OnClick", function(self)
+    DM.settings.flashExpiring = self:GetChecked()
+    DM:PrintMessage("Flashing " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
+
+    -- Show/hide the seconds control based on checkbox state
+    if secondsContainer then
+      if self:GetChecked() then
+        secondsContainer:Show()
+      else
+        secondsContainer:Hide()
+      end
+    end
+
+    DM:SaveSettings()
+  end)
+
   -- Set up the border-only checkbox handler
   borderOnlyCheckbox:SetScript("OnClick", function(self)
     DM.settings.borderOnly = self:GetChecked()

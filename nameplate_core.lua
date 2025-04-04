@@ -91,3 +91,50 @@ function DM:GetHealthBar(nameplate)
 
   return healthBar
 end
+
+-- Process a single unit for DoT tracking and nameplate coloring
+function DM:ProcessDotsForUnit(unit)
+  if not unit or not self:ShouldProcessNameplates() then return end
+
+  local unitName = UnitName(unit)
+  if not unitName then return end
+
+  DM:NameplateDebug("Processing DoTs for unit: %s", unitName)
+
+  -- Find all active DoTs on this unit
+  local activeDots = self:GetActiveDots(unit)
+  if not activeDots or not next(activeDots) then
+    -- If we were previously tracking this unit but now it has no DoTs,
+    -- we need to reset its color
+    self:ResetNameplate(unit)
+    return
+  end
+
+  -- Find the best color to use based on priority rules
+  local bestColor, bestSpellName, bestSpellID = self:GetBestColorForUnit(unit, activeDots)
+
+  if bestColor then
+    DM:NameplateDebug("Best color found for %s: %d/%d/%d (from %s)",
+      unitName, bestColor[1] * 255, bestColor[2] * 255, bestColor[3] * 255, bestSpellName)
+
+    -- Find the nameplate for this unit
+    local nameplate = C_NamePlate.GetNamePlateForUnit(unit)
+    if nameplate then
+      -- Apply the color to the nameplate
+      self:ApplyColorToNameplate(nameplate, unit, bestColor)
+    else
+      DM:NameplateDebug("Could not find nameplate for unit: %s", unitName)
+    end
+  else
+    DM:NameplateDebug("No DoT color priority found for %s", unitName)
+
+    -- Reset the nameplate to its original color if we've colored it before
+    self:ResetNameplate(unit)
+  end
+
+  -- Check for expiring DoTs regardless of whether we found a best color
+  -- This ensures we handle flashing animations properly
+  if DM.settings.flashExpiring then
+    self:CheckForExpiringDoTs(unit)
+  end
+end

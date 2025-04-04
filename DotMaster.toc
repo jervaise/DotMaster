@@ -1,9 +1,13 @@
-## Interface: 110100
+## Interface: 100200
 ## Title: DotMaster
-## Notes: Track your DoTs on enemy nameplates
-## Author: Your Name
-## Version: 0.9.11
+## Notes: Tracks your damage-over-time abilities on nameplates
+## Author: DM Dev Team
+## Version: 0.9.12
 ## SavedVariables: DotMasterDB
+## X-Curse-Project-ID: 123456
+## X-Wago-ID: 123456
+## X-WoWI-ID: 123456
+## X-DotMaster-Debug: true
 ## X-Category: Combat
 ## X-License: All Rights Reserved
 ## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga

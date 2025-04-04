@@ -19,10 +19,14 @@ function DM:SaveSettings()
     DotMasterDB.settings.forceColor = DM.settings.forceColor
     DotMasterDB.settings.borderOnly = DM.settings.borderOnly
     DotMasterDB.settings.borderThickness = DM.settings.borderThickness
+    DotMasterDB.settings.flashExpiring = DM.settings.flashExpiring
+    DotMasterDB.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds
 
     DM:DatabaseDebug("Force threat color setting saved: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
     DM:DatabaseDebug("Border only setting saved: " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
     DM:DatabaseDebug("Border thickness saved: " .. (DM.settings.borderThickness or "Default"))
+    DM:DatabaseDebug("Flash expiring setting saved: " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
+    DM:DatabaseDebug("Flash threshold saved: " .. (DM.settings.flashThresholdSeconds or "Default") .. " seconds")
   end
 
   -- Save debug categories and options
@@ -81,6 +85,26 @@ function DM:LoadSettings()
   else
     DM.settings.borderThickness = 2
     DM:DatabaseDebug("No saved border thickness setting found, using default (2)")
+  end
+
+  -- Load flash expiring setting
+  if DotMasterDB.settings and DotMasterDB.settings.flashExpiring ~= nil then
+    DM.settings.flashExpiring = DotMasterDB.settings.flashExpiring
+    DM:DatabaseDebug("Flash expiring setting loaded: " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
+  else
+    DM.settings.flashExpiring = DM.defaults.flashExpiring
+    DM:DatabaseDebug("No saved flash expiring setting found, using default (" ..
+    (DM.defaults.flashExpiring and "Enabled" or "Disabled") .. ")")
+  end
+
+  -- Load flash threshold setting
+  if DotMasterDB.settings and DotMasterDB.settings.flashThresholdSeconds ~= nil then
+    DM.settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
+    DM:DatabaseDebug("Flash threshold loaded: " .. DM.settings.flashThresholdSeconds .. " seconds")
+  else
+    DM.settings.flashThresholdSeconds = DM.defaults.flashThresholdSeconds
+    DM:DatabaseDebug("No saved flash threshold setting found, using default (" ..
+    DM.defaults.flashThresholdSeconds .. " seconds)")
   end
 
   -- Load debug settings

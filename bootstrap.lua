@@ -17,7 +17,9 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "0.9.11"
+  version = "0.9.12",
+  flashExpiring = false,
+  flashThresholdSeconds = 3.0
 }
 
 -- Debug categories (minimal initial setup)
