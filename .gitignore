@@ -1,0 +1,22 @@
+# VSCode files
+.vscode/
+*.code-workspace
+.history/
+
+# Backup files
+*.bak
+*.backup
+*~
+*.old
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Zip files
+*.zip 
