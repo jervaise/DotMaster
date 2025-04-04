@@ -514,7 +514,7 @@ function DM:CreateGeneralTab(parent)
   table.insert(panels, combinationsPanel)
 
   local borderModePanel = CreateAccordionPanel(
-    "Border Color Mode",
+    "Border-only Color Mode",
     "DotMaster can modify nameplate borders instead of the entire nameplate color. This less intrusive option preserves other nameplate visuals while still providing DoT tracking.",
     false
   )
