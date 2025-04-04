@@ -145,7 +145,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create minimap checkbox
   local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
-    checkboxContainer, enableCheckbox, -5, "Show Minimap Icon")
+    checkboxContainer, enableCheckbox, -4, "Show Minimap Icon")
   minimapCheckbox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
   minimapCheckbox:SetScript("OnClick", function(self)
     if not DotMasterDB or not DotMasterDB.minimap then return end
@@ -166,7 +166,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create force threat color checkbox
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
-    checkboxContainer, minimapCheckbox, -5, "Force Threat Color")
+    checkboxContainer, minimapCheckbox, -4, "Force Threat Color")
   if DM.settings == nil then DM.settings = {} end
   if DM.settings.forceColor == nil then DM.settings.forceColor = false end
   forceColorCheckbox:SetChecked(DM.settings.forceColor)
@@ -181,7 +181,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create border-only checkbox and thickness control together
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    checkboxContainer, forceColorCheckbox, -5, "Border-only")
+    checkboxContainer, forceColorCheckbox, -4, "Border-only")
   if DM.settings.borderOnly == nil then DM.settings.borderOnly = false end
   borderOnlyCheckbox:SetChecked(DM.settings.borderOnly)
 
@@ -280,7 +280,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Add flashing checkbox
   local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
-    checkboxContainer, borderOnlyCheckbox, -5, "Expiry Flash") -- Changed from -8 to -5
+    checkboxContainer, borderOnlyCheckbox, -4, "Expiry Flash") -- Changed from -5 to -4
   if DM.settings.flashExpiring == nil then DM.settings.flashExpiring = false end
   flashingCheckbox:SetChecked(DM.settings.flashExpiring)
 
