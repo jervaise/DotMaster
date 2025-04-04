@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.7 (2023-04-18)
+
+#### Fixed
+- Fixed combinations appearing expanded by default when creating new ones
+- Modified the initialization logic to ensure combinations start collapsed
+- Updated initialization of row.isExpanded to ensure consistent behavior
+- Improved the isExpanded flag handling in dialog for new combinations
+- Fixed default expanded state in multiple places to ensure consistent behavior
+
 ### Version 0.9.6 (2023-04-17)
 
 #### Added

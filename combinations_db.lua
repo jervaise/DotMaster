@@ -235,8 +235,12 @@ function DM:CreateCombination(name, spells, color)
     color = color or { r = 1, g = 0, b = 0, a = 1 },
     priority = priority,
     enabled = true,
-    threshold = "all" -- "all" or numeric value
+    threshold = "all", -- "all" or numeric value
+    isExpanded = false -- ALWAYS start collapsed
   }
+
+  -- Debug message to confirm expanded state is set correctly
+  DM:DebugMsg("New combination created with ID: " .. id .. ", isExpanded explicitly set to false")
 
   -- Save changes safely
   local success, errorMsg = pcall(function()

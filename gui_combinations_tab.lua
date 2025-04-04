@@ -169,8 +169,47 @@ function DM:CreateCombinationsTab(parent)
   -- Store references to the UI elements
   local combinationRows = {}
 
+  -- Function to update the layout when combinations are expanded/collapsed
+  local function UpdateCombinationsLayout()
+    local yOffset = 2         -- Start with small offset like in tracked spells tab
+    local rowHeight = 30      -- Combination row height
+    local spellRowHeight = 25 -- Spell row height
+    local spacing = 2         -- Small spacing between rows
+
+    -- Go through all combination rows
+    for index, row in ipairs(combinationRows) do
+      if row and row:IsShown() then
+        -- Position the combination row
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
+        row:SetWidth(scrollContent:GetWidth())
+
+        -- Update yOffset for next row
+        yOffset = yOffset + rowHeight + spacing
+
+        -- If this combination is expanded, position its spell frames
+        if row.isExpanded and row.spellFrames then
+          for _, spellFrame in ipairs(row.spellFrames) do
+            spellFrame:ClearAllPoints()
+            spellFrame:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
+            spellFrame:SetWidth(scrollContent:GetWidth())
+            spellFrame:Show()
+
+            -- Update yOffset for next row
+            yOffset = yOffset + spellRowHeight + spacing
+          end
+        end
+      end
+    end
+
+    -- Update scroll content height
+    scrollContent:SetHeight(math.max(yOffset, scrollFrame:GetHeight()))
+  end
+
   -- Function to update the combinations list
   local function UpdateCombinationsList()
+    self:DebugMsg("Updating combinations list")
+
     -- Clear existing rows
     for i = 1, #combinationRows do
       local row = combinationRows[i]
@@ -221,6 +260,16 @@ function DM:CreateCombinationsTab(parent)
       end)
 
       return
+    end
+
+    -- Clean up any orphaned spell frames that might remain from previous updates
+    -- This must be after we've initialized scrollContent
+    for _, child in ipairs({ scrollContent:GetChildren() }) do
+      -- Skip messageFrame which is only created when DB isn't initialized
+      if child.GetObjectType and child:GetObjectType() == "Frame" and not child.deleteButton and not child.initButton then
+        child:Hide()
+        child:SetParent(nil)
+      end
     end
 
     -- Get combinations and sort them by priority
@@ -288,76 +337,77 @@ function DM:CreateCombinationsTab(parent)
     local rowHeight = 30
     local yOffset = 2 -- Changed from 0 to 2 to match tracked spells tab's spacing
 
+    -- Initialize tracking arrays for rows and spell frames
+    local allRows = {}
+    local allSpellFrames = {}
+
     for index, comboInfo in ipairs(sortedCombos) do
-      local row = combinationRows[index]
+      local id = comboInfo.id
+      local combo = comboInfo.data
 
-      -- Create row if it doesn't exist
-      if not row then
-        row = CreateFrame("Frame", nil, scrollContent)
-        row:SetHeight(rowHeight)
+      -- Skip if no name or process if combo has a name
+      if combo.name then
+        -- Create row frame
+        local row = CreateFrame("Button", nil, scrollContent)
+        row:SetSize(scrollContent:GetWidth(), rowHeight)
+        row:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
+        row:RegisterForClicks("LeftButtonDown", "RightButtonDown")
+        row.comboID = id
 
-        -- Row background (alternating colors)
+        table.insert(allRows, row)
+
+        -- Set background
         local rowBg = row:CreateTexture(nil, "BACKGROUND")
         rowBg:SetAllPoints()
+        rowBg:SetColorTexture(0.075, 0.075, 0.075, 0.8)
+        row.rowBg = rowBg
 
-        -- Name text
-        local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        nameText:SetPoint("LEFT", row, "LEFT", 10, 0)
-        nameText:SetWidth(160)
+        -- Collapse/Expand Indicator
+        local indicator = row:CreateTexture(nil, "OVERLAY")
+        indicator:SetSize(16, 16)
+        indicator:SetPoint("LEFT", row, "LEFT", 5, 0)
+
+        -- Store ID and data for later use
+        row.comboID = id
+
+        -- Set isExpanded state from data with explicit true/false
+        -- Fix: There are two places setting isExpanded, causing conflicts
+        -- Use an explicit comparison to false instead of a default true value
+        -- For new combinations, isExpanded is explicitly set to false in combinations_db.lua
+        if combo.isExpanded == nil then
+          row.isExpanded = false -- Explicitly default to false if nil
+          self:DebugMsg("IMPORTANT: Combination '" ..
+            (combo.name or "unnamed") .. "' had nil isExpanded value, defaulting to FALSE")
+        else
+          row.isExpanded = combo.isExpanded
+          self:DebugMsg("Setting initial expand state for combo '" .. (combo.name or "unnamed") ..
+            "': " .. tostring(row.isExpanded) ..
+            " (stored value: " .. tostring(combo.isExpanded) .. ")")
+        end
+
+        -- Update indicator based on expanded state
+        if row.isExpanded then
+          indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
+        else
+          indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
+        end
+        row.indicator = indicator
+
+        -- Name text - similar to class names in tracked spells tab
+        local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        nameText:SetPoint("LEFT", row, "LEFT", 28, 0) -- Shifted right to make room for indicator
+        nameText:SetWidth(140)                        -- Reduced width to accommodate indicator
         nameText:SetJustifyH("LEFT")
         row.nameText = nameText
 
-        -- Order text (was Priority text)
-        local orderText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        orderText:SetPoint("LEFT", row, "LEFT", 290, 0)
-        row.orderText = orderText
+        -- Initialize spellFrames array to track child frames
+        row.spellFrames = {}
 
-        -- Add Up Arrow Button
-        local upArrow = CreateFrame("Button", nil, row)
-        upArrow:SetSize(20, 20) -- Match tracked spells tab size
-        upArrow:SetPoint("RIGHT", orderText, "RIGHT", 15, 0)
-        upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
-        upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
-        upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-
-        -- Disable up arrow for first item
-        if index == 1 then
-          upArrow:Disable()
-          upArrow:SetAlpha(0.5)
-        else
-          upArrow:Enable()
-          upArrow:SetAlpha(1.0)
-        end
-
-        -- Up arrow click handler
-        upArrow:SetScript("OnClick", function()
-          if index > 1 then
-            local prevComboInfo = sortedCombos[index - 1]
-            local currentComboID = comboInfo.id
-            local prevComboID = prevComboInfo.id
-
-            -- Get current priorities
-            local currentPriority = DM.combinations.data[currentComboID].priority
-            local prevPriority = DM.combinations.data[prevComboID].priority
-
-            -- Swap priorities
-            DM.combinations.data[currentComboID].priority = prevPriority
-            DM.combinations.data[prevComboID].priority = currentPriority
-
-            -- Save changes to database
-            DM:SaveCombinationsDB()
-            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
-              currentComboID, prevPriority, prevComboID, currentPriority))
-
-            -- Refresh the combinations list
-            UpdateCombinationsList()
-          end
-        end)
-
-        -- Add Down Arrow Button
+        -- Add arrow buttons exactly as in tracked spells tab
+        -- First down arrow, then up arrow (in reverse order from tracked spells)
         local downArrow = CreateFrame("Button", nil, row)
-        downArrow:SetSize(20, 20)                           -- Match tracked spells tab size
-        downArrow:SetPoint("RIGHT", upArrow, "LEFT", -2, 0) -- 2px gap between arrows
+        downArrow:SetSize(20, 20)
+        downArrow:SetPoint("RIGHT", row, "RIGHT", -140, 0) -- Position matching tracked spells tab
         downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
         downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
         downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
@@ -390,6 +440,48 @@ function DM:CreateCombinationsTab(parent)
             DM:SaveCombinationsDB()
             self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
               currentComboID, nextPriority, nextComboID, currentPriority))
+
+            -- Refresh the combinations list
+            UpdateCombinationsList()
+          end
+        end)
+
+        -- Up arrow (positioned to the right of down arrow with 2px gap)
+        local upArrow = CreateFrame("Button", nil, row)
+        upArrow:SetSize(20, 20)
+        upArrow:SetPoint("RIGHT", downArrow, "LEFT", -2, 0) -- 2px gap between arrows
+        upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
+        upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
+        upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+
+        -- Disable up arrow for first item
+        if index == 1 then
+          upArrow:Disable()
+          upArrow:SetAlpha(0.5)
+        else
+          upArrow:Enable()
+          upArrow:SetAlpha(1.0)
+        end
+
+        -- Up arrow click handler
+        upArrow:SetScript("OnClick", function()
+          if index > 1 then
+            local prevComboInfo = sortedCombos[index - 1]
+            local currentComboID = comboInfo.id
+            local prevComboID = prevComboInfo.id
+
+            -- Get current priorities
+            local currentPriority = DM.combinations.data[currentComboID].priority
+            local prevPriority = DM.combinations.data[prevComboID].priority
+
+            -- Swap priorities
+            DM.combinations.data[currentComboID].priority = prevPriority
+            DM.combinations.data[prevComboID].priority = currentPriority
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+              currentComboID, prevPriority, prevComboID, currentPriority))
 
             -- Refresh the combinations list
             UpdateCombinationsList()
@@ -508,74 +600,274 @@ function DM:CreateCombinationsTab(parent)
 
         -- Delete button
         local deleteButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        deleteButton:SetSize(60, 20)
-        deleteButton:SetPoint("LEFT", editButton, "RIGHT", 5, 0)
+        deleteButton:SetSize(45, 22)
+        deleteButton:SetPoint("RIGHT", editButton, "LEFT", -5, 0)
         deleteButton:SetText("Delete")
         row.deleteButton = deleteButton
 
         combinationRows[index] = row
+
+        -- Now handle all the settings for this row that were previously outside the if statement
+        -- Position the row
+        row:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
+        row:SetWidth(scrollContent:GetWidth()) -- Match scroll content width
+
+        -- Store ID and data for later use
+        row.comboID = id
+
+        -- REMOVED: Duplicate expanded state code (conflicts with line 373)
+        -- row.isExpanded = combo.isExpanded or true
+
+        -- REMOVED: Duplicate indicator texture setting
+        -- row.indicator:SetTexture(row.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
+        --   "Interface\\Buttons\\UI-PlusButton-Up")
+
+        -- Update background color with a dimmed version of the combination's color
+        if not row.rowBg then
+          local rowBg = row:CreateTexture(nil, "BACKGROUND")
+          rowBg:SetAllPoints()
+          row.rowBg = rowBg
+        end
+
+        if combo.color then
+          local r = combo.color.r or combo.color[1] or 1
+          local g = combo.color.g or combo.color[2] or 0
+          local b = combo.color.b or combo.color[3] or 0
+          -- Use 20% of the original color to create a dimmed background
+          row.rowBg:SetColorTexture(r * 0.2, g * 0.2, b * 0.2, 0.8)
+        else
+          -- Fallback neutral dark grey if no color
+          row.rowBg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
+        end
+
+        -- Update text fields - match class name style with combination color
+        row.nameText:SetText(combo.name or "Unnamed")
+        if combo.color then
+          local r = combo.color.r or combo.color[1] or 1
+          local g = combo.color.g or combo.color[2] or 0
+          local b = combo.color.b or combo.color[3] or 0
+          row.nameText:SetTextColor(r, g, b)       -- Use combination's color for text
+        else
+          row.nameText:SetTextColor(0.8, 0.8, 0.8) -- Default light grey
+        end
+
+        -- Update color swatch
+        if combo.color then
+          row.colorTexture:SetColorTexture(
+            combo.color.r or combo.color[1] or 1,
+            combo.color.g or combo.color[2] or 0,
+            combo.color.b or combo.color[3] or 0,
+            combo.color.a or combo.color[4] or 1
+          )
+        else
+          row.colorTexture:SetColorTexture(0.7, 0.7, 0.7, 1)
+        end
+
+        -- Button handlers
+        row.editButton:SetScript("OnClick", function()
+          DM:ShowCombinationDialog(id)
+        end)
+
+        -- Delete button click handler
+        row.deleteButton:SetScript("OnClick", function()
+          -- Create confirmation dialog
+          StaticPopupDialogs["DOTMASTER_DELETE_COMBINATION"] = {
+            text = "Are you sure you want to delete the combination '" .. combo.name .. "'?",
+            button1 = "Yes",
+            button2 = "No",
+            OnAccept = function()
+              -- Save the combination ID for cleanup
+              local combinationToDelete = comboInfo.id
+
+              -- First clean up any spell frames for this combination
+              if scrollContent then
+                -- Get all children without creating a temporary table
+                for _, child in pairs(scrollContent.GetChildren and { scrollContent:GetChildren() } or {}) do
+                  -- If this is a spell frame (no buttons) or has the correct combinationID
+                  if (child.combinationID and child.combinationID == combinationToDelete) or
+                      (not child.deleteButton and not child.editButton) then
+                    child:Hide()
+                    child:SetParent(nil)
+                  end
+                end
+              end
+
+              -- Delete the combination
+              if DM.DeleteCombination then
+                DM:DeleteCombination(combinationToDelete)
+              end
+
+              -- Update the list
+              UpdateCombinationsList()
+            end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+            preferredIndex = 3,
+          }
+          StaticPopup_Show("DOTMASTER_DELETE_COMBINATION")
+        end)
+
+        -- Store the combo ID in the row for drag & drop
+        row.comboID = id
+
+        -- Setup click handling for expand/collapse
+        row:SetScript("OnClick", function(self, button, down)
+          if button == "LeftButton" then
+            -- Toggle expanded state
+            self.isExpanded = not self.isExpanded
+            DM:DebugMsg("Toggling expand state for " ..
+              combo.name .. " to: " .. tostring(self.isExpanded) .. ", spellFrames count: " .. #self.spellFrames)
+
+            -- Update the database to remember expanded state
+            DM.combinations.data[id].isExpanded = self.isExpanded
+
+            -- Update indicator
+            if self.isExpanded then
+              self.indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
+            else
+              self.indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
+            end
+
+            -- Show/hide spell frames for this combination
+            if self.spellFrames and #self.spellFrames > 0 then
+              DM:DebugMsg("Processing " .. #self.spellFrames .. " spell frames")
+
+              for i, frame in ipairs(self.spellFrames) do
+                if frame and frame.SetShown then
+                  frame:SetShown(self.isExpanded)
+                  DM:DebugMsg("  - Setting spell frame " .. i .. " visibility to " .. tostring(self.isExpanded))
+                else
+                  DM:DebugMsg("  - Invalid spell frame at index " .. i)
+                end
+              end
+            else
+              DM:DebugMsg("No spell frames found for this combination")
+            end
+
+            -- Save changes to database
+            DM:SaveCombinationsDB()
+
+            -- Update layout
+            if container and container.UpdateCombinationsLayout then
+              container:UpdateCombinationsLayout()
+            end
+          end
+        end)
+
+        -- Show the row
+        row:Show()
+
+        -- Update yOffset for next row
+        yOffset = yOffset + rowHeight
+
+        -- Create spell frames for this combination
+        if combo.spells and #combo.spells > 0 then
+          -- Create frames for each spell in the combination
+          local spellRowHeight = 25
+          for i, spellID in ipairs(combo.spells) do
+            local spellFrame = CreateFrame("Frame", nil, scrollContent)
+            spellFrame:SetSize(scrollContent:GetWidth(), spellRowHeight)
+
+            -- Tag this spell frame with its parent combination ID for tracking
+            spellFrame.combinationID = id
+
+            -- Add to tracking arrays - BUT ONLY ONCE (not again at the end of the loop)
+            table.insert(row.spellFrames, spellFrame)
+            table.insert(allSpellFrames, spellFrame)
+
+            -- Hide spell frame initially if combination is collapsed, otherwise explicitly show it
+            -- Important: Default to hidden for newly created combinations
+            if row.isExpanded == false then
+              spellFrame:Hide()
+              self:DebugMsg("Hiding spell frame for collapsed combination: " .. combo.name)
+            else
+              -- Force showing spell frames for expanded combinations
+              spellFrame:Show()
+              self:DebugMsg("Showing spell frame for expanded combination: " .. combo.name ..
+                " (isExpanded=" .. tostring(row.isExpanded) ..
+                ", stored value=" .. tostring(combo.isExpanded) .. ")")
+            end
+
+            -- Set alternating background
+            local spellBg = spellFrame:CreateTexture(nil, "BACKGROUND")
+            spellBg:SetAllPoints()
+            if (i % 2 == 0) then
+              spellBg:SetColorTexture(0, 0, 0, 0.3)
+            else
+              spellBg:SetColorTexture(0, 0, 0, 0.2)
+            end
+
+            -- Try different ways to look up the spell info
+            local spellName, spellIcon
+
+            -- Method 1: Look up by number directly
+            if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+              local spellData = DM.dmspellsdb[spellID]
+              spellName = spellData.spellname
+              spellIcon = spellData.spellicon
+              -- Method 2: Look up by string ID
+            elseif DM.dmspellsdb and DM.dmspellsdb[tostring(spellID)] then
+              local spellData = DM.dmspellsdb[tostring(spellID)]
+              spellName = spellData.spellname
+              spellIcon = spellData.spellicon
+              -- Method 3: Use WoW API as fallback
+            else
+              local spellInfo = C_Spell.GetSpellInfo(spellID)
+              if spellInfo then
+                spellName = spellInfo.name
+                spellIcon = spellInfo.iconFileID
+              else
+                spellName = "Unknown Spell"
+                spellIcon = 134400 -- question mark
+              end
+            end
+
+            -- Add indent to indicate this is a child item
+            local indent = 25
+
+            -- Spell Icon
+            local icon = spellFrame:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(20, 20)
+            icon:SetPoint("LEFT", spellFrame, "LEFT", indent, 0)
+            icon:SetTexture(spellIcon or 134400)     -- Default to question mark if no icon
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim icon borders
+
+            -- Spell Name & ID
+            local name = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+            name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+            name:SetWidth(spellFrame:GetWidth() - indent - 30)
+            name:SetText(string.format("%s (%d)", spellName or "Unknown", spellID))
+            name:SetJustifyH("LEFT")
+          end
+        end
       end
 
-      -- Set row data
-      local id = comboInfo.id
-      local combo = comboInfo.data
-
-      -- Position the row
-      row:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
-      row:SetWidth(scrollContent:GetWidth()) -- Match scroll content width
-
-      -- Background color (alternating)
-      local rowBg = row:GetRegions()
-      rowBg:SetColorTexture(index % 2 == 0 and 0.2 or 0.15, index % 2 == 0 and 0.2 or 0.15,
-        index % 2 == 0 and 0.2 or 0.15, 0.8)
-
-      -- Update text fields
-      row.nameText:SetText(combo.name or "Unnamed")
-      row.orderText:SetText(combo.priority or "")
-
-      -- Update color swatch
-      if combo.color then
-        row.colorTexture:SetColorTexture(
-          combo.color.r or combo.color[1] or 1,
-          combo.color.g or combo.color[2] or 1,
-          combo.color.b or combo.color[3] or 1,
-          combo.color.a or combo.color[4] or 1
-        )
-      else
-        row.colorTexture:SetColorTexture(0.7, 0.7, 0.7, 1)
-      end
-
-      -- Button handlers
-      row.editButton:SetScript("OnClick", function()
-        DM:ShowCombinationDialog(id)
-      end)
-
-      row.deleteButton:SetScript("OnClick", function()
-        DM:ShowDeleteConfirmation(id, UpdateCombinationsList)
-      end)
-
-      -- Store the combo ID in the row for drag & drop
-      row.comboID = id
-
-      -- Show the row
-      row:Show()
-
-      -- Update yOffset for next row
-      yOffset = yOffset + rowHeight
+      -- Continue to next combination
     end
 
-    -- Update scroll content height
-    scrollContent:SetHeight(math.max(yOffset, scrollFrame:GetHeight()))
+    -- Update scrolling frame content height
+    scrollContent:SetHeight(math.max(yOffset, scrollContent:GetParent():GetHeight()))
+
+    -- Store references for cleanup on next update
+    container.allRows = allRows
+    container.allSpellFrames = allSpellFrames
   end
 
   -- Store the update function
   container.UpdateCombinationsList = UpdateCombinationsList
+  container.UpdateCombinationsLayout = UpdateCombinationsLayout
 
   -- Export functions to the main addon
   DM.GUI = DM.GUI or {}
   DM.GUI.UpdateCombinationsList = function()
     if container and container.UpdateCombinationsList then
       container:UpdateCombinationsList()
+    end
+  end
+  DM.GUI.UpdateCombinationsLayout = function()
+    if container and container.UpdateCombinationsLayout then
+      container:UpdateCombinationsLayout()
     end
   end
 
@@ -894,17 +1186,53 @@ function DM:ShowCombinationDialog(comboID)
         return
       end
 
+      -- Check for duplicate name
+      local isDuplicate = false
+      if DM.combinations and DM.combinations.data then
+        for id, combo in pairs(DM.combinations.data) do
+          -- Skip the current combo when editing
+          if id ~= dialog.comboID and combo.name and combo.name:lower() == name:lower() then
+            isDuplicate = true
+            break
+          end
+        end
+      end
+
+      if isDuplicate then
+        -- Create warning popup for duplicate name
+        StaticPopupDialogs["DOTMASTER_WARNING_DUPLICATE_NAME"] = {
+          text = "A combination with the name \"" .. name .. "\" already exists.\nPlease choose a different name.",
+          button1 = "OK",
+          timeout = 0,
+          whileDead = true,
+          hideOnEscape = true,
+          preferredIndex = 3,
+        }
+        StaticPopup_Show("DOTMASTER_WARNING_DUPLICATE_NAME")
+        return
+      end
+
       -- Check if we're editing or creating
       if dialog.comboID then
         -- Update existing
         DM:UpdateCombination(dialog.comboID, {
           name = name,
           color = color,
-          spells = spells
+          spells = spells,
+          isExpanded = dialog.isExpanded -- Preserve expanded state
         })
+        self:DebugMsg("Updated combination with ID: " ..
+          dialog.comboID .. ", isExpanded state preserved as: " .. tostring(dialog.isExpanded))
       else
         -- Create new
-        DM:CreateCombination(name, spells, color)
+        local newID = DM:CreateCombination(name, spells, color)
+        self:DebugMsg("Created new combination with ID: " .. tostring(newID) .. ", isExpanded set to false by default")
+
+        -- Force immediate flag setting in case the UI refreshes before database is saved
+        if DM.combinations and DM.combinations.data and DM.combinations.data[newID] then
+          DM.combinations.data[newID].isExpanded = false
+          self:DebugMsg("Explicitly set isExpanded=false for new combination")
+        end
       end
 
       -- Update the list
@@ -973,11 +1301,17 @@ function DM:ShowCombinationDialog(comboID)
     -- Load spells
     dialog.selectedSpells = combo.spells or {}
 
+    -- Remember the expanded state
+    dialog.isExpanded = combo.isExpanded
+
     -- Display the spells in the spell list
     DM:UpdateCombinationSpellList(dialog)
   else
     dialog.title:SetText("New Combination")
     dialog.comboID = nil
+
+    -- Set default expanded state for new combinations
+    dialog.isExpanded = false
 
     -- Show the empty state message
     DM:UpdateCombinationSpellList(dialog)
@@ -1039,7 +1373,7 @@ function DM:UpdateCombinationSpellList(dialog)
 
   -- Display each spell
   local yOffset = 5
-  local rowHeight = 44
+  local rowHeight = 35 -- Slightly smaller rows
 
   for index, spellID in ipairs(dialog.selectedSpells) do
     self:DebugMsg("Processing spell ID: " .. spellID)
@@ -1048,118 +1382,81 @@ function DM:UpdateCombinationSpellList(dialog)
     local row = CreateFrame("Frame", nil, dialog.spellsContent)
     row:SetSize(dialog.spellsContent:GetWidth(), rowHeight)
     row:SetPoint("TOPLEFT", dialog.spellsContent, "TOPLEFT", 0, -yOffset)
-    row:EnableMouse(true) -- Make the row clickable
 
     -- Background
     local bg = row:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(
-      index % 2 == 0 and 0.2 or 0.15,
-      index % 2 == 0 and 0.2 or 0.15,
-      index % 2 == 0 and 0.2 or 0.15,
-      0.8
-    )
+    -- Alternating row background
+    if (index % 2 == 0) then
+      bg:SetColorTexture(0.1, 0.1, 0.1, 0.5)    -- Slightly darker
+    else
+      bg:SetColorTexture(0.15, 0.15, 0.15, 0.5) -- Slightly lighter
+    end
 
-    -- Try different ways to look up the spell
-    local spellName, spellIcon
+    -- Spell icon
+    local icon = row:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(rowHeight - 6, rowHeight - 6) -- Slightly smaller icon
+    icon:SetPoint("LEFT", row, "LEFT", 5, 0)
 
-    -- Method 1: Look up by number directly
+    -- Get spell info safely
+    local spellName = "Unknown"
+    local spellIcon = 134400 -- Default question mark icon
+
+    -- Try to get data from spell database
     if DM.dmspellsdb and DM.dmspellsdb[spellID] then
       local spellData = DM.dmspellsdb[spellID]
-      spellName = spellData.spellname
-      spellIcon = spellData.spellicon
-      self:DebugMsg("Found spell using numeric ID: " .. spellName)
-      -- Method 2: Look up by string ID
+      spellName = spellData.spellname or spellName
+      spellIcon = spellData.spellicon or spellIcon
+      -- Or try string ID
     elseif DM.dmspellsdb and DM.dmspellsdb[tostring(spellID)] then
       local spellData = DM.dmspellsdb[tostring(spellID)]
-      spellName = spellData.spellname
-      spellIcon = spellData.spellicon
-      self:DebugMsg("Found spell using string ID: " .. spellName)
-      -- Method 3: Use WoW API as fallback
+      spellName = spellData.spellname or spellName
+      spellIcon = spellData.spellicon or spellIcon
+      -- Fallback to API
     else
-      self:DebugMsg("Spell not in database, using API for: " .. spellID)
       local spellInfo = C_Spell.GetSpellInfo(spellID)
       if spellInfo then
-        spellName = spellInfo.name
-        spellIcon = spellInfo.iconFileID
-        self:DebugMsg("Found using API: " .. spellName)
-      else
-        spellName = "Unknown Spell"
-        spellIcon = 134400 -- question mark
-        self:DebugMsg("Spell not found by any method: " .. spellID)
+        spellName = spellInfo.name or spellName
+        spellIcon = spellInfo.iconFileID or spellIcon
       end
     end
 
-    -- Icon
-    local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(rowHeight - 6, rowHeight - 6)
-    icon:SetPoint("LEFT", row, "LEFT", 5, 0)
-    icon:SetTexture(spellIcon or 134400) -- Default to question mark if no icon
+    icon:SetTexture(spellIcon)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim icon borders
 
     -- Spell name with ID in parentheses
-    local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    name:SetJustifyH("LEFT")
-    name:SetText(spellName .. " (" .. spellID .. ")")
-
-    -- Position centered with icon
-    name:ClearAllPoints()
+    local name = row:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-    name:SetPoint("RIGHT", row, "RIGHT", -5, 0)
-    name:SetPoint("TOP", row, "TOP", 0, -2)
-    name:SetPoint("BOTTOM", row, "BOTTOM", 0, 2)
+    name:SetPoint("RIGHT", row, "RIGHT", -80, 0) -- Reserve space for remove button
+    name:SetJustifyH("LEFT")
+    name:SetText(string.format("%s (%d)", spellName, spellID))
 
     -- Remove button
-    local removeButton = CreateFrame("Button", nil, row)
-    removeButton:SetSize(24, 24)                        -- Increased from 16x16 to 24x24
-    removeButton:SetPoint("RIGHT", row, "RIGHT", -8, 0) -- Better positioning
-    removeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-    removeButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
-
-    -- Make row exclude the remove button area for clicking
-    row:SetScript("OnMouseDown", function(self, button)
-      if button == "LeftButton" then
-        local x, y = GetCursorPosition()
-        local scale = self:GetEffectiveScale()
-        x, y = x / scale, y / scale
-
-        -- Convert to frame coordinates
-        local left, bottom, width, height = self:GetRect()
-        local mouseX, mouseY = x - left, y - bottom
-
-        -- Check if click is not in remove button area
-        if mouseX < (width - 30) then -- Adjusted for larger button (was 20)
-          -- Remove spell on row click
-          for i, id in ipairs(dialog.selectedSpells) do
-            if id == spellID then
-              table.remove(dialog.selectedSpells, i)
-              break
-            end
-          end
-
-          -- Update the display
-          DM:UpdateCombinationSpellList(dialog)
-        end
-      end
-    end)
+    local removeButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    removeButton:SetSize(70, 22)
+    removeButton:SetPoint("RIGHT", row, "RIGHT", -5, 0)
+    removeButton:SetText("Remove")
 
     removeButton:SetScript("OnClick", function()
-      -- Remove the spell
+      -- Remove this spell from the selectedSpells array
       for i, id in ipairs(dialog.selectedSpells) do
         if id == spellID then
           table.remove(dialog.selectedSpells, i)
+          self:DebugMsg("Removed spell ID " .. spellID .. " from combination")
           break
         end
       end
 
       -- Update the display
-      DM:UpdateCombinationSpellList(dialog)
+      self:UpdateCombinationSpellList(dialog)
     end)
 
-    yOffset = yOffset + rowHeight
+    row:Show()
+    yOffset = yOffset + rowHeight + 2 -- 2 pixels spacing between rows
   end
 
-  -- Set content height
-  dialog.spellsContent:SetHeight(math.max(yOffset + 5, 100))
+  -- Update content height for proper scrolling
+  dialog.spellsContent:SetHeight(math.max(yOffset, dialog.spellsContent:GetHeight()))
 end
 
 -- Function to show delete confirmation
@@ -1252,17 +1549,30 @@ function DM:ShowSpellSelectionForCombo(parent)
       return
     end
 
+    -- Get parent dialog's already added spells for filtering
+    local parentDialog = frame.parentDialog
+    local existingSpells = {}
+    if parentDialog and parentDialog.selectedSpells then
+      for _, spellID in ipairs(parentDialog.selectedSpells) do
+        existingSpells[spellID] = true
+      end
+    end
+
     -- Get player class
     local _, playerClass = UnitClass("player")
 
-    -- Filter spells based on player class
+    -- Filter spells based on player class and exclude already added spells
     local filteredSpells = {}
 
     for spellIDStr, spellData in pairs(DM.dmspellsdb) do
-      -- Class match check (player class or ALL) AND tracked=1
-      if (spellData.wowclass and (spellData.wowclass == playerClass or spellData.wowclass == "ALL") and spellData.tracked == 1) then
+      local numericID = tonumber(spellIDStr)
+      -- Class match check (player class or ALL) AND tracked=1 AND not already in combination
+      if numericID and spellData.wowclass and
+          (spellData.wowclass == playerClass or spellData.wowclass == "ALL") and
+          spellData.tracked == 1 and
+          not existingSpells[numericID] then
         -- Add to filtered list
-        table.insert(filteredSpells, { id = tonumber(spellIDStr), data = spellData })
+        table.insert(filteredSpells, { id = numericID, data = spellData })
       end
     end
 
@@ -1289,7 +1599,7 @@ function DM:ShowSpellSelectionForCombo(parent)
       helpText:SetPoint("TOP", helpFrame, "TOP", 0, 0)
       helpText:SetWidth(scrollContent:GetWidth() - 40)
       helpText:SetText(
-        "No tracked spells available.\n\nYou need to mark spells as 'tracked' in the Database tab, or use Find My Dots to add spells to your database.")
+        "No additional spells available.\n\nYou've added all available tracked spells or need to mark more spells as 'tracked' in the Database tab.")
       helpText:SetTextColor(1, 0.82, 0)
       helpText:SetJustifyH("CENTER")
       helpText:SetJustifyV("TOP")
@@ -1309,20 +1619,35 @@ function DM:ShowSpellSelectionForCombo(parent)
       button:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, -yOffset)
       button:EnableMouse(true) -- Make the button clickable
 
-      -- Background
+      -- Background - consistent color instead of alternating
       local bg = button:CreateTexture(nil, "BACKGROUND")
       bg:SetAllPoints()
 
-      -- Set background color - much darker for unselected rows
+      -- Use a single consistent background color with selection highlighting
       local isSelected = selectedSpells[spellID] or false
-      local baseColor = index % 2 == 0 and 0.12 or 0.08 -- Much darker base colors
-      local bgColor = isSelected and 0.3 or baseColor   -- Bright for selected, dark for unselected
-      bg:SetColorTexture(bgColor, bgColor, bgColor, 0.9)
+      if isSelected then
+        bg:SetColorTexture(0.3, 0.3, 0.3, 0.9) -- Brighter for selected
+      else
+        bg:SetColorTexture(0.1, 0.1, 0.1, 0.9) -- Dark for unselected
+      end
 
-      -- Checkbox
+      -- Spell icon
+      local iconSize = buttonHeight - 16
+      local icon = button:CreateTexture(nil, "ARTWORK")
+      icon:SetSize(iconSize, iconSize)
+      icon:SetPoint("LEFT", button, "LEFT", 5, 0)
+
+      -- Get spell icon
+      local spellIcon = 134400 -- Default to question mark
+      if DM.dmspellsdb and DM.dmspellsdb[spellID] and DM.dmspellsdb[spellID].spellicon then
+        spellIcon = DM.dmspellsdb[spellID].spellicon
+      end
+      icon:SetTexture(spellIcon)
+
+      -- Add checkbox
       local checkbox = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
       checkbox:SetSize(20, 20)
-      checkbox:SetPoint("LEFT", button, "LEFT", 5, 0)
+      checkbox:SetPoint("LEFT", icon, "RIGHT", 10, 0)
       checkbox:SetChecked(isSelected)
 
       -- Make row click toggle the checkbox
@@ -1338,38 +1663,20 @@ function DM:ShowSpellSelectionForCombo(parent)
         if isChecked then
           selectedSpells[spellID] = true
           -- Update background color when selected
-          bg:SetColorTexture(baseColor + 0.1, baseColor + 0.1, baseColor + 0.1, 0.9)
+          bg:SetColorTexture(0.3, 0.3, 0.3, 0.9)
         else
           selectedSpells[spellID] = nil
           -- Restore normal background color
-          bg:SetColorTexture(baseColor, baseColor, baseColor, 0.9)
+          bg:SetColorTexture(0.1, 0.1, 0.1, 0.9)
         end
       end)
 
-      -- Spell icon
-      local iconSize = buttonHeight - 16
-      local icon = button:CreateTexture(nil, "ARTWORK")
-      icon:SetSize(iconSize, iconSize)
-      icon:SetPoint("LEFT", checkbox, "RIGHT", 10, 0)
-
-      -- Get spell icon
-      if spellData.spellicon then
-        icon:SetTexture(spellData.spellicon)
-      else
-        icon:SetTexture(134400) -- Question mark
-      end
-
       -- Spell name with ID in parentheses
-      local name = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+      local name = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+      name:SetPoint("LEFT", checkbox, "RIGHT", 8, 0)
+      name:SetPoint("RIGHT", button, "RIGHT", -5, 0) -- Extend to the right edge with margin
       name:SetJustifyH("LEFT")
-      name:SetText(spellData.spellname .. " (" .. spellID .. ")")
-
-      -- Position centered with icon
-      name:ClearAllPoints()
-      name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-      name:SetPoint("RIGHT", button, "RIGHT", -5, 0)
-      name:SetPoint("TOP", button, "TOP", 0, -2)
-      name:SetPoint("BOTTOM", button, "BOTTOM", 0, 2)
+      name:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
 
       button:Show()
       yOffset = yOffset + buttonHeight
@@ -1388,7 +1695,6 @@ function DM:ShowSpellSelectionForCombo(parent)
     local screenHeight = GetScreenHeight()
     frame:SetPoint("TOP", UIParent, "TOP", 0, -50)
     frame:SetFrameStrata("DIALOG")
-    frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", frame.StartMoving)
