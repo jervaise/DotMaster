@@ -5,30 +5,30 @@
 The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on enemy nameplates and providing visual feedback to the player.
 
 - **Release Status**: Beta
-- **Current Version**: 0.9.11
+- **Current Version**: 1.0.0
 - **Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Branches
 
-- **main**: Stable release (v0.9.0)
-- **develop**: Active development branch (v0.9.11)
+- **main**: Stable release (v1.0.0)
+- **develop**: Active development branch (v1.0.0)
 - **feature/X**: Various feature branches for specific components
 
 ## Project Status
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 0.9.11
+- **Current Version**: 1.0.0
 - **Status**: Active Development
 - **Last Updated**: July 15, 2023
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 0.9.11
+- **Current Version**: 1.0.0
 - **Branch Status**:
-  - **main**: Contains the latest stable release (v0.9.0)
-  - **develop**: Active development branch (v0.9.11)
+  - **main**: Contains the latest stable release (v1.0.0)
+  - **develop**: Active development branch (v1.0.0)
     - This branch is always used for in-game testing
 
 ## Development Progress

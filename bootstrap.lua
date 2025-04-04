@@ -17,7 +17,7 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "0.9.12",
+  version = "1.0.0",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -242,7 +242,7 @@ end
 DM.Meta = {
   addonName = "DotMaster",
   displayName = "|cFFB54AC9DotMaster|r",
-  version = "0.9.11",
+  version = "1.0.0",
   author = "Your Name",
   website = "https://github.com/yourusername/DotMaster",
   slash = "/dm"

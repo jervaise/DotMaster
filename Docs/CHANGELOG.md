@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 1.0.0 (2024-07-01)
+- **Major Release**: First stable release of DotMaster
+- **API Stability**: All features are now considered stable and production-ready
+- **Feature Complete**: All planned features for the 1.0 milestone have been implemented
+- **Performance**: Significant optimizations for combat situations with many targets
+- **Bug Fixes**: Resolved all known critical and major issues
+- **Documentation**: Comprehensive documentation updated for all features
+- **Compatibility**: Full compatibility with World of Warcraft: The War Within (11.1.0)
+- **Plater Integration**: Perfected nameplate coloring with Plater
+- **UI/UX**: Polished all user interface elements and improved usability
+- **Spell Database**: Comprehensive database of DoTs for all classes and specializations
+
 ### Version 0.9.12 (2023-07-25)
 - **Added**: Flashing feature for DoTs that are about to expire
 - **Added**: Configurable threshold (1-8 seconds) for when to start flashing
