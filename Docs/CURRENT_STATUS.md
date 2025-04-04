@@ -5,30 +5,30 @@
 The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on enemy nameplates and providing visual feedback to the player.
 
 - **Release Status**: Beta
-- **Current Version**: 0.9.10
+- **Current Version**: 0.9.11
 - **Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Branches
 
 - **main**: Stable release (v0.9.0)
-- **develop**: Active development branch (v0.9.10)
+- **develop**: Active development branch (v0.9.11)
 - **feature/X**: Various feature branches for specific components
 
 ## Project Status
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 0.9.10
+- **Current Version**: 0.9.11
 - **Status**: Active Development
-- **Last Updated**: April 16, 2023
+- **Last Updated**: July 15, 2023
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 0.9.10
+- **Current Version**: 0.9.11
 - **Branch Status**:
   - **main**: Contains the latest stable release (v0.9.0)
-  - **develop**: Active development branch (v0.9.10)
+  - **develop**: Active development branch (v0.9.11)
     - This branch is always used for in-game testing
 
 ## Development Progress
@@ -37,6 +37,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 |---------|--------|-------|
 | Core Framework | ✅ STABLE | Reverted to v0.4.0 stable codebase |
 | Nameplate Tracking | ✅ STABLE | Visual indicators, duration, position |
+| Border-only Coloring | ✅ NEW | Option to color just the nameplate border |
 | Find My Dots | ✅ STABLE | Window showing all active DoTs grouped by target |
 | Spell Database | ✅ STABLE | Pre-defined database of DoT spells for all classes |
 | Configuration UI | ✅ STABLE | Options panel with profile support |
@@ -45,7 +46,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 | API Compatibility | ⚠️ NEEDS REVIEW | Critical API changes still need implementation |
 | Pre-Game Validation | ✅ MAINTAINED | Preserved dmcheck tool for validation |
 | Documentation | ✅ UPDATED | Consolidated documentation structure |
-| Plater Integration | ✅ FIXED | Fixed color restore functionality with Plater |
+| Plater Integration | ✅ ENHANCED | Added border-only coloring with thickness control |
 
 ## Current Development Focus
 
@@ -55,6 +56,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 - Testing the new database system with various spell data
 - Ensuring proper loading sequence for saved data
 - Enhancing debug capabilities for better troubleshooting
+- Perfecting the new border coloring feature
 
 ## Known Issues
 
@@ -69,11 +71,16 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 3. Enhance UI responsiveness in high-stress scenarios
 4. Add more comprehensive error recovery mechanisms
 5. Implement more user-requested quality of life features
+6. Add GUI controls for the border-only coloring feature
 
 ## Recent Changes
 
 The most significant recent changes include:
 
+- ✅ **Border-only Coloring**: Added option to color just the nameplate border instead of the entire nameplate
+- ✅ **Configurable Border Thickness**: Added control for border thickness when using border-only coloring
+- ✅ **Improved Plater Integration**: Enhanced compatibility with Plater's border system
+- ✅ **Nameplate Coloring Fixes**: Eliminated color flicker when leaving combat and fixed non-combat coloring
 - ✅ **Minimap Icon**: Added minimap icon functionality for quick access to DotMaster and Find My Dots
 - ✅ **UI Improvements**: Redesigned General tab with better layout, spacing, and center-aligned elements
 - ✅ **Player Class Coloring**: Main UI now uses player's class color for border and title text
@@ -82,11 +89,6 @@ The most significant recent changes include:
 - ✅ **Plater Integration**: Fixed critical issue with Plater nameplate colors not properly returning to Plater's configured threat colors
 - ✅ **Color Picker Functionality**: Fixed color picker functionality by properly including gui_colorpicker.lua in TOC file
 - ✅ **Modern API Usage**: Updated nameplate detection to use modern C_UnitAuras API with fallbacks
-- ✅ **Debug System Improvements**: Added color picker debug category with dedicated debug function
-- ✅ **Error Handling Improvements**: Fixed "attempt to call global 'UnitAura'" and DeepCopy errors
-- ✅ **DoT Combinations**: Added new Combinations tab for managing effects when multiple DoTs are active on the same target
-- ✅ **Combination Database**: Implemented database structure and detection system for DoT combinations
-- ✅ **Advanced Priority System**: Created priority system for combinations that takes precedence over individual DoTs
 
 Prior to that:
 - ✅ **Tracked Spells UI Redesign**: Completely redesigned the tracked spells interface with improved usability, better layout, and immediate save functionality

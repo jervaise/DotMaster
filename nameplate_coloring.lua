@@ -45,6 +45,39 @@ function DM:ApplyThreatColor(unitFrame, unitToken)
   return false
 end
 
+-- Apply a color to a nameplate border only
+function DM:SetNameplateBorderColor(unitFrame, color)
+  if not unitFrame or not unitFrame.healthBar or not color then return false end
+
+  local Plater = _G["Plater"]
+  if not Plater then return false end
+
+  local border = unitFrame.healthBar.border
+  if not border then
+    DM:NameplateDebug("Border not found on healthBar")
+    return false
+  end
+
+  -- Set the border color
+  border:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+
+  -- Set the border size if specified in settings
+  if DM.settings and DM.settings.borderThickness then
+    border:SetBorderSizes(DM.settings.borderThickness, DM.settings.borderThickness,
+      DM.settings.borderThickness, DM.settings.borderThickness)
+    border:UpdateSizes()
+  end
+
+  -- Set custom border color flag so Plater knows we're handling this
+  unitFrame.customBorderColor = { color[1], color[2], color[3], color[4] or 1 }
+
+  DM:NameplateDebug("Border color set to: %d/%d/%d, thickness: %d",
+    color[1] * 255, color[2] * 255, color[3] * 255,
+    DM.settings.borderThickness or 1)
+
+  return true
+end
+
 -- Apply a color to a nameplate
 function DM:ApplyColorToNameplate(nameplate, unitToken, color)
   if not nameplate or not color then return false end
@@ -71,16 +104,27 @@ function DM:ApplyColorToNameplate(nameplate, unitToken, color)
         end
       end
 
-      -- If not using threat colors or no threat condition matched, use our DoT color
-      DM:NameplateDebug("Applying regular DoT color")
-      Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
+      -- Check for border-only mode
+      if DM.settings and DM.settings.borderOnly then
+        DM:NameplateDebug("Border-only mode is enabled")
 
-      -- These flags tell Plater not to change this nameplate's color
-      unitFrame.UsingCustomColor = true
-      unitFrame.DenyColorChange = true
+        -- Apply color only to the border
+        if self:SetNameplateBorderColor(unitFrame, color) then
+          self.coloredPlates[unitToken] = true
+          return true
+        end
+      else
+        -- If not using border-only mode, use full nameplate coloring
+        DM:NameplateDebug("Applying regular DoT color to full nameplate")
+        Plater.SetNameplateColor(unitFrame, color[1], color[2], color[3], color[4] or 1)
 
-      self.coloredPlates[unitToken] = true
-      return true
+        -- These flags tell Plater not to change this nameplate's color
+        unitFrame.UsingCustomColor = true
+        unitFrame.DenyColorChange = true
+
+        self.coloredPlates[unitToken] = true
+        return true
+      end
     else
       DM:NameplateDebug("Plater unitFrame or healthBar not found")
       return false
@@ -127,12 +171,19 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
     -- Log for debugging
     DM:NameplateDebug("RestoreDefaultColor for Plater nameplate: %s", nameplate:GetName() or "unnamed")
 
-    -- Reset Plater's color control flags - this is critical
-    unitFrame.UsingCustomColor = nil
-    unitFrame.DenyColorChange = nil
+    -- If we were in border-only mode, clear the custom border color
+    if DM.settings and DM.settings.borderOnly then
+      -- Reset custom border color
+      unitFrame.customBorderColor = nil
+      Plater.UpdateBorderColor(unitFrame)
+    else
+      -- Reset Plater's color control flags - this is critical
+      unitFrame.UsingCustomColor = nil
+      unitFrame.DenyColorChange = nil
 
-    -- Reset the healthBar color variables to ensure Plater recalculates them
-    healthBar.R, healthBar.G, healthBar.B, healthBar.A = nil, nil, nil, nil
+      -- Reset the healthBar color variables to ensure Plater recalculates them
+      healthBar.R, healthBar.G, healthBar.B, healthBar.A = nil, nil, nil, nil
+    end
 
     -- Call Plater's color refresh function - this is the core method in the mod example
     Plater.RefreshNameplateColor(unitFrame)

@@ -17,7 +17,12 @@ function DM:SaveSettings()
   if DM.settings then
     DotMasterDB.settings = DotMasterDB.settings or {}
     DotMasterDB.settings.forceColor = DM.settings.forceColor
+    DotMasterDB.settings.borderOnly = DM.settings.borderOnly
+    DotMasterDB.settings.borderThickness = DM.settings.borderThickness
+
     DM:DatabaseDebug("Force threat color setting saved: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
+    DM:DatabaseDebug("Border only setting saved: " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
+    DM:DatabaseDebug("Border thickness saved: " .. (DM.settings.borderThickness or "Default"))
   end
 
   -- Save debug categories and options
@@ -58,6 +63,24 @@ function DM:LoadSettings()
   else
     DM.settings.forceColor = false
     DM:DatabaseDebug("No saved force threat color setting found, using default (Disabled)")
+  end
+
+  -- Load border only setting
+  if DotMasterDB.settings and DotMasterDB.settings.borderOnly ~= nil then
+    DM.settings.borderOnly = DotMasterDB.settings.borderOnly
+    DM:DatabaseDebug("Border only setting loaded: " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
+  else
+    DM.settings.borderOnly = false
+    DM:DatabaseDebug("No saved border only setting found, using default (Disabled)")
+  end
+
+  -- Load border thickness setting
+  if DotMasterDB.settings and DotMasterDB.settings.borderThickness ~= nil then
+    DM.settings.borderThickness = DotMasterDB.settings.borderThickness
+    DM:DatabaseDebug("Border thickness loaded: " .. DM.settings.borderThickness)
+  else
+    DM.settings.borderThickness = 2
+    DM:DatabaseDebug("No saved border thickness setting found, using default (2)")
   end
 
   -- Load debug settings

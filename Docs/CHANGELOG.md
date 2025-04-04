@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.11 (2023-07-15)
+- **Added**: Border-only coloring mode that colors just the nameplate border instead of the entire nameplate
+- **Added**: Configurable border thickness when using border-only coloring
+- **Enhanced**: Improved integration with Plater's border system
+- **Technical**: Added compatibility with Plater's customBorderColor functionality
+
 ### Version 0.9.10 (2023-07-10)
 - **Fixed**: Nameplate coloring now works outside of combat (removed combat check restriction)
 - **Fixed**: Eliminated the color flicker when leaving combat by hooking into Plater's color reset functions
