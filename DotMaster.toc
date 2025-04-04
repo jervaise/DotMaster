@@ -2,14 +2,13 @@
 ## Title: DotMaster
 ## Notes: Tracks your damage-over-time abilities on nameplates
 ## Author: DM Dev Team
-## Version: 1.0.0-beta
+## Version: 1.0.0
 ## SavedVariables: DotMasterDB
 ## X-Curse-Project-ID: 123456
 ## X-Wago-ID: 123456
 ## X-WoWI-ID: 123456
 ## X-Category: Combat
 ## X-License: All Rights Reserved
-## X-Beta: true
 ## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga
 
 # Libraries

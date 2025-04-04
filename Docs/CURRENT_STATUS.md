@@ -4,8 +4,8 @@
 
 The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on enemy nameplates and providing visual feedback to the player.
 
-- **Release Status**: Beta
-- **Current Version**: 1.0.0 (Beta)
+- **Release Status**: Stable
+- **Current Version**: 1.0.0
 - **Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Branches
@@ -19,14 +19,14 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 
 ### Current Status
 - **Project**: DotMaster
-- **Current Version**: 1.0.0 (Beta)
-- **Status**: Beta Testing
+- **Current Version**: 1.0.0
+- **Status**: Stable Release
 - **Last Updated**: April 4, 2024
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 
 ## Current Version Information
 
-- **Current Version**: 1.0.0 (Beta)
+- **Current Version**: 1.0.0
 - **Branch Status**:
   - **main**: Contains the latest stable release (v1.0.0)
   - **beta**: Current beta release (v1.0.0)
@@ -44,9 +44,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 | Spell Database | ✅ STABLE | Pre-defined database of DoT spells for all classes |
 | Configuration UI | ✅ STABLE | Options panel with profile support |
 | Minimap Button | ✅ STABLE | Integration with LibDBIcon |
-| Debug System | ✅ STABLE | Comprehensive logging with category-based filtering |
-| API Compatibility | ⚠️ NEEDS REVIEW | Critical API changes still need implementation |
-| Pre-Game Validation | ✅ MAINTAINED | Preserved dmcheck tool for validation |
+| API Compatibility | ✅ STABLE | All critical API functions are implemented |
 | Documentation | ✅ UPDATED | Consolidated documentation structure |
 | Plater Integration | ✅ ENHANCED | Added border-only coloring with thickness control |
 
@@ -76,7 +74,7 @@ The DotMaster addon is a tool for tracking damage-over-time (DoT) effects on ene
 
 The most significant recent changes include:
 
-- ✅ **Beta Release**: Released version 1.0.0 as beta on April 4, 2024
+- ✅ **Stable Release**: Released version 1.0.0 as stable on April 4, 2024
 - ✅ **Release Documentation**: Added comprehensive release documentation
 - ✅ **Border-only Coloring**: Added option to color just the nameplate border instead of the entire nameplate
 - ✅ **Configurable Border Thickness**: Added control for border thickness when using border-only coloring

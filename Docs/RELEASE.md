@@ -1,23 +1,23 @@
 # DotMaster Release Information
 
-## Version 1.0.0 (Beta)
+## Version 1.0.0
 
-This is the official beta release of DotMaster v1.0.0. This version contains all planned features for the 1.0 milestone and is considered feature-complete.
+This is the official stable release of DotMaster v1.0.0. This version contains all planned features for the 1.0 milestone and is considered feature-complete and stable for production use.
 
 ### Release Details
 
-- **Version**: 1.0.0 (Beta)
-- **Branch**: beta
+- **Version**: 1.0.0
+- **Branch**: main
 - **Release Date**: April 4, 2024
 - **WoW Compatibility**: World of Warcraft: The War Within (11.1.0)
 - **Repository**: https://github.com/jervaise/DotMaster
 
 ### Release Notes
 
-This beta release includes:
+This stable release includes:
 
 - **Feature Complete**: All planned features for the 1.0 milestone have been implemented
-- **API Stability**: All features are now considered stable for beta testing
+- **API Stability**: All features are fully stable and production-ready
 - **Performance**: Significant optimizations for combat situations with many targets
 - **Bug Fixes**: Resolved all known critical and major issues
 - **Documentation**: Comprehensive documentation updated for all features
@@ -26,35 +26,34 @@ This beta release includes:
 - **UI/UX**: Polished all user interface elements and improved usability
 - **Spell Database**: Comprehensive database of DoTs for all classes and specializations
 
-### Known Issues in Beta
+### Known Issues
 
-1. **API Compatibility**: Still working on ensuring all parts of the addon use `C_Spell.GetSpellInfo()`
-2. **Performance**: May experience frame drops during combat with many targets
-3. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
+1. **Performance**: May experience frame drops during combat with many targets
+2. **Nameplate Detection**: Occasional issues detecting all nameplates in crowded scenarios
 
-### Testing Focus
+### Upcoming Features
 
-Beta testers should focus on:
+Future releases will focus on:
 
-1. **General Stability**: Report any crashes or Lua errors
-2. **Performance**: Note any situations where the addon causes significant frame rate drops
-3. **Functionality**: Verify that all features work as expected
-4. **Compatibility**: Test with other popular addons to identify any conflicts
-5. **UI/UX**: Provide feedback on the user interface and experience
+1. **Performance**: Further optimizations for combat scenarios with many targets
+2. **UI Enhancements**: Additional quality of life improvements
+3. **Spell Database**: Expanded coverage of all specializations
+4. **Visual Effects**: Enhanced visual feedback for DoT tracking
+5. **Integration**: Improved compatibility with popular addons
 
 ### Reporting Issues
 
-Please report any issues found during beta testing by:
+Please report any issues by:
 
 1. Opening an issue on GitHub
 2. Including detailed steps to reproduce the issue
 3. Attaching any relevant error messages or screenshots
 4. Mentioning your WoW version, other installed addons, and system specs
 
-### Release Roadmap
+### Future Roadmap
 
-- **Beta Testing**: April 4, 2024 - May 1, 2024
-- **Release Candidate**: May 2, 2024 (pending beta feedback)
-- **Final Release**: May 15, 2024 (tentative)
+- **Minor Updates**: Regular bug fixes and minor enhancements
+- **Feature Updates**: New features and major enhancements in v1.1.0 (planned)
+- **Performance Updates**: Dedicated performance optimization in v1.0.5 (planned)
 
-Thank you for participating in the DotMaster beta testing program! 
+Thank you for using DotMaster! 
