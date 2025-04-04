@@ -315,30 +315,9 @@ function DM.Debug:CreateDebugWindow()
     xOffset = xOffset + 100
   end
 
-  -- Console Output Toggle
-  local consoleCheckbox = CreateFrame("CheckButton", "DotMasterDebugConsoleOutput", frame, "UICheckButtonTemplate")
-  consoleCheckbox:SetPoint("TOPLEFT", 16, -60)
-  consoleCheckbox:SetSize(22, 22)
-
-  local consoleText = _G[consoleCheckbox:GetName() .. "Text"]
-  consoleText:SetText("Output to Console")
-  consoleText:SetPoint("LEFT", consoleCheckbox, "RIGHT", 2, 0)
-
-  -- Set initial state
-  consoleCheckbox:SetChecked(DM.DEBUG_CONSOLE_OUTPUT or false)
-
-  -- Add click handler
-  consoleCheckbox:SetScript("OnClick", function(self)
-    DM.DEBUG_CONSOLE_OUTPUT = self:GetChecked()
-    -- Save setting
-    if DotMasterDB then
-      DotMasterDB.debugConsoleOutput = DM.DEBUG_CONSOLE_OUTPUT
-    end
-  end)
-
   -- Scroll Frame for the EditBox
   local scrollFrame = CreateFrame("ScrollFrame", "DotMasterDebugScrollFrame", frame, "UIPanelScrollFrameTemplate")
-  scrollFrame:SetPoint("TOPLEFT", 16, -90)
+  scrollFrame:SetPoint("TOPLEFT", 16, -60) -- Adjusted position since we removed the console checkbox
   scrollFrame:SetPoint("BOTTOMRIGHT", -36, 40)
 
   -- EditBox within the ScrollFrame

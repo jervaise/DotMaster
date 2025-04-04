@@ -249,23 +249,6 @@ function DM:InitializeMainSlashCommands()
     elseif command == "show" and DM.GUI and DM.GUI.frame then
       DM:DebugMsg("Attempting to show GUI")
       DM.GUI.frame:Show()
-
-      -- In development environment, automatically open debug console
-      C_Timer.After(0.2, function()
-        if DM.Debug and DM.Debug.ToggleWindow then
-          -- Only open if it's not already shown
-          if not (DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown()) then
-            DM:DebugMsg("Auto-opening debug console in development environment")
-            DM.Debug:ToggleWindow()
-
-            -- Position the debug window next to the main UI
-            if DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown() then
-              DM.GUI.debugFrame:ClearAllPoints()
-              DM.GUI.debugFrame:SetPoint("TOPRIGHT", DM.GUI.frame, "TOPLEFT", -5, 0)
-            end
-          end
-        end
-      end)
     elseif command == "reload" then
       DM:DebugMsg("Reloading UI")
       ReloadUI()
@@ -411,44 +394,10 @@ function DM:InitializeMainSlashCommands()
           DM.GUI.frame:Hide()
         else
           DM.GUI.frame:Show()
-
-          -- In development environment, automatically open debug console
-          C_Timer.After(0.2, function()
-            if DM.Debug and DM.Debug.ToggleWindow then
-              -- Only open if it's not already shown
-              if not (DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown()) then
-                DM:DebugMsg("Auto-opening debug console in development environment")
-                DM.Debug:ToggleWindow()
-
-                -- Position the debug window next to the main UI
-                if DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown() then
-                  DM.GUI.debugFrame:ClearAllPoints()
-                  DM.GUI.debugFrame:SetPoint("TOPRIGHT", DM.GUI.frame, "TOPLEFT", -5, 0)
-                end
-              end
-            end
-          end)
         end
       elseif command == "show" and DM.GUI and DM.GUI.frame then
         DM:DebugMsg("Attempting to show GUI")
         DM.GUI.frame:Show()
-
-        -- In development environment, automatically open debug console
-        C_Timer.After(0.2, function()
-          if DM.Debug and DM.Debug.ToggleWindow then
-            -- Only open if it's not already shown
-            if not (DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown()) then
-              DM:DebugMsg("Auto-opening debug console in development environment")
-              DM.Debug:ToggleWindow()
-
-              -- Position the debug window next to the main UI
-              if DM.GUI.debugFrame and DM.GUI.debugFrame:IsShown() then
-                DM.GUI.debugFrame:ClearAllPoints()
-                DM.GUI.debugFrame:SetPoint("TOPRIGHT", DM.GUI.frame, "TOPLEFT", -5, 0)
-              end
-            end
-          end
-        end)
       elseif command == "reload" then
         DM:DebugMsg("Reloading UI")
         ReloadUI()
