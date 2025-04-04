@@ -8,16 +8,6 @@ function DM:ApplyThreatColor(unitFrame, unitToken)
   local Plater = _G["Plater"]
   if not Plater then return false end
 
-  -- Check if we're in combat
-  if not Plater.IsInCombat() then
-    return false
-  end
-
-  -- Check if the unit is in combat
-  if not unitFrame.InCombat then
-    return false
-  end
-
   -- Check if player is a tank
   if Plater.PlayerIsTank then
     -- Player is a tank, check if we lost aggro
@@ -171,3 +161,91 @@ function DM:RestoreDefaultColor(nameplate, unitToken)
 
   self.coloredPlates[unitToken] = nil
 end
+
+-- Function to reapply DoT colors after leaving combat
+-- This is needed because Plater resets all nameplate colors when combat ends
+function DM:HookPlaterFunctions()
+  local Plater = _G["Plater"]
+  if not Plater then
+    DM:NameplateDebug("Plater not found, cannot hook color functions")
+    return
+  end
+
+  DM:NameplateDebug("Setting up Plater function hooks to prevent color flicker")
+
+  -- Store the original function
+  local originalUpdateAllNameplateColors = Plater.UpdateAllNameplateColors
+
+  -- Hook the function that updates all nameplate colors (called when leaving combat)
+  Plater.UpdateAllNameplateColors = function(...)
+    -- First let Plater do its work
+    local result = originalUpdateAllNameplateColors(...)
+
+    -- Then immediately reapply our colors to prevent flicker
+    if DM.enabled then
+      C_Timer.After(0, function() -- Use immediate timer to ensure we run after Plater's function completes
+        DM:NameplateDebug("Plater attempted to reset colors - immediately reapplying DoT colors")
+        DM:UpdateAllNameplates()
+      end)
+    end
+
+    return result
+  end
+
+  -- Store the original refresh function
+  local originalRefreshNameplateColor = Plater.RefreshNameplateColor
+
+  -- Hook the function that refreshes individual nameplate colors
+  Plater.RefreshNameplateColor = function(unitFrame, ...)
+    -- Let Plater do its work
+    local result = originalRefreshNameplateColor(unitFrame, ...)
+
+    -- Check if this is a nameplate we're tracking
+    if DM.enabled and unitFrame and unitFrame.unit then
+      local unitToken = unitFrame.unit
+      if DM.activePlates[unitToken] then
+        C_Timer.After(0, function()
+          -- Reapply our colors if needed
+          DM:UpdateNameplate(unitToken)
+        end)
+      end
+    end
+
+    return result
+  end
+
+  DM:NameplateDebug("Plater function hooks installed successfully")
+end
+
+-- Initialize the hook when this file loads
+do
+  C_Timer.After(1, function()
+    if _G["Plater"] then
+      DM:HookPlaterFunctions()
+    else
+      DM:NameplateDebug("Delaying Plater hook until Plater is loaded")
+      C_Timer.After(2, function()
+        if _G["Plater"] then
+          DM:HookPlaterFunctions()
+        else
+          DM:NameplateDebug("Plater not found after delay, cannot hook functions")
+        end
+      end)
+    end
+  end)
+end
+
+-- We'll still keep the event registration as a backup
+local combatEventFrame = CreateFrame("Frame")
+combatEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+combatEventFrame:SetScript("OnEvent", function(self, event)
+  if event == "PLAYER_REGEN_ENABLED" then
+    -- Use a very short delay to ensure we run after Plater's handlers
+    C_Timer.After(0.01, function()
+      if DM.enabled then
+        DM:NameplateDebug("Combat ended - immediate reapplication of DoT colors")
+        DM:UpdateAllNameplates()
+      end
+    end)
+  end
+end)

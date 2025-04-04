@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### Version 0.9.10 (2023-07-10)
+- **Fixed**: Nameplate coloring now works outside of combat (removed combat check restriction)
+- **Fixed**: Eliminated the color flicker when leaving combat by hooking into Plater's color reset functions
+- **Fixed**: Improved integration with Plater's threat system to preserve colors consistently
+- **Enhanced**: More robust nameplate color handling for all combat state transitions
+- **Technical**: Updated code to properly hook into Plater's core nameplate functions
+
 ### Version 0.9.9 (2023-06-18)
 - Simplified the "Detected Dots" UI for a cleaner look
 - Removed decorative borders, icons and fancy visual elements from dot detection dialogs
