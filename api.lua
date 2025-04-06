@@ -201,161 +201,78 @@ end
 -- Template for the Plater script that will handle DoT tracking
 DM.API.PLATER_SCRIPT_TEMPLATE = {
   Name = "DotMaster DoT Tracker",
-  Icon = [[Interface\ICONS\Ability_Rogue_RuptureTN]],
-  Desc = "Tracks damage-over-time effects on nameplates. Created by DotMaster AddOn.",
+  Icon = "Interface\\ICONS\\Ability_Rogue_RuptureTN",
+  Desc = "Tracks DoTs on nameplates",
   Author = "DotMaster",
   Time = time(),
-  Revision = 1,
-  PlaterCore = 1,
-
-  -- Lua code sections that Plater will execute
-  OnInit = [[function (scriptTable)
-    -- Initialize the script
-    scriptTable.config = scriptTable.config or {}
-
-    -- Create a table to store our environment
-    local envTable = {}
-    scriptTable.envTable = envTable
-
-    -- Print initialization message
-    print("DotMaster DoT Tracker: Initialized!")
-end]],
-
-  OnUpdate = [[function (self, unitId, unitFrame, envTable, scriptTable)
-    -- Simple validation
-    if not unitId or not unitFrame then
-        return
-    end
-
-    -- In a future version, this will check for active DoTs
-    -- and modify the nameplate accordingly
-end]],
-
-  OnHide = [[function (self, unitId, unitFrame, envTable, scriptTable)
-    -- Clean up any visual effects when the nameplate is hidden
-end]],
-
-  OnShow = [[function (self, unitId, unitFrame, envTable, scriptTable)
-    -- Initialize nameplate-specific elements when shown
-end]],
-
-  -- Default script configuration options
-  Options = {
-    {
-      Name = "Show Border",
-      Type = 1,
-      Value = true,
-    },
-    {
-      Name = "Border Color",
-      Type = 1,
-      Value = { 1, 0, 0, 1 },
-    },
-  },
-
-  -- Required Plater script metadata
-  Hooks = {},
-  IconTexture = [[Interface\ICONS\Ability_Rogue_RuptureTN]],
-  IconTexCoords = { 0, 1, 0, 1 },
-  IconSize = { 14, 14 },
   Enabled = true,
-  NpcNames = {},
+
+  -- These are the required script sections
+  OnInit = [[function(scriptTable)
+    -- Do minimal initialization
+  end]],
+
+  OnUpdate = [[function(self, unitId, unitFrame, envTable, scriptTable)
+    -- Empty update function
+  end]],
+
+  -- Required structure elements
   SpellIds = {},
-  UID = "DM" .. tostring(math.random(100000, 999999)),
-  scriptId = "DMScript" .. tostring(math.random(100000, 999999)),
-  version = 1,
-  semver = "1.0.0",
+  Hooks = {},
+  Options = {},
+  version = 1
 }
 
 -- Function to inject or update the DotMaster script in Plater
 function DM.API:InjectPlaterScript()
   -- Safety check - ensure Plater exists
   if not Plater then
-    DM:PlaterDebug("Error: Plater is not loaded or installed!")
     DM:PrintMessage("Error: Plater is not loaded or installed!")
     return false
   end
 
-  DM:PlaterDebug("Preparing to inject script into Plater...")
+  DM:PrintMessage("Adding DotMaster script to Plater...")
 
   -- Create a copy of our template
-  local scriptTable = DeepCopyTable(DM.API.PLATER_SCRIPT_TEMPLATE)
+  local script = DeepCopyTable(DM.API.PLATER_SCRIPT_TEMPLATE)
 
-  -- Generate new unique IDs each time for new installations
-  scriptTable.UID = "DM" .. tostring(math.random(100000, 999999))
-  scriptTable.scriptId = "DMScript" .. tostring(math.random(100000, 999999))
-
-  -- Apply any user-specific settings here in future versions
-  DM:PlaterDebug("Applying user settings to script...")
-
-  -- Check if our script already exists
-  local existingScriptIndex = nil
-  if Plater.db and Plater.db.profile and Plater.db.profile.script_data then
-    for i, script in ipairs(Plater.db.profile.script_data) do
-      if script and script.Name == scriptTable.Name then
-        existingScriptIndex = i
-        DM:PlaterDebug("Found existing script at index " .. i)
-        break
-      end
-    end
-  else
-    DM:PlaterDebug("Error: Plater database structure not found!")
-    DM:PrintMessage("Error: Plater database structure not found!")
+  -- Ensure Plater.db is populated
+  if not Plater.db or not Plater.db.profile or not Plater.db.profile.script_data then
+    DM:PrintMessage("Error: Plater database is not ready!")
     return false
   end
 
-  -- Either update existing script or add a new one
-  if existingScriptIndex then
-    -- Update existing script but preserve key properties
-    local existingScript = Plater.db.profile.script_data[existingScriptIndex]
-
-    -- Keep these properties from the existing script
-    scriptTable.Enabled = existingScript.Enabled or true
-    scriptTable.UID = existingScript.UID
-    scriptTable.scriptId = existingScript.scriptId
-
-    -- Update version info
-    scriptTable.version = (existingScript.version or 1) + 1
-    scriptTable.semver = "1.0." .. tostring(scriptTable.version)
-    scriptTable.Revision = (existingScript.Revision or 1) + 1
-
-    -- Replace the script with our updated version
-    Plater.db.profile.script_data[existingScriptIndex] = scriptTable
-    DM:PlaterDebug("Updated existing Plater script (version " .. scriptTable.version .. ")")
-    DM:PrintMessage("Updated existing Plater script (version " .. scriptTable.version .. ")")
-  else
-    -- Add as a new script
-    table.insert(Plater.db.profile.script_data, scriptTable)
-    DM:PlaterDebug("Injected new Plater script")
-    DM:PrintMessage("Injected new Plater script")
+  -- Check if our script already exists
+  local exists = false
+  for i, existingScript in ipairs(Plater.db.profile.script_data) do
+    if existingScript and existingScript.Name == script.Name then
+      -- Update existing script
+      script.Enabled = existingScript.Enabled -- Preserve enabled state
+      Plater.db.profile.script_data[i] = script
+      exists = true
+      DM:PrintMessage("Updated existing DotMaster script")
+      break
+    end
   end
 
-  -- Use a safe approach to recompile scripts
-  DM:PlaterDebug("Telling Plater to recompile scripts...")
+  -- If script doesn't exist, add it
+  if not exists then
+    table.insert(Plater.db.profile.script_data, script)
+    DM:PrintMessage("Added new DotMaster script to Plater")
+  end
 
-  -- Wait a moment before recompiling
-  C_Timer.After(0.5, function()
-    if Plater.WipeAndRecompileAllScripts then
-      -- Try to safely recompile with error protection
-      local success, errorMsg = pcall(function()
-        Plater.WipeAndRecompileAllScripts("script")
-      end)
+  -- Try to refresh Plater scripts
+  if Plater.RefreshDBUpvalues then
+    Plater.RefreshDBUpvalues()
+  end
 
-      if not success then
-        DM:PlaterDebug("Error during script recompilation: " .. tostring(errorMsg))
-        -- Try alternative recompilation method
-        if Plater.CompileAllScripts then
-          Plater.CompileAllScripts("script")
-        end
-      end
-    elseif Plater.CompileAllScripts then
-      Plater.CompileAllScripts("script")
-    else
-      DM:PlaterDebug("Warning: Could not find Plater script recompilation methods")
-    end
+  -- Let Plater know scripting was modified
+  if Plater.ScriptingIsEnabled then
+    Plater.ScriptingIsEnabled = true
+  end
 
-    DM:PlaterDebug("Script installation complete")
-  end)
+  -- Don't try to force recompile immediately as it can cause errors
+  -- Plater will handle this on its own
 
   return true
 end
