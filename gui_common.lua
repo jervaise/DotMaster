@@ -49,7 +49,30 @@ end
 
 -- Add Database tab component function
 DotMaster_Components.CreateDatabaseTab = function(parent)
-  return Components.CreateDatabaseTab(parent)
+  -- Create a simplified database tab since the real one is not available
+  DM:DatabaseDebug("Creating simplified Database Tab (original moved to Old_Backend)")
+
+  -- Create standardized info area
+  local infoArea = DotMaster_Components.CreateTabInfoArea(
+    parent,
+    "Spell Database",
+    "Database functionality is not available in this version."
+  )
+
+  -- Create a message explaining the situation
+  local message = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  message:SetPoint("TOP", infoArea, "BOTTOM", 0, -40)
+  message:SetWidth(400)
+  message:SetText(
+  "The database functionality has been disabled in this version while the backend is being rewritten.\n\nThe full database functionality will return in a future update.")
+  message:SetJustifyH("CENTER")
+  message:SetTextColor(0.8, 0.8, 0.8)
+
+  -- Main container to return
+  local container = CreateFrame("Frame", nil, parent)
+  container:SetAllPoints()
+
+  return container
 end
 
 -- Store the info area creation function in the Components namespace
