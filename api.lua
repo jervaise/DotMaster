@@ -206,21 +206,32 @@ DM.API.PLATER_SCRIPT_TEMPLATE = {
   Author = "DotMaster",
   Time = time(),
   Enabled = true,
+  Revision = 1,
+  ScriptType = 1,
+  VersionCheck = 1,
 
   -- These are the required script sections
   OnInit = [[function(scriptTable)
-    -- Do minimal initialization
+    -- Minimal initialization
+    print("|cFF00FFDCDotMaster Plater Script Loaded|r")
   end]],
 
   OnUpdate = [[function(self, unitId, unitFrame, envTable, scriptTable)
     -- Empty update function
   end]],
 
+  -- Empty code sections that Plater expects
+  OnHide = [[]],
+  OnShow = [[]],
+
   -- Required structure elements
+  Prio = 99,
   SpellIds = {},
   Hooks = {},
   Options = {},
-  version = 1
+  OptionsValues = {},
+  version = 1,
+  PlaterCore = 1
 }
 
 -- Function to inject or update the DotMaster script in Plater
@@ -235,6 +246,7 @@ function DM.API:InjectPlaterScript()
 
   -- Create a copy of our template
   local script = DeepCopyTable(DM.API.PLATER_SCRIPT_TEMPLATE)
+  script.Time = time() -- Ensure we have the current time
 
   -- Ensure Plater.db is populated
   if not Plater.db or not Plater.db.profile or not Plater.db.profile.script_data then
@@ -247,32 +259,34 @@ function DM.API:InjectPlaterScript()
   for i, existingScript in ipairs(Plater.db.profile.script_data) do
     if existingScript and existingScript.Name == script.Name then
       -- Update existing script
+      -- Preserve important properties from existing script
       script.Enabled = existingScript.Enabled -- Preserve enabled state
+
+      -- Properly increment the revision number
+      script.Revision = (tonumber(existingScript.Revision) or 1) + 1
+      script.version = (tonumber(existingScript.version) or 1) + 1
+
+      -- Update with our new version
       Plater.db.profile.script_data[i] = script
       exists = true
-      DM:PrintMessage("Updated existing DotMaster script")
+      DM:PrintMessage("Updated existing DotMaster script to revision " .. script.Revision)
       break
     end
   end
 
   -- If script doesn't exist, add it
   if not exists then
+    -- First time adding - make sure index values are numbers
+    script.Revision = 1
+    script.version = 1
+
     table.insert(Plater.db.profile.script_data, script)
     DM:PrintMessage("Added new DotMaster script to Plater")
   end
 
-  -- Try to refresh Plater scripts
-  if Plater.RefreshDBUpvalues then
-    Plater.RefreshDBUpvalues()
-  end
-
-  -- Let Plater know scripting was modified
-  if Plater.ScriptingIsEnabled then
-    Plater.ScriptingIsEnabled = true
-  end
-
-  -- Don't try to force recompile immediately as it can cause errors
-  -- Plater will handle this on its own
+  -- Don't call any Plater refresh or recompile functions
+  -- This will let Plater handle it on its own terms
+  -- A /reload ui will ensure everything is properly loaded
 
   return true
 end

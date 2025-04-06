@@ -67,6 +67,7 @@ function DM:SlashCommand(msg)
       local success = DM.API:InjectPlaterScript()
       if success then
         -- Success message is now handled inside the InjectPlaterScript function
+        DM:PrintMessage("Important: Please type /reload to complete the Plater script installation")
       else
         DM:PrintMessage("Failed to inject script into Plater. Is Plater installed and enabled?")
       end
