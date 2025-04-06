@@ -5,12 +5,33 @@
 DotMaster = CreateFrame("Frame")
 local DM = DotMaster
 
--- Setup simple debugging (will be enhanced later)
+-- Setup basic message printing
 function DM:SimplePrint(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Define minimal constants and defaults (only what's needed for bootstrap)
+-- Basic message function
+function DM:PrintMessage(message)
+  print("|cFFCC00FFDotMaster:|r " .. message)
+end
+
+-- Implement a simplified debug message handler for development
+function DM:DebugMsg(message)
+  -- Only print to console in development mode
+  if DM.DEBUG_MODE then
+    DM:SimplePrint(message)
+  end
+end
+
+-- Define a stub for database debug messages for API compatibility
+function DM:DatabaseDebug(message)
+  -- Only print to console in development mode
+  if DM.DEBUG_MODE then
+    DM:SimplePrint("[DATABASE] " .. message)
+  end
+end
+
+-- Define minimal constants and defaults
 DM.addonName = "DotMaster"
 DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
@@ -21,15 +42,6 @@ DM.defaults = {
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
-
--- Debug categories (minimal initial setup)
-DM.DEBUG_CATEGORIES = {
-  general = true,
-  database = true
-}
-
--- By default, don't output debug messages to chat console
-DM.DEBUG_CONSOLE_OUTPUT = false
 
 -- Setup basic event handling for initialization sequence
 DM:RegisterEvent("ADDON_LOADED")
@@ -42,17 +54,9 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
   if event == "ADDON_LOADED" and arg1 == DM.addonName then
     -- This is the critical point where SavedVariables become available
     DM.initState = "addon_loaded"
-
-    -- First priority: Initialize the debug system if needed
-    if DM.Debug and DM.Debug.Init and not DM.debugInitialized then
-      DM.Debug:Init()
-      DM.debugInitialized = true
-    end
-
-    -- Now use DebugMsg instead of SimplePrint
     DM:DebugMsg("ADDON_LOADED triggered - SavedVariables available")
 
-    -- Load saved settings (will be implemented in LoadSettings)
+    -- Load saved settings
     if DM.LoadSettings then
       DM:LoadSettings()
       DM:DebugMsg("Settings loaded")
@@ -60,44 +64,25 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       DM:DebugMsg("WARNING: LoadSettings not available yet")
     end
 
-    -- Load spell database (will be implemented in LoadDMSpellsDB)
-    if DM.LoadDMSpellsDB then
-      DM:LoadDMSpellsDB()
-      DM:DebugMsg("Spell database loaded")
-    else
-      DM:DebugMsg("WARNING: LoadDMSpellsDB not available yet")
-    end
-
     DM.pendingInitialization = false
   elseif event == "PLAYER_LOGIN" then
     DM.initState = "player_login"
     DM:DebugMsg("PLAYER_LOGIN triggered")
-
-    -- Register debug slash commands if available
-    if DM.InitializeDebugSlashCommands then
-      DM:InitializeDebugSlashCommands()
-      DM:DebugMsg("Debug slash commands initialized")
-    end
 
     -- Register main slash commands if available
     if DM.InitializeMainSlashCommands then
       DM:InitializeMainSlashCommands()
       DM:DebugMsg("Main slash commands initialized")
     end
+
+    -- Initialize minimap icon
+    if DM.InitializeMinimapIcon then
+      DM:InitializeMinimapIcon()
+      DM:DebugMsg("Minimap icon initialized")
+    end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
     DM:DebugMsg("PLAYER_ENTERING_WORLD triggered")
-
-    -- Call main initialization (moved from core.lua)
-    if DM.CompleteInitialization then
-      DM:CompleteInitialization()
-    end
-
-    -- Make sure database is fully loaded before creating GUI
-    if DM.LoadDMSpellsDB and (not DM.dmspellsdb or next(DM.dmspellsdb) == nil) then
-      DM:DatabaseDebug("Ensuring database is loaded before GUI creation")
-      DM:LoadDMSpellsDB()
-    end
 
     -- Create GUI if available
     if DM.CreateGUI then
@@ -105,225 +90,23 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       DM:DebugMsg("GUI created")
     end
 
-    -- Initialize nameplate systems (now enabled in CompleteInitialization)
-    -- The initialization is now handled in CompleteInitialization
-
     -- Print final initialization message
     DM:DebugMsg("Initialization complete - v" .. (DM.defaults and DM.defaults.version or "unknown"))
   elseif event == "PLAYER_LOGOUT" then
-    -- Save settings and database on logout
+    -- Save settings on logout
     if DM.SaveSettings then
       DM:SaveSettings()
-    end
-
-    if DM.SaveDMSpellsDB then
-      DM:SaveDMSpellsDB()
     end
   end
 end)
 
--- Implement a minimal debug message handler until the real one is loaded
-function DM:DebugMsg(message)
-  -- Store message for later display in debug console
-  DM.oldDebugMessages = DM.oldDebugMessages or {}
-
-  -- Format with timestamp for consistency
-  local timestamp = date("|cFF888888[%H:%M:%S]|r ", GetServerTime())
-  local prefix = "|cFFCC00FF[GENERAL]|r "
-  local fullMessage = timestamp .. prefix .. message
-
-  -- Save for debug console to display later
-  table.insert(DM.oldDebugMessages, fullMessage)
-
-  -- Also print to chat if needed during early initialization
-  DM:SimplePrint(message)
-end
-
--- Define a stub for database debug messages
-function DM:DatabaseDebug(message)
-  -- Store message for later display in debug console
-  DM.oldDebugMessages = DM.oldDebugMessages or {}
-
-  -- Format with timestamp for consistency
-  local timestamp = date("|cFF888888[%H:%M:%S]|r ", GetServerTime())
-  local prefix = "|cFFFFA500[DATABASE]|r "
-  local fullMessage = timestamp .. prefix .. message
-
-  -- Save for debug console to display later
-  table.insert(DM.oldDebugMessages, fullMessage)
-
-  -- Also print to chat during early initialization
-  DM:SimplePrint("[DATABASE] " .. message)
-end
-
--- CompleteInitialization will be called during PLAYER_ENTERING_WORLD
-function DM:CompleteInitialization()
-  DM:DebugMsg("Completing full initialization")
-
-  -- Check for Plater dependency
-  if not _G["Plater"] then
-    DM:DebugMsg("ERROR: Plater is not installed or enabled")
-
-    -- Create an error popup
-    StaticPopupDialogs["DOTMASTER_MISSING_PLATER"] = {
-      text =
-      "|cFFFF0000DotMaster requires Plater Nameplates to function.|r\n\nPlease install and enable Plater from CurseForge, WoWInterface, or Wago.",
-      button1 = "OK",
-      timeout = 0,
-      whileDead = true,
-      hideOnEscape = false,
-      preferredIndex = 3,
-    }
-    StaticPopup_Show("DOTMASTER_MISSING_PLATER")
-
-    -- Print error message to chat
-    DM:PrintMessage("|cFFFF0000DotMaster requires Plater Nameplates to function.|r")
-    DM:PrintMessage("Please install Plater from CurseForge, WoWInterface, or Wago.")
-
-    -- Disable the addon - don't proceed with initialization
-    DM.enabled = false
-    DM.platerMissing = true
-
-    -- We're done here, don't initialize anything else
-    return
-  else
-    -- Hook Plater NPC colors specifically to handle conflicts (this should be first)
-    if DM.HookPlaterNpcColors then
-      DM:HookPlaterNpcColors()
-    end
-
-    -- Hook other Plater functions to ensure our colors persist
-    if DM.HookPlaterFunctions then
-      DM:HookPlaterFunctions()
-    end
-  end
-
-  -- Check if we have database data loaded
-  if DM.dmspellsdb then
-    local count = 0
-    for _ in pairs(DM.dmspellsdb) do
+-- Utility function for table size
+function DM:TableCount(table)
+  local count = 0
+  if table then
+    for _ in pairs(table) do
       count = count + 1
     end
-    DM:DebugMsg("Database contains " .. count .. " spells")
-  else
-    DM:DebugMsg("WARNING: Database not loaded or empty")
-
-    -- Try loading the database again if it's empty
-    if DM.LoadDMSpellsDB then
-      DM:LoadDMSpellsDB()
-      DM:DebugMsg("Attempted to reload database")
-    end
   end
-
-  -- Initialize nameplate tables properly
-  DM.activePlates = DM.activePlates or {}
-  DM.coloredPlates = DM.coloredPlates or {}
-  DM.originalColors = DM.originalColors or {}
-
-  -- Register nameplate related events
-  DM:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-  DM:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-  DM:RegisterEvent("UNIT_AURA")
-
-  -- Hook our OnEvent handler to handle nameplate events
-  local existingOnEvent = DM:GetScript("OnEvent")
-  DM:SetScript("OnEvent", function(self, event, arg1, ...)
-    -- Call the existing event handler for all events first
-    if existingOnEvent then
-      existingOnEvent(self, event, arg1, ...)
-    end
-
-    -- Handle nameplate events after other handlers
-    if event == "NAME_PLATE_UNIT_ADDED" and self.NameplateAdded then
-      self:NameplateAdded(arg1)
-    elseif event == "NAME_PLATE_UNIT_REMOVED" and self.NameplateRemoved then
-      self:NameplateRemoved(arg1)
-    elseif event == "UNIT_AURA" and self.UnitAuraChanged then
-      self:UnitAuraChanged(arg1)
-    end
-  end)
-
-  DM:DebugMsg("Nameplate events registered successfully")
-
-  -- At this point we would initialize everything else
-  DM:DebugMsg("Addon fully initialized")
-end
-
-DM.Meta = {
-  addonName = "DotMaster",
-  displayName = "|cFFB54AC9DotMaster|r",
-  version = "1.0.0",
-  author = "Your Name",
-  website = "https://github.com/yourusername/DotMaster",
-  slash = "/dm"
-}
-
--- Make sure we initialize Plater hooks in the correct order and with proper timing
-do
-  -- Function to initialize DotMaster's Plater integration
-  local function InitializePlaterIntegration()
-    -- Check if Plater is loaded
-    if not _G["Plater"] then
-      DM:DebugMsg("Plater not found, will retry initialization later")
-      C_Timer.After(2, InitializePlaterIntegration)
-      return
-    end
-
-    DM:DebugMsg("Initializing Plater integration")
-
-    -- First and most important: Hook NPC Colors system to prevent conflicts
-    DM:HookPlaterNpcColors()
-
-    -- Then hook the general Plater functions
-    DM:HookPlaterFunctions()
-
-    -- Register for PLAYER_ENTERING_WORLD to ensure hooks are maintained after loading screens
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:SetScript("OnEvent", function()
-      -- Delay slightly to ensure Plater has finished its initialization
-      C_Timer.After(1, function()
-        if _G["Plater"] then
-          -- Check if our hooks are intact
-          if not DM.platerNpcColorsHooked then
-            DM:DebugMsg("Reapplying Plater NPC Colors hook after loading screen")
-            DM:HookPlaterNpcColors()
-          end
-
-          if not DM.platerFunctionsHooked then
-            DM:DebugMsg("Reapplying general Plater hooks after loading screen")
-            DM:HookPlaterFunctions()
-          end
-        end
-      end)
-    end)
-
-    DM:DebugMsg("Plater integration initialized successfully")
-  end
-  -- In bootstrap.lua, add this after Plater is loaded:
-  if DM.InstallPlaterDirectMod then
-    DM:InstallPlaterDirectMod()
-  end
-  -- Trigger the initialization
-  C_Timer.After(1, InitializePlaterIntegration)
-end
-
--- Full addon initialization function (called after PLAYER_ENTERING_WORLD)
-function DM:Initialize()
-  if not DM.pendingInitialization or DM.initState == "initialized" then
-    DM:DebugMsg("Initialize called but addon already initialized or not pending.")
-    return
-  end
-
-  -- Default settings structure
-  DM.defaults = {
-    enabled = true,
-    debug = false,
-    version = "1.0.3",
-    flashExpiring = false,
-    flashThresholdSeconds = 3.0,
-  }
-
-  -- Rest of the function remains unchanged
-  DM:CompleteInitialization()
+  return count
 end

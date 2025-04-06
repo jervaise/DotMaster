@@ -23,14 +23,7 @@ bootstrap.lua
 core.lua
 api.lua
 settings.lua
-gui_debug.lua
-utils.lua
 minimap.lua
-
-# Database and spells
-spell_database.lua
-spell_utils.lua
-combinations_db.lua
 
 # GUI
 gui.lua
@@ -38,15 +31,9 @@ gui_common.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
 gui_combinations_tab.lua
-gui_database_tab.lua
 gui_colorpicker.lua
 gui_spell_row.lua
 gui_spell_selection.lua
 
-# Nameplate functionality
-nameplate_core.lua
-nameplate_detection.lua
-nameplate_coloring.lua
-
-# Features
-find_my_dots.lua
+# Initialize the addon
+init.lua

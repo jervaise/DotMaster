@@ -1,5 +1,5 @@
 -- DotMaster core.lua
--- Final initialization steps and startup
+-- Core structures and minimal initialization
 
 local DM = DotMaster
 
@@ -11,10 +11,9 @@ end
 
 -- Initialize necessary structures
 DM.settings = DM.settings or {}
-DM.dmspellsdb = DM.dmspellsdb or {}
-DM.activePlates = DM.activePlates or {}
-DM.coloredPlates = DM.coloredPlates or {}
 DM.enabled = true
+
+-- Set up basic defaults
 DM.defaults = DM.defaults or {
   enabled = true,
   debug = false,
@@ -23,24 +22,14 @@ DM.defaults = DM.defaults or {
   flashThresholdSeconds = 3.0
 }
 
--- Initialize Debug System Core (Hooks, Logging)
-local debugOK, debugErr = pcall(function()
-  if DM.Debug and DM.Debug.Init then
-    DM.Debug:Init()
-    DM:DebugMsg("Core debug system initialized (logging hooked).")
-  else
-    DM:SimplePrint("DM.Debug.Init not found!")
-  end
+-- Enable development mode - can be toggled from settings
+DM.DEBUG_MODE = false
 
-  -- Create Debug Console GUI (but don't show it yet)
-  if DM.Debug and DM.Debug.CreateDebugWindow then
-    DM.Debug:CreateDebugWindow()
-    DM:DebugMsg("Debug console GUI created.")
-  end
-end)
-
-if not debugOK then
-  DM:SimplePrint("Error initializing debug system: " .. tostring(debugErr))
+-- Register a slash command to toggle debug mode
+SLASH_DMDEBUG1 = "/dmdebug"
+SlashCmdList["DMDEBUG"] = function(msg)
+  DM.DEBUG_MODE = not DM.DEBUG_MODE
+  DM:PrintMessage("Debug mode is now " .. (DM.DEBUG_MODE and "ON" or "OFF"))
 end
 
 -- Utility function for table size
@@ -59,13 +48,4 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Check database state for diagnostic purposes
-if DM.dmspellsdb then
-  local count = DM:TableCount(DM.dmspellsdb)
-  DM:DebugMsg("Database check from core.lua: " .. count .. " spells")
-else
-  DM:DebugMsg("Database check from core.lua: NOT LOADED")
-end
-
--- Final debug note
-DM:DebugMsg("Core.lua execution finished. Initialization will complete during PLAYER_ENTERING_WORLD event.")
+DM:DebugMsg("Core.lua execution finished.")
