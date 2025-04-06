@@ -4,6 +4,11 @@
 local DM = DotMaster
 DM.API = {}
 
+-- Version info
+function DM.API:GetVersion()
+  return "1.0.3"
+end
+
 -- Spell tracking functions
 function DM.API:GetTrackedSpells()
   -- Return empty table to populate the Tracked Spells tab

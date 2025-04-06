@@ -15,7 +15,7 @@ function DM:SaveSettings()
 
   -- Update DotMasterDB with current settings
   DotMasterDB.enabled = settings.enabled
-  DotMasterDB.version = "1.0.2"
+  DotMasterDB.version = "1.0.3"
 
   -- Save force threat color setting
   DotMasterDB.settings = DotMasterDB.settings or {}

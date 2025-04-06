@@ -15,6 +15,13 @@ DM.dmspellsdb = DM.dmspellsdb or {}
 DM.activePlates = DM.activePlates or {}
 DM.coloredPlates = DM.coloredPlates or {}
 DM.enabled = true
+DM.defaults = DM.defaults or {
+  enabled = true,
+  debug = false,
+  version = "1.0.3",
+  flashExpiring = false,
+  flashThresholdSeconds = 3.0
+}
 
 -- Initialize Debug System Core (Hooks, Logging)
 local debugOK, debugErr = pcall(function()

@@ -17,7 +17,7 @@ DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
   debug = false,
-  version = "1.0.2",
+  version = "1.0.3",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -319,7 +319,7 @@ function DM:Initialize()
   DM.defaults = {
     enabled = true,
     debug = false,
-    version = "1.0.2",
+    version = "1.0.3",
     flashExpiring = false,
     flashThresholdSeconds = 3.0,
   }
