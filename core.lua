@@ -66,12 +66,12 @@ function DM:SlashCommand(msg)
     if DM.API.InjectPlaterScript then
       local success = DM.API:InjectPlaterScript()
       if success then
-        print("|cff00cc00DotMaster|r: Successfully injected script into Plater")
+        -- Success message is now handled inside the InjectPlaterScript function
       else
-        print("|cffcc0000DotMaster|r: Failed to inject script into Plater. Is Plater installed and enabled?")
+        DM:PrintMessage("Failed to inject script into Plater. Is Plater installed and enabled?")
       end
     else
-      print("|cffcc0000DotMaster|r: API not initialized yet. Try again later.")
+      DM:PrintMessage("API not initialized yet. Try again later.")
     end
   else
     HelpCommand(msg);
@@ -92,6 +92,13 @@ end
 -- Basic message printing function
 function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
+end
+
+-- Debug message printing function
+function DM:DebugMsg(message)
+  if DM.DEBUG_MODE then
+    print("|cFF00FF00DotMaster Debug:|r " .. message)
+  end
 end
 
 -- Color picker debug function
