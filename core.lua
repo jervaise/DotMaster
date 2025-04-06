@@ -40,6 +40,7 @@ local function HelpCommand(msg)
   print("   |cff00ff00/dm toggle|r - Shows/hides configuration window");
   print("   |cff00ff00/dm debug|r - Toggle debug mode");
   print("   |cff00ff00/dm plater|r - Inject DotMaster script into Plater");
+  print("   |cff00ff00/dm platerclean|r - Remove DotMaster script from Plater (fixes broken installation)");
 end
 
 -- Process slash commands
@@ -70,6 +71,18 @@ function DM:SlashCommand(msg)
         DM:PrintMessage("Important: Please type /reload to complete the Plater script installation")
       else
         DM:PrintMessage("Failed to inject script into Plater. Is Plater installed and enabled?")
+      end
+    else
+      DM:PrintMessage("API not initialized yet. Try again later.")
+    end
+  elseif (msg == "platerclean") then
+    -- New command to remove script from Plater
+    if DM.API.RemovePlaterScript then
+      local success = DM.API:RemovePlaterScript()
+      if success then
+        DM:PrintMessage("DotMaster script removed from Plater")
+      else
+        DM:PrintMessage("Failed to remove script from Plater. Is Plater installed and enabled?")
       end
     else
       DM:PrintMessage("API not initialized yet. Try again later.")

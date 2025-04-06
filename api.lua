@@ -290,3 +290,40 @@ function DM.API:InjectPlaterScript()
 
   return true
 end
+
+-- Function to remove the DotMaster script from Plater to fix broken installation
+function DM.API:RemovePlaterScript()
+  -- Safety check - ensure Plater exists
+  if not Plater then
+    DM:PrintMessage("Error: Plater is not loaded or installed!")
+    return false
+  end
+
+  -- Ensure Plater.db is populated
+  if not Plater.db or not Plater.db.profile or not Plater.db.profile.script_data then
+    DM:PrintMessage("Error: Plater database structure not found!")
+    return false
+  end
+
+  DM:PrintMessage("Removing DotMaster script from Plater...")
+
+  -- Look for our script by name
+  local found = false
+  for i = #Plater.db.profile.script_data, 1, -1 do
+    local script = Plater.db.profile.script_data[i]
+    if script and script.Name and (script.Name == "DotMaster DoT Tracker" or script.Name:find("DotMaster")) then
+      -- Remove the script from the table
+      table.remove(Plater.db.profile.script_data, i)
+      found = true
+      DM:PrintMessage("Removed DotMaster script from Plater")
+    end
+  end
+
+  if not found then
+    DM:PrintMessage("No DotMaster scripts found in Plater")
+  else
+    DM:PrintMessage("Important: Please type /reload to complete the cleanup")
+  end
+
+  return true
+end
