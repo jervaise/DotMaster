@@ -397,6 +397,7 @@ function DM:CreateGeneralTab(parent)
     "/dm - Toggle this window\n" ..
     "/dm on - Enable the addon\n" ..
     "/dm off - Disable the addon\n" ..
+    "/dm plater - Install DoT Tracker script\n" ..
     "/dmdebug - Show the debug console"
   )
 
@@ -408,6 +409,44 @@ function DM:CreateGeneralTab(parent)
   eventFrame:SetScript("OnEvent", function()
     C_Timer.After(0.5, RestoreCheckboxTexts)
   end)
+
+  -- Add a Plater integration section
+  local platerTitle = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  platerTitle:SetPoint("TOP", commandsTitle, "BOTTOM", 0, -60)
+  platerTitle:SetText("Plater Integration")
+  platerTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
+
+  -- Create a button to inject the Plater script
+  local injectButton = CreateFrame("Button", nil, contentPanel, "UIPanelButtonTemplate")
+  injectButton:SetSize(200, 30)
+  injectButton:SetPoint("TOP", platerTitle, "BOTTOM", 0, -10)
+  injectButton:SetText("Install DoT Tracker Script")
+
+  -- Set script to inject Plater script when clicked
+  injectButton:SetScript("OnClick", function()
+    if not Plater then
+      DM:PrintMessage("Error: Plater is not installed or enabled!")
+      return
+    end
+
+    if DM.API and DM.API.InjectPlaterScript then
+      local success = DM.API:InjectPlaterScript()
+      if success then
+        DM:PrintMessage("Successfully injected DoT Tracker script into Plater!")
+      else
+        DM:PrintMessage("Failed to inject script. Please check if Plater is enabled.")
+      end
+    else
+      DM:PrintMessage("Error: API not initialized. Try reloading UI.")
+    end
+  end)
+
+  -- Add description text
+  local platerDesc = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  platerDesc:SetPoint("TOP", injectButton, "BOTTOM", 0, -10)
+  platerDesc:SetWidth(370)
+  platerDesc:SetJustifyH("CENTER")
+  platerDesc:SetText("Click the button above to install or update the\nDotMaster DoT Tracker script in Plater.")
 
   return parent
 end

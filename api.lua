@@ -4,6 +4,29 @@
 local DM = DotMaster
 DM.API = {}
 
+-- Helper function to create a deep copy of a table (in case CopyTable is not available)
+local function DeepCopyTable(orig)
+  local orig_type = type(orig)
+  local copy
+  if orig_type == 'table' then
+    copy = {}
+    for orig_key, orig_value in next, orig, nil do
+      copy[DeepCopyTable(orig_key)] = DeepCopyTable(orig_value)
+    end
+    setmetatable(copy, DeepCopyTable(getmetatable(orig)))
+  else
+    copy = orig
+  end
+  return copy
+end
+
+-- Specialized debug function for Plater integration
+function DM:PlaterDebug(message)
+  if DM.DEBUG_MODE then
+    DM:PrintMessage("[Plater Integration] " .. message)
+  end
+end
+
 -- Version info
 function DM.API:GetVersion()
   return "1.0.3"
@@ -173,4 +196,100 @@ function DM:ShowSpellSelection(parent, callback)
   if callback then
     callback(0, "Unknown Spell", "Interface\\Icons\\INV_Misc_QuestionMark")
   end
+end
+
+-- Template for the Plater script that will handle DoT tracking
+DM.API.PLATER_SCRIPT_TEMPLATE = {
+  Name = "DotMaster DoT Tracker",
+  Icon = [[Interface\ICONS\Ability_Rogue_RuptureTN]],
+  Desc = "Tracks damage-over-time effects on nameplates. Created by DotMaster AddOn.",
+  Author = "DotMaster",
+  Time = time(),
+  Revision = 1,
+  PlaterCore = 1,
+  -- Lua code sections that Plater will execute
+  OnInit = [[
+        function (scriptTable)
+            print("DotMaster DoT Tracker: Initialized!")
+            -- This is a placeholder for the actual implementation
+            -- The actual script will be generated based on user settings
+        end
+    ]],
+  OnUpdate = [[
+        function (self, unitId, unitFrame, envTable, scriptTable)
+            -- This is a placeholder for the actual implementation
+        end
+    ]],
+  OnHide = [[
+        function (self, unitId, unitFrame, envTable, scriptTable)
+            -- This is a placeholder for the actual implementation
+        end
+    ]],
+  OnShow = [[
+        function (self, unitId, unitFrame, envTable, scriptTable)
+            -- This is a placeholder for the actual implementation
+        end
+    ]],
+  -- Not using these sections for now, but we need them for a valid script
+  Hooks = {},
+  Options = {},
+  IconTexture = [[Interface\ICONS\Ability_Rogue_RuptureTN]],
+  IconTexCoords = { 0, 1, 0, 1 },
+  IconSize = { 14, 14 },
+  -- Script can be enabled by default
+  Enabled = true,
+  -- Use npcID triggers - this will be populated based on user settings
+  NpcNames = {},
+  -- Spell IDs triggers - this will be populated based on user settings
+  SpellIds = {}
+}
+
+-- Function to inject or update the DotMaster script in Plater
+function DM.API:InjectPlaterScript()
+  -- Safety check - ensure Plater exists
+  if not Plater then
+    DM:PlaterDebug("Error: Plater is not loaded or installed!")
+    return false
+  end
+
+  DM:PlaterDebug("Preparing to inject script into Plater...")
+
+  -- Create a copy of our template
+  local scriptTable = DeepCopyTable(DM.API.PLATER_SCRIPT_TEMPLATE)
+
+  -- Apply any user-specific settings here
+  -- This will be expanded in future versions
+  DM:PlaterDebug("Applying user settings to script...")
+
+  -- Check if our script already exists
+  local existingScriptIndex = nil
+  for i, script in ipairs(Plater.db.profile.script_data) do
+    if script.Name == scriptTable.Name then
+      existingScriptIndex = i
+      DM:PlaterDebug("Found existing script at index " .. i)
+      break
+    end
+  end
+
+  -- Either update existing script or add a new one
+  if existingScriptIndex then
+    -- Update existing script
+    -- Keep certain user properties (like Enabled state and perhaps triggers)
+    local existingScript = Plater.db.profile.script_data[existingScriptIndex]
+    scriptTable.Enabled = existingScript.Enabled
+
+    -- Replace the script with our updated version
+    Plater.db.profile.script_data[existingScriptIndex] = scriptTable
+    DM:PlaterDebug("Updated existing Plater script")
+  else
+    -- Add as a new script
+    table.insert(Plater.db.profile.script_data, scriptTable)
+    DM:PlaterDebug("Injected new Plater script")
+  end
+
+  -- Tell Plater to recompile all scripts
+  DM:PlaterDebug("Telling Plater to recompile scripts...")
+  Plater.WipeAndRecompileAllScripts("script")
+
+  return true
 end

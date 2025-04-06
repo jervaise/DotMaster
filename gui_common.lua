@@ -64,7 +64,7 @@ DotMaster_Components.CreateDatabaseTab = function(parent)
   message:SetPoint("TOP", infoArea, "BOTTOM", 0, -40)
   message:SetWidth(400)
   message:SetText(
-  "The database functionality has been disabled in this version while the backend is being rewritten.\n\nThe full database functionality will return in a future update.")
+    "The database functionality has been disabled in this version while the backend is being rewritten.\n\nThe full database functionality will return in a future update.")
   message:SetJustifyH("CENTER")
   message:SetTextColor(0.8, 0.8, 0.8)
 
