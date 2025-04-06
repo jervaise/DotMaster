@@ -3,6 +3,22 @@
 
 local DM = DotMaster
 
+-- Add these functions at the top of the file, after the local DM = DotMaster line
+
+-- Stub functions for combinations functionality
+function DM:IsCombinationsInitialized()
+  return true -- Always return true to avoid initialization errors
+end
+
+function DM:ForceCombinationsInitialization()
+  return true -- Always return success
+end
+
+-- Function for showing the combination dialog - stub implementation
+function DM:ShowCombinationDialog()
+  DM:PrintMessage("Combination dialog functionality is not available in this version")
+end
+
 -- Helper function to set up mouse wheel scrolling and hide scrollbars
 local function SetupScrollFrames(frame)
   if not frame then return end

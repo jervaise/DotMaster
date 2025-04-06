@@ -142,3 +142,35 @@ function DM.API:SaveDebugSettings(debugSettings)
   DM:DebugMsg("API: SaveDebugSettings called")
   return true
 end
+
+-- Add these functions to support color picker and spell selection
+
+-- Show color picker (stub)
+function DM:ShowColorPicker(r, g, b, callback)
+  -- Use the built-in color picker directly for now
+  local function colorFunc()
+    local r, g, b = ColorPickerFrame:GetColorRGB()
+    callback(r, g, b)
+  end
+
+  local function cancelFunc()
+    local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
+    callback(prevR, prevG, prevB)
+  end
+
+  ColorPickerFrame.func = colorFunc
+  ColorPickerFrame.cancelFunc = cancelFunc
+  ColorPickerFrame.previousValues = { r, g, b }
+  ColorPickerFrame:SetColorRGB(r, g, b)
+  ColorPickerFrame:Show()
+end
+
+-- Show spell selection (stub)
+function DM:ShowSpellSelection(parent, callback)
+  DM:PrintMessage("Spell selection is not available in this version")
+
+  -- Return a valid default if needed
+  if callback then
+    callback(0, "Unknown Spell", "Interface\\Icons\\INV_Misc_QuestionMark")
+  end
+end

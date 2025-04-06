@@ -48,4 +48,11 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
+-- Color picker debug function
+function DM:ColorPickerDebug(message)
+  if DM.DEBUG_MODE then
+    DM:PrintMessage("[ColorPicker] " .. message)
+  end
+end
+
 DM:DebugMsg("Core.lua execution finished.")

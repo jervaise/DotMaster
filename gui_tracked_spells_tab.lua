@@ -5,6 +5,12 @@ local DM = DotMaster
 local Components = DotMaster_Components -- Reuse existing component namespace if applicable
 local GUI = DM.GUI                      -- Alias for convenience
 
+-- Add placeholder functions for the tracked spells list
+function DM.GUI:RefreshTrackedSpellTabList(filter)
+  -- Placeholder function to refresh the tracked spells list
+  DM:DebugMsg("RefreshTrackedSpellTabList called with filter: " .. (filter or ""))
+end
+
 -- Function to create the Tracked Spells tab content
 function Components.CreateTrackedSpellsTab(parentFrame)
   DM:DatabaseDebug("Creating Tracked Spells Tab Content...")

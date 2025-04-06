@@ -53,27 +53,37 @@ function DM:InitializeMinimapIcon()
           end
         end
       elseif button == "RightButton" then
-        -- Toggle Find My Dots window
-        DM:StartFindMyDots()
+        -- Simplified right-click behavior
+        DM:PrintMessage("Right-click functionality is currently disabled")
       end
     end,
     OnTooltipShow = function(tooltip)
       if not tooltip or not tooltip.AddLine then return end
       tooltip:AddLine("DotMaster")
       tooltip:AddLine("|cFFFFFFFFLeft-Click:|r Open Main Interface", 1, 1, 1)
-      tooltip:AddLine("|cFFFFFFFFRight-Click:|r Find My Dots", 1, 1, 1)
+      tooltip:AddLine("|cFFFFFFFFRight-Click:|r Currently disabled", 1, 1, 1)
     end
   })
 
+  -- Safety check to ensure the object was created
+  if not DM.minimapLDB then
+    DM:PrintMessage("Error: Failed to create minimap button data")
+    return
+  end
+
   -- Register with LibDBIcon
   local LibDBIcon = LibStub("LibDBIcon-1.0")
-  LibDBIcon:Register("DotMaster", DM.minimapLDB, DotMasterDB.minimap)
+  if LibDBIcon and DM.minimapLDB then
+    LibDBIcon:Register("DotMaster", DM.minimapLDB, DotMasterDB.minimap)
 
-  -- Apply saved visibility state immediately
-  if DotMasterDB.minimap.hide then
-    LibDBIcon:Hide("DotMaster")
+    -- Apply saved visibility state immediately
+    if DotMasterDB.minimap.hide then
+      LibDBIcon:Hide("DotMaster")
+    else
+      LibDBIcon:Show("DotMaster")
+    end
   else
-    LibDBIcon:Show("DotMaster")
+    DM:PrintMessage("Error: Failed to initialize minimap icon")
   end
 
   -- Additional function to toggle minimap icon
@@ -84,10 +94,13 @@ function DM:InitializeMinimapIcon()
     -- Apply the saved state
     DotMasterDB.minimap.hide = settings.minimapIcon.hide
 
-    if DotMasterDB.minimap.hide then
-      LibDBIcon:Hide("DotMaster")
-    else
-      LibDBIcon:Show("DotMaster")
+    local LibDBIcon = LibStub("LibDBIcon-1.0")
+    if LibDBIcon then
+      if DotMasterDB.minimap.hide then
+        LibDBIcon:Hide("DotMaster")
+      else
+        LibDBIcon:Show("DotMaster")
+      end
     end
 
     DM:DebugMsg("Minimap icon visibility set to: " .. (DotMasterDB.minimap.hide and "hidden" or "shown"))
@@ -133,13 +146,10 @@ function DM:AddMinimapSlashCommand()
     DM:PrintMessage("  /dm on - Enable addon")
     DM:PrintMessage("  /dm off - Disable addon")
     DM:PrintMessage("  /dm status - Display debug information")
-    DM:PrintMessage("  /dm console - Open Debug Console (use /dmdebug)")
     DM:PrintMessage("  /dm show - Show GUI (if loaded)")
     DM:PrintMessage("  /dm reset - Reset to default settings")
     DM:PrintMessage("  /dm save - Force save settings")
     DM:PrintMessage("  /dm reload - Reload UI")
-    DM:PrintMessage("  /dm fixdb - Fix database ID format issues")
-    DM:PrintMessage("  /dm dbstate - Show detailed database state and spells")
     DM:PrintMessage("  /dm minimap - Toggle minimap icon")
   end
 end
