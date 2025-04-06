@@ -21,6 +21,7 @@ Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 # Core files
 bootstrap.lua
 core.lua
+api.lua
 settings.lua
 gui_debug.lua
 utils.lua

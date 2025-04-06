@@ -128,38 +128,42 @@ function DM:CreateGeneralTab(parent)
     return checkbox
   end
 
+  -- Get settings from API
+  local settings = DM.API:GetSettings()
+
   -- Create the main feature checkbox
   local enableCheckbox = CreateStyledCheckbox("DotMasterEnableCheckbox",
     checkboxContainer, nil, 0, "Enable DotMaster")
-  enableCheckbox:SetChecked(DM.enabled)
+  enableCheckbox:SetChecked(settings.enabled)
   enableCheckbox:SetScript("OnClick", function(self)
-    DM.enabled = self:GetChecked()
-    DM:PrintMessage(DM.enabled and "Enabled" or "Disabled")
-    if DM.enabled then
-      DM:UpdateAllNameplates()
-    else
-      DM:ResetAllNameplates()
-    end
-    DM:SaveSettings()
+    local enabled = self:GetChecked()
+    DM.API:EnableAddon(enabled)
+    DM:PrintMessage(enabled and "Enabled" or "Disabled")
+
+    -- Update settings
+    settings.enabled = enabled
+    DM.API:SaveSettings(settings)
   end)
 
   -- Create minimap checkbox
   local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
     checkboxContainer, enableCheckbox, -4, "Show Minimap Icon")
-  minimapCheckbox:SetChecked(not (DotMasterDB and DotMasterDB.minimap and DotMasterDB.minimap.hide))
+  minimapCheckbox:SetChecked(not (settings.minimapIcon and settings.minimapIcon.hide))
   minimapCheckbox:SetScript("OnClick", function(self)
-    if not DotMasterDB or not DotMasterDB.minimap then return end
-    DotMasterDB.minimap.hide = not self:GetChecked()
-    if DM.ToggleMinimapIcon then
-      DM:ToggleMinimapIcon()
-    else
-      local LibDBIcon = LibStub("LibDBIcon-1.0")
-      if LibDBIcon then
-        if DotMasterDB.minimap.hide then
-          LibDBIcon:Hide("DotMaster")
-        else
-          LibDBIcon:Show("DotMaster")
-        end
+    local showIcon = self:GetChecked()
+
+    -- Update settings
+    if not settings.minimapIcon then settings.minimapIcon = {} end
+    settings.minimapIcon.hide = not showIcon
+    DM.API:SaveSettings(settings)
+
+    -- Toggle minimap icon if LibDBIcon is available
+    local LibDBIcon = LibStub("LibDBIcon-1.0")
+    if LibDBIcon then
+      if settings.minimapIcon.hide then
+        LibDBIcon:Hide("DotMaster")
+      else
+        LibDBIcon:Show("DotMaster")
       end
     end
   end)
@@ -167,26 +171,24 @@ function DM:CreateGeneralTab(parent)
   -- Create force threat color checkbox
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
     checkboxContainer, minimapCheckbox, -4, "Force Threat Color")
-  if DM.settings == nil then DM.settings = {} end
-  if DM.settings.forceColor == nil then DM.settings.forceColor = false end
-  forceColorCheckbox:SetChecked(DM.settings.forceColor)
+  forceColorCheckbox:SetChecked(settings.forceColor)
   forceColorCheckbox:SetScript("OnClick", function(self)
-    DM.settings.forceColor = self:GetChecked()
-    DM:PrintMessage("Force Threat Color " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
-    if DM.enabled then
-      DM:UpdateAllNameplates()
-    end
-    DM:SaveSettings()
+    local forceColor = self:GetChecked()
+
+    -- Update settings
+    settings.forceColor = forceColor
+    DM.API:SaveSettings(settings)
+
+    DM:PrintMessage("Force Threat Color " .. (forceColor and "Enabled" or "Disabled"))
   end)
 
   -- Create border-only checkbox and thickness control together
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
     checkboxContainer, forceColorCheckbox, -4, "Border-only")
-  if DM.settings.borderOnly == nil then DM.settings.borderOnly = false end
-  borderOnlyCheckbox:SetChecked(DM.settings.borderOnly)
+  borderOnlyCheckbox:SetChecked(settings.borderOnly)
 
   -- Initialize thickness value if needed
-  if DM.settings.borderThickness == nil then DM.settings.borderThickness = 2 end
+  if settings.borderThickness == nil then settings.borderThickness = 2 end
 
   -- Create a compact thickness control next to the border-only checkbox
   local thicknessContainer = CreateFrame("Frame", nil, checkboxContainer)
@@ -198,56 +200,50 @@ function DM:CreateGeneralTab(parent)
   thicknessValueContainer:SetSize(30, 26)
   thicknessValueContainer:SetPoint("LEFT", thicknessContainer, "LEFT", 0, 0)
 
-  -- Create the thickness value display with right alignment
-  local thicknessValue = thicknessValueContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  -- Create the thickness value display
+  local thicknessValue = thicknessValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   thicknessValue:SetPoint("RIGHT", thicknessValueContainer, "RIGHT", 0, 0)
   thicknessValue:SetJustifyH("RIGHT")
-  thicknessValue:SetText(DM.settings.borderThickness .. " px")
+  thicknessValue:SetText(settings.borderThickness .. " px")
 
   -- Create decrease button with fixed position
   local decreaseButton = CreateFrame("Button", nil, thicknessContainer)
-  decreaseButton:SetSize(18, 18)
+  decreaseButton:SetSize(16, 16)
   decreaseButton:SetPoint("LEFT", thicknessValueContainer, "RIGHT", 2, 0)
   decreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
   decreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
   decreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   decreaseButton:SetScript("OnClick", function()
-    if DM.settings.borderThickness > 1 then
-      DM.settings.borderThickness = DM.settings.borderThickness - 1
-      thicknessValue:SetText(DM.settings.borderThickness .. " px")
-      if DM.enabled then
+    if settings.borderThickness > 1 then
+      settings.borderThickness = settings.borderThickness - 1
+      thicknessValue:SetText(settings.borderThickness .. " px")
+      if settings.enabled then
         DM:UpdateAllNameplates()
       end
-      DM:SaveSettings()
+      DM.API:SaveSettings(settings)
     end
   end)
 
-  -- Create increase button
+  -- Create increase button with fixed position
   local increaseButton = CreateFrame("Button", nil, thicknessContainer)
-  increaseButton:SetSize(18, 18)
+  increaseButton:SetSize(16, 16)
   increaseButton:SetPoint("LEFT", decreaseButton, "RIGHT", 2, 0)
   increaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
   increaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
   increaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   increaseButton:SetScript("OnClick", function()
-    if DM.settings.borderThickness < 4 then
-      DM.settings.borderThickness = DM.settings.borderThickness + 1
-      thicknessValue:SetText(DM.settings.borderThickness .. " px")
-      if DM.enabled then
+    if settings.borderThickness < 4 then
+      settings.borderThickness = settings.borderThickness + 1
+      thicknessValue:SetText(settings.borderThickness .. " px")
+      if settings.enabled then
         DM:UpdateAllNameplates()
       end
-      DM:SaveSettings()
+      DM.API:SaveSettings(settings)
     end
   end)
 
-  -- Make sure texture is shown properly
-  local decreaseTexture = decreaseButton:GetNormalTexture()
-  local increaseTexture = increaseButton:GetNormalTexture()
-  if decreaseTexture then decreaseTexture:SetTexCoord(0, 1, 0, 1) end
-  if increaseTexture then increaseTexture:SetTexCoord(0, 1, 0, 1) end
-
   -- Initially hide or show the thickness control based on checkbox state
-  if DM.settings.borderOnly then
+  if settings.borderOnly then
     thicknessContainer:Show()
   else
     thicknessContainer:Hide()
@@ -255,34 +251,31 @@ function DM:CreateGeneralTab(parent)
 
   -- Set up the border-only checkbox handler
   borderOnlyCheckbox:SetScript("OnClick", function(self)
-    DM.settings.borderOnly = self:GetChecked()
-    DM:PrintMessage("Border-only " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
+    local borderOnly = self:GetChecked()
+    DM:PrintMessage("Border-only " .. (borderOnly and "Enabled" or "Disabled"))
 
     -- Show/hide the thickness control based on checkbox state
     if thicknessContainer then
-      if self:GetChecked() then
+      if borderOnly then
         thicknessContainer:Show()
       else
         thicknessContainer:Hide()
       end
     end
 
-    if DM.enabled then
+    -- Update settings
+    settings.borderOnly = borderOnly
+    DM.API:SaveSettings(settings)
+
+    if settings.enabled then
       DM:UpdateAllNameplates()
     end
-    DM:SaveSettings()
   end)
 
-  -- Container for bottom buttons
-  local bottomButtonContainer = CreateFrame("Frame", nil, parent)
-  bottomButtonContainer:SetSize(parent:GetWidth() - 20, 50)
-  bottomButtonContainer:SetPoint("BOTTOM", 0, 40) -- 30px up from bottom
-
-  -- Add flashing checkbox
+  -- Create flashing checkbox and seconds control together
   local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
     checkboxContainer, borderOnlyCheckbox, -4, "Expiry Flash") -- Changed from -5 to -4
-  if DM.settings.flashExpiring == nil then DM.settings.flashExpiring = false end
-  flashingCheckbox:SetChecked(DM.settings.flashExpiring)
+  flashingCheckbox:SetChecked(settings.flashExpiring)
 
   -- Create a container for the seconds input
   local secondsContainer = CreateFrame("Frame", nil, checkboxContainer)
@@ -294,44 +287,44 @@ function DM:CreateGeneralTab(parent)
   secondsValueContainer:SetSize(30, 26)
   secondsValueContainer:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
 
-  -- Create the seconds input display with right alignment
-  local secondsValue = secondsValueContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+  -- Create the seconds value display
+  local secondsValue = secondsValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   secondsValue:SetPoint("RIGHT", secondsValueContainer, "RIGHT", 0, 0)
   secondsValue:SetJustifyH("RIGHT")
-  secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
+  secondsValue:SetText(settings.flashThresholdSeconds .. " s")
 
   -- Create decrease button for seconds with fixed position
   local secondsDecreaseButton = CreateFrame("Button", nil, secondsContainer)
-  secondsDecreaseButton:SetSize(18, 18)
+  secondsDecreaseButton:SetSize(16, 16)
   secondsDecreaseButton:SetPoint("LEFT", secondsValueContainer, "RIGHT", 2, 0)
   secondsDecreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
   secondsDecreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
   secondsDecreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   secondsDecreaseButton:SetScript("OnClick", function()
-    if DM.settings.flashThresholdSeconds > 1 then
-      DM.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds - 0.5
-      secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
-      DM:SaveSettings()
+    if settings.flashThresholdSeconds > 1 then
+      settings.flashThresholdSeconds = settings.flashThresholdSeconds - 0.5
+      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
+      DM.API:SaveSettings(settings)
     end
   end)
 
-  -- Create increase button for seconds
+  -- Create increase button for seconds with fixed position
   local secondsIncreaseButton = CreateFrame("Button", nil, secondsContainer)
-  secondsIncreaseButton:SetSize(18, 18)
+  secondsIncreaseButton:SetSize(16, 16)
   secondsIncreaseButton:SetPoint("LEFT", secondsDecreaseButton, "RIGHT", 2, 0)
   secondsIncreaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
   secondsIncreaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
   secondsIncreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   secondsIncreaseButton:SetScript("OnClick", function()
-    if DM.settings.flashThresholdSeconds < 8 then
-      DM.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds + 0.5
-      secondsValue:SetText(DM.settings.flashThresholdSeconds .. " s")
-      DM:SaveSettings()
+    if settings.flashThresholdSeconds < 8 then
+      settings.flashThresholdSeconds = settings.flashThresholdSeconds + 0.5
+      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
+      DM.API:SaveSettings(settings)
     end
   end)
 
   -- Initially hide or show the seconds control based on checkbox state
-  if DM.settings.flashExpiring then
+  if settings.flashExpiring then
     secondsContainer:Show()
   else
     secondsContainer:Hide()
@@ -339,216 +332,82 @@ function DM:CreateGeneralTab(parent)
 
   -- Set up the flashing checkbox handler
   flashingCheckbox:SetScript("OnClick", function(self)
-    DM.settings.flashExpiring = self:GetChecked()
-    DM:PrintMessage("Expiry Flash " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
+    local flashExpiring = self:GetChecked()
+    DM:PrintMessage("Expiry Flash " .. (flashExpiring and "Enabled" or "Disabled"))
 
     -- Show/hide the seconds control based on checkbox state
     if secondsContainer then
-      if self:GetChecked() then
+      if flashExpiring then
         secondsContainer:Show()
       else
         secondsContainer:Hide()
       end
     end
 
-    DM:SaveSettings()
+    -- Update settings
+    settings.flashExpiring = flashExpiring
+    DM.API:SaveSettings(settings)
   end)
 
-  -- Create info section container with fixed height
-  local infoSection = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
-  infoSection:SetSize(350, 140)                             -- Maintaining the 140px height
-  infoSection:SetPoint("TOP", contentPanel, "TOP", 0, -200) -- Changed from -220 to -200 (20px higher)
-  infoSection:SetBackdrop({
+  -- Create a second area for information about the addon in a nice box
+  local infoBox = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
+  infoBox:SetSize(370, 140)
+  infoBox:SetPoint("TOP", contentPanel, "TOP", 0, -200)
+  infoBox:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    edgeFile = nil,
-    edgeSize = 0,
-    insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 8,
+    insets = { left = 2, right = 2, top = 2, bottom = 2 },
   })
-  infoSection:SetBackdropColor(0.05, 0.05, 0.05, 0.5)
+  infoBox:SetBackdropColor(0.1, 0.1, 0.1, 0.5)       -- Even more transparent than the main panel
+  infoBox:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.6) -- Subtle border
 
-  -- Array to store panels for easier management
-  local panels = {}
+  -- Create info box title with decoration
+  local infoBoxTitle = infoBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  infoBoxTitle:SetPoint("TOP", infoBox, "TOP", 0, -10)
+  infoBoxTitle:SetText("How to use DotMaster")
+  infoBoxTitle:SetTextColor(1, 0.82, 0) -- WoW Gold for titles
 
-  -- Function to update panel positions and visibility
-  local function UpdatePanelPositions()
-    local currentOffset = 0
-
-    for i, panel in ipairs(panels) do
-      -- Reposition header
-      panel.header:ClearAllPoints()
-      panel.header:SetPoint("TOPLEFT", infoSection, "TOPLEFT", 0, -currentOffset)
-
-      -- Update offset for next panel
-      currentOffset = currentOffset + panel.headerHeight
-
-      -- Position and show/hide content
-      panel.content:ClearAllPoints()
-      panel.content:SetPoint("TOPLEFT", panel.header, "BOTTOMLEFT", 12, -4)
-
-      if panel.isExpanded then
-        panel.indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
-        panel.content:Show()
-        currentOffset = currentOffset + panel.contentHeight + 8 -- Add padding
-      else
-        panel.indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
-        panel.content:Hide()
-      end
-    end
-  end
-
-  -- Function to expand a specific panel and collapse others
-  local function ExpandPanel(panelIndex)
-    for i, panel in ipairs(panels) do
-      panel.isExpanded = (i == panelIndex)
-    end
-    UpdatePanelPositions()
-  end
-
-  -- Function to create an accordion panel
-  local function CreateAccordionPanel(title, description, isExpanded)
-    local panel = {}
-    panel.isExpanded = isExpanded
-
-    -- Create header button
-    local header = CreateFrame("Button", nil, infoSection, "BackdropTemplate")
-    header:SetSize(350, 30)
-    header:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-
-    -- Set up background
-    header:SetBackdrop({
-      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-      edgeFile = nil,
-      edgeSize = 0,
-      insets = { left = 0, right = 0, top = 0, bottom = 0 },
-    })
-    header:SetBackdropColor(0.075, 0.075, 0.075, 0.7)
-
-    -- Create expand/collapse indicator
-    local indicator = header:CreateTexture(nil, "OVERLAY")
-    indicator:SetSize(16, 16)
-    indicator:SetPoint("LEFT", header, "LEFT", 8, 0)
-    panel.indicator = indicator
-
-    -- Create title text
-    local titleText = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    titleText:SetPoint("LEFT", indicator, "RIGHT", 6, 0)
-    titleText:SetText(title)
-    titleText:SetTextColor(classColor.r, classColor.g, classColor.b)
-
-    -- Create content frame
-    local content = CreateFrame("Frame", nil, infoSection)
-    content:SetSize(326, 0) -- Width with margins, height set later
-
-    -- Create or update the description text
-    local descText
-
-    -- Check if this is the DoT Combinations panel (index 2)
-    if title == "DoT Combinations" then
-      -- Using a single text element with normal color
-      descText = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-      descText:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
-      descText:SetWidth(326)
-      descText:SetText(
-        "Create powerful combinations requiring two or more DoTs to be active simultaneously before applying nameplate colors. Combinations always take priority over individual spells.")
-      descText:SetJustifyH("LEFT")
-      descText:SetJustifyV("TOP")
-      descText:SetTextColor(0.8, 0.8, 0.8) -- Normal text color
-      descText:SetSpacing(2)
-
-      -- Set content height based on text
-      content:SetHeight(descText:GetStringHeight() + 8)
-    else
-      -- Regular text for other panels
-      descText = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-      descText:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
-      descText:SetWidth(326)
-      descText:SetText(description)
-      descText:SetJustifyH("LEFT")
-      descText:SetJustifyV("TOP")
-      descText:SetTextColor(0.8, 0.8, 0.8)
-      descText:SetSpacing(2)
-
-      -- Set content height based on text
-      content:SetHeight(descText:GetStringHeight() + 8)
-    end
-
-    -- Store panel elements
-    panel.header = header
-    panel.content = content
-    panel.headerHeight = header:GetHeight()
-    panel.contentHeight = content:GetHeight()
-
-    -- Add click handler
-    header:SetScript("OnClick", function()
-      -- Toggle this panel
-      panel.isExpanded = not panel.isExpanded
-
-      -- If expanding, collapse others
-      if panel.isExpanded then
-        for i, otherPanel in ipairs(panels) do
-          if otherPanel ~= panel then
-            otherPanel.isExpanded = false
-          end
-        end
-      end
-
-      UpdatePanelPositions()
-    end)
-
-    return panel
-  end
-
-  -- Create the three info panels
-  local threatColorPanel = CreateAccordionPanel(
-    "Threat Color Information",
-    "Automatically applies threat colors to nameplates with your DoTs for instant combat feedback (shows aggro warnings for DPS, lost aggro alerts for tanks)",
-    true -- First panel expanded by default
+  -- Add information text with better formatting
+  local infoText = infoBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  infoText:SetPoint("TOPLEFT", infoBox, "TOPLEFT", 20, -30)
+  infoText:SetPoint("BOTTOMRIGHT", infoBox, "BOTTOMRIGHT", -20, 10)
+  infoText:SetJustifyH("LEFT")
+  infoText:SetJustifyV("TOP")
+  infoText:SetSpacing(4) -- Add line spacing for better readability
+  infoText:SetText(
+    "1. Go to the Tracked Spells tab to add your DoTs\n" ..
+    "2. Set colors for each spell by clicking on the colored box\n" ..
+    "3. Set priorities to determine which color is shown when\n    multiple DoTs are active on the same target\n" ..
+    "4. You can create spell combinations in the Combinations tab\n" ..
+    "5. Use /dm to toggle this window, /dm on or /dm off to enable/disable"
   )
-  table.insert(panels, threatColorPanel)
 
-  local combinationsPanel = CreateAccordionPanel(
-    "DoT Combinations",
-    "", -- Description handled specially inside the CreateAccordionPanel function
-    false
+  -- Create a command list section at the bottom
+  local commandsTitle = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  commandsTitle:SetPoint("TOP", infoBox, "BOTTOM", 0, -15)
+  commandsTitle:SetText("Slash Commands")
+  commandsTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
+
+  local commandsText = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  commandsText:SetPoint("TOP", commandsTitle, "BOTTOM", 0, -5)
+  commandsText:SetWidth(370)
+  commandsText:SetJustifyH("CENTER")
+  commandsText:SetText(
+    "/dm - Toggle this window\n" ..
+    "/dm on - Enable the addon\n" ..
+    "/dm off - Disable the addon\n" ..
+    "/dmdebug - Show the debug console"
   )
-  table.insert(panels, combinationsPanel)
 
-  local borderModePanel = CreateAccordionPanel(
-    "Border-only Color Mode",
-    "DotMaster can modify nameplate borders instead of the entire nameplate color. This less intrusive option preserves other nameplate visuals while still providing DoT tracking.",
-    false
-  )
-  table.insert(panels, borderModePanel)
-
-  -- Initial positioning update
-  UpdatePanelPositions()
-
-  -- Ensure the info section doesn't overflow its container
-  infoSection:SetClipsChildren(true)
-
-  -- Add a warning about Plater integration (moved to bottom button area)
-  local platerWarning = bottomButtonContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  platerWarning:SetPoint("CENTER", bottomButtonContainer, "CENTER", 0, 0)
-  platerWarning:SetWidth(350)
-  platerWarning:SetText(
-    "WARNING: If using Plater, disable any Plater scripts or mods that modify nameplate colors for proper DotMaster functionality.")
-  platerWarning:SetTextColor(1, 0.82, 0) -- Gold text for warning
-  platerWarning:SetJustifyH("CENTER")
-  platerWarning:SetJustifyV("TOP")
-  platerWarning:SetSpacing(2)
-
-  -- Register for PLAYER_ENTERING_WORLD to restore checkbox texts after loading screens
-  local restoreTextFrame = CreateFrame("Frame")
-  restoreTextFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-  restoreTextFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
-  restoreTextFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" or event == "LOADING_SCREEN_DISABLED" then
-      C_Timer.After(0.1, function()
-        RestoreCheckboxTexts()
-      end)
-    end
+  -- Register special event to fix broken checkbox text when moving between zones
+  -- Only restore after zone changes to avoid unnecessary text setting
+  local eventFrame = CreateFrame("Frame")
+  eventFrame:RegisterEvent("ZONE_CHANGED")
+  eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+  eventFrame:SetScript("OnEvent", function()
+    C_Timer.After(0.5, RestoreCheckboxTexts)
   end)
 
-  -- Store the function to allow manual restoration
-  DM.RestoreCheckboxTexts = RestoreCheckboxTexts
+  return parent
 end

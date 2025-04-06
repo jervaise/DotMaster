@@ -20,6 +20,20 @@ function DM:InitializeMinimapIcon()
     }
   end
 
+  -- Get settings from API
+  local settings = DM.API:GetSettings()
+  if not settings.minimapIcon then
+    settings.minimapIcon = {
+      hide = false,
+      minimapPos = 220,
+      radius = 80
+    }
+    DM.API:SaveSettings(settings)
+  end
+
+  -- Use API settings to override DotMasterDB for minimap state
+  DotMasterDB.minimap.hide = settings.minimapIcon.hide
+
   -- Set up LDB data broker object
   local LDB = LibStub("LibDataBroker-1.1")
 
@@ -64,12 +78,18 @@ function DM:InitializeMinimapIcon()
 
   -- Additional function to toggle minimap icon
   function DM:ToggleMinimapIcon()
-    -- Don't toggle, just directly apply the saved state
+    -- Get latest settings
+    local settings = DM.API:GetSettings()
+
+    -- Apply the saved state
+    DotMasterDB.minimap.hide = settings.minimapIcon.hide
+
     if DotMasterDB.minimap.hide then
       LibDBIcon:Hide("DotMaster")
     else
       LibDBIcon:Show("DotMaster")
     end
+
     DM:DebugMsg("Minimap icon visibility set to: " .. (DotMasterDB.minimap.hide and "hidden" or "shown"))
   end
 
@@ -86,8 +106,20 @@ function DM:AddMinimapSlashCommand()
     command = strtrim(command:lower())
 
     if command == "minimap" then
+      -- Get settings
+      local settings = DM.API:GetSettings()
+
+      -- Toggle minimap visibility
+      if not settings.minimapIcon then settings.minimapIcon = {} end
+      settings.minimapIcon.hide = not settings.minimapIcon.hide
+
+      -- Save settings
+      DM.API:SaveSettings(settings)
+
+      -- Apply change
       DM:ToggleMinimapIcon()
-      DM:PrintMessage(DotMasterDB.minimap.hide and "Minimap icon hidden" or "Minimap icon shown")
+
+      DM:PrintMessage(settings.minimapIcon.hide and "Minimap icon hidden" or "Minimap icon shown")
       return
     end
 

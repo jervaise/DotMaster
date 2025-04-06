@@ -10,33 +10,37 @@ function DM:SaveSettings()
     DotMasterDB = {}
   end
 
-  DotMasterDB.enabled = DM.enabled
-  DotMasterDB.version = DM.defaults.version
+  -- Get settings from API
+  local settings = DM.API:GetSettings()
+
+  -- Update DotMasterDB with current settings
+  DotMasterDB.enabled = settings.enabled
+  DotMasterDB.version = "1.0.2"
 
   -- Save force threat color setting
-  if DM.settings then
-    DotMasterDB.settings = DotMasterDB.settings or {}
-    DotMasterDB.settings.forceColor = DM.settings.forceColor
-    DotMasterDB.settings.borderOnly = DM.settings.borderOnly
-    DotMasterDB.settings.borderThickness = DM.settings.borderThickness
-    DotMasterDB.settings.flashExpiring = DM.settings.flashExpiring
-    DotMasterDB.settings.flashThresholdSeconds = DM.settings.flashThresholdSeconds
+  DotMasterDB.settings = DotMasterDB.settings or {}
+  DotMasterDB.settings.forceColor = settings.forceColor
+  DotMasterDB.settings.borderOnly = settings.borderOnly
+  DotMasterDB.settings.borderThickness = settings.borderThickness
+  DotMasterDB.settings.flashExpiring = settings.flashExpiring
+  DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
 
-    DM:DatabaseDebug("Force threat color setting saved: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
-    DM:DatabaseDebug("Border only setting saved: " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
-    DM:DatabaseDebug("Border thickness saved: " .. (DM.settings.borderThickness or "Default"))
-    DM:DatabaseDebug("Flash expiring setting saved: " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
-    DM:DatabaseDebug("Flash threshold saved: " .. (DM.settings.flashThresholdSeconds or "Default") .. " seconds")
-  end
+  DM:DatabaseDebug("Force threat color setting saved: " .. (settings.forceColor and "Enabled" or "Disabled"))
+  DM:DatabaseDebug("Border only setting saved: " .. (settings.borderOnly and "Enabled" or "Disabled"))
+  DM:DatabaseDebug("Border thickness saved: " .. (settings.borderThickness or "Default"))
+  DM:DatabaseDebug("Flash expiring setting saved: " .. (settings.flashExpiring and "Enabled" or "Disabled"))
+  DM:DatabaseDebug("Flash threshold saved: " .. (settings.flashThresholdSeconds or "Default") .. " seconds")
 
   -- Save debug categories and options
-  if DM.DEBUG_CATEGORIES then
-    DotMasterDB.debugCategories = DM.DEBUG_CATEGORIES
+  local debugSettings = DM.API:GetDebugSettings()
+
+  if debugSettings.categories then
+    DotMasterDB.debugCategories = debugSettings.categories
     DM:DatabaseDebug("Debug categories saved")
   end
 
-  if DM.DEBUG_CONSOLE_OUTPUT ~= nil then
-    DotMasterDB.debugConsoleOutput = DM.DEBUG_CONSOLE_OUTPUT
+  if debugSettings.consoleOutput ~= nil then
+    DotMasterDB.debugConsoleOutput = debugSettings.consoleOutput
     DM:DatabaseDebug("Debug console output setting saved")
   end
 
@@ -53,74 +57,50 @@ function DM:LoadSettings()
     DotMasterDB = {}
   end
 
-  -- Set enabled state (from SavedVariables or defaults)
-  DM.enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or DM.defaults.enabled
-  DM:DatabaseDebug("Addon enabled state: " .. (DM.enabled and "Enabled" or "Disabled"))
+  -- Initialize API settings with defaults
+  local settings = {
+    enabled = (DotMasterDB.enabled ~= nil) and DotMasterDB.enabled or true,
+    forceColor = false,
+    borderOnly = false,
+    borderThickness = 2,
+    flashExpiring = false,
+    flashThresholdSeconds = 3.0,
+    minimapIcon = { hide = false }
+  }
 
-  -- Initialize settings container if needed
-  DM.settings = DM.settings or {}
+  -- Load settings from saved variables if available
+  if DotMasterDB.settings then
+    if DotMasterDB.settings.forceColor ~= nil then
+      settings.forceColor = DotMasterDB.settings.forceColor
+    end
 
-  -- Load force threat color setting
-  if DotMasterDB.settings and DotMasterDB.settings.forceColor ~= nil then
-    DM.settings.forceColor = DotMasterDB.settings.forceColor
-    DM:DatabaseDebug("Force threat color setting loaded: " .. (DM.settings.forceColor and "Enabled" or "Disabled"))
-  else
-    DM.settings.forceColor = false
-    DM:DatabaseDebug("No saved force threat color setting found, using default (Disabled)")
+    if DotMasterDB.settings.borderOnly ~= nil then
+      settings.borderOnly = DotMasterDB.settings.borderOnly
+    end
+
+    if DotMasterDB.settings.borderThickness ~= nil then
+      settings.borderThickness = DotMasterDB.settings.borderThickness
+    end
+
+    if DotMasterDB.settings.flashExpiring ~= nil then
+      settings.flashExpiring = DotMasterDB.settings.flashExpiring
+    end
+
+    if DotMasterDB.settings.flashThresholdSeconds ~= nil then
+      settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
+    end
   end
 
-  -- Load border only setting
-  if DotMasterDB.settings and DotMasterDB.settings.borderOnly ~= nil then
-    DM.settings.borderOnly = DotMasterDB.settings.borderOnly
-    DM:DatabaseDebug("Border only setting loaded: " .. (DM.settings.borderOnly and "Enabled" or "Disabled"))
-  else
-    DM.settings.borderOnly = false
-    DM:DatabaseDebug("No saved border only setting found, using default (Disabled)")
+  -- Load minimap settings
+  if DotMasterDB.minimap then
+    settings.minimapIcon = DotMasterDB.minimap
   end
 
-  -- Load border thickness setting
-  if DotMasterDB.settings and DotMasterDB.settings.borderThickness ~= nil then
-    DM.settings.borderThickness = DotMasterDB.settings.borderThickness
-    DM:DatabaseDebug("Border thickness loaded: " .. DM.settings.borderThickness)
-  else
-    DM.settings.borderThickness = 2
-    DM:DatabaseDebug("No saved border thickness setting found, using default (2)")
-  end
+  -- Set the enabled state in both API and core for compatibility
+  DM.enabled = settings.enabled
 
-  -- Load flash expiring setting
-  if DotMasterDB.settings and DotMasterDB.settings.flashExpiring ~= nil then
-    DM.settings.flashExpiring = DotMasterDB.settings.flashExpiring
-    DM:DatabaseDebug("Flash expiring setting loaded: " .. (DM.settings.flashExpiring and "Enabled" or "Disabled"))
-  else
-    DM.settings.flashExpiring = DM.defaults.flashExpiring
-    DM:DatabaseDebug("No saved flash expiring setting found, using default (" ..
-    (DM.defaults.flashExpiring and "Enabled" or "Disabled") .. ")")
-  end
-
-  -- Load flash threshold setting
-  if DotMasterDB.settings and DotMasterDB.settings.flashThresholdSeconds ~= nil then
-    DM.settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
-    DM:DatabaseDebug("Flash threshold loaded: " .. DM.settings.flashThresholdSeconds .. " seconds")
-  else
-    DM.settings.flashThresholdSeconds = DM.defaults.flashThresholdSeconds
-    DM:DatabaseDebug("No saved flash threshold setting found, using default (" ..
-    DM.defaults.flashThresholdSeconds .. " seconds)")
-  end
-
-  -- Load debug settings
-  if DotMasterDB.debugCategories then
-    DM.DEBUG_CATEGORIES = DotMasterDB.debugCategories
-    DM:DatabaseDebug("Debug categories loaded from saved variables")
-  else
-    DM:DatabaseDebug("No saved debug categories found, using defaults")
-  end
-
-  if DotMasterDB.debugConsoleOutput ~= nil then
-    DM.DEBUG_CONSOLE_OUTPUT = DotMasterDB.debugConsoleOutput
-    DM:DatabaseDebug("Debug console output setting loaded")
-  else
-    DM:DatabaseDebug("No saved debug console output setting found, using default")
-  end
+  -- Save to API
+  DM.API:SaveSettings(settings)
 
   DM:DebugMsg("Settings loaded")
 end
@@ -153,11 +133,13 @@ function DM:InitializeDebugSlashCommands()
           DM:PrintMessage("Debug console toggle not available")
         end
       elseif command == "status" then
+        local debugSettings = DM.API:GetDebugSettings()
+
         DM:PrintMessage("Debug Status: " .. (DM.DEBUG_MODE and "Enabled" or "Disabled"))
         -- Show enabled categories
-        if DM.DEBUG_CATEGORIES then
+        if debugSettings.categories then
           DM:PrintMessage("Enabled Categories:")
-          for category, enabled in pairs(DM.DEBUG_CATEGORIES) do
+          for category, enabled in pairs(debugSettings.categories) do
             if enabled then
               DM:PrintMessage("  - " .. category)
             end
@@ -168,20 +150,23 @@ function DM:InitializeDebugSlashCommands()
         local category, state = strsplit(" ", arg, 2)
         category = strtrim(category:lower())
 
-        if DM.DEBUG_CATEGORIES and DM.DEBUG_CATEGORIES[category] ~= nil then
+        local debugSettings = DM.API:GetDebugSettings()
+
+        if debugSettings.categories and debugSettings.categories[category] ~= nil then
           if state and (state:lower() == "on" or state:lower() == "enable") then
-            DM.DEBUG_CATEGORIES[category] = true
+            debugSettings.categories[category] = true
             DM:PrintMessage("Debug category '" .. category .. "' enabled")
           elseif state and (state:lower() == "off" or state:lower() == "disable") then
-            DM.DEBUG_CATEGORIES[category] = false
+            debugSettings.categories[category] = false
             DM:PrintMessage("Debug category '" .. category .. "' disabled")
           else
             -- Toggle if no state specified
-            DM.DEBUG_CATEGORIES[category] = not DM.DEBUG_CATEGORIES[category]
+            debugSettings.categories[category] = not debugSettings.categories[category]
             DM:PrintMessage("Debug category '" .. category .. "' " ..
-              (DM.DEBUG_CATEGORIES[category] and "enabled" or "disabled"))
+              (debugSettings.categories[category] and "enabled" or "disabled"))
           end
-          DM:SaveSettings()
+
+          DM.API:SaveDebugSettings(debugSettings)
         else
           DM:PrintMessage("Unknown debug category: " .. category)
         end
@@ -227,39 +212,30 @@ function DM:InitializeMainSlashCommands()
     command = strtrim(command:lower())
 
     if command == "on" or command == "enable" then
+      local settings = DM.API:GetSettings()
+      settings.enabled = true
       DM.enabled = true
+      DM.API:SaveSettings(settings)
+      DM.API:EnableAddon(true)
       DM:PrintMessage("Enabled")
-      if DM.UpdateAllNameplates then DM:UpdateAllNameplates() else DM:DebugMsg("UpdateAllNameplates not available") end
-      DM:SaveSettings()
     elseif command == "off" or command == "disable" then
+      local settings = DM.API:GetSettings()
+      settings.enabled = false
       DM.enabled = false
+      DM.API:SaveSettings(settings)
+      DM.API:EnableAddon(false)
       DM:PrintMessage("Disabled")
-      if DM.ResetAllNameplates then DM:ResetAllNameplates() else DM:DebugMsg("ResetAllNameplates not available") end
-      DM:SaveSettings()
     elseif command == "debug" or command == "status" then
       DM:DebugMsg("Status Information:")
-      DM:DebugMsg("Enabled: " .. (DM.enabled and "Yes" or "No"))
+      local settings = DM.API:GetSettings()
+      DM:DebugMsg("Enabled: " .. (settings.enabled and "Yes" or "No"))
       DM:DebugMsg("GUI loaded: " .. (DM.GUI and "Yes" or "No"))
       DM:DebugMsg("GUI frame exists: " .. (DM.GUI and DM.GUI.frame and "Yes" or "No"))
       DM:DebugMsg("Active plates: " .. (DM.TableCount and DM:TableCount(DM.activePlates) or "N/A"))
       DM:DebugMsg("Colored plates: " .. (DM.TableCount and DM:TableCount(DM.coloredPlates) or "N/A"))
-      DM:DebugMsg("Tracked spells: " .. (DM.TableCount and DM:TableCount(DM.dmspellsdb) or "N/A"))
-      DM:DebugMsg("Spell database entries:")
 
-      local tracked = 0
-      for spellID, config in pairs(DM.dmspellsdb or {}) do
-        local enabledText = config.enabled == 1 and "Enabled" or "Disabled"
-        local trackedText = config.tracked == 1 and "Tracked" or "Not tracked"
-        DM:DebugMsg("  - " .. spellID .. ": " .. (config.spellname or "Unknown") ..
-          " (" .. enabledText .. ", " .. trackedText .. ")")
-
-        if config.tracked == 1 then
-          tracked = tracked + 1
-        end
-      end
-
-      DM:DebugMsg("Total spells: " .. (DM.TableCount and DM:TableCount(DM.dmspellsdb) or "N/A") ..
-        ", Tracked: " .. tracked)
+      local trackedSpells = DM.API:GetTrackedSpells()
+      DM:DebugMsg("Tracked spells: " .. (DM.TableCount and DM:TableCount(trackedSpells) or "N/A"))
 
       -- Add initialization state info
       DM:DebugMsg("Initialization state: " .. (DM.initState or "unknown"))
@@ -293,14 +269,24 @@ function DM:InitializeMainSlashCommands()
               DotMasterDB.spellDatabase = nil
             end
             DotMasterDB = nil
-            DM.enabled = DM.defaults.enabled
+
+            -- Reset settings to defaults
+            local defaultSettings = {
+              enabled = true,
+              forceColor = false,
+              borderOnly = false,
+              borderThickness = 2,
+              flashExpiring = false,
+              flashThresholdSeconds = 3.0,
+              minimapIcon = { hide = false }
+            }
+
+            DM.enabled = defaultSettings.enabled
+            DM.API:SaveSettings(defaultSettings)
             DM:PrintMessage("Settings reset to defaults")
-            if DM.ResetAllNameplates then DM:ResetAllNameplates() end
-            if DM.UpdateAllNameplates then DM:UpdateAllNameplates() end
+
+            -- Save and update UI
             DM:SaveSettings()
-            if DM.GUI and DM.GUI.RefreshSpellList then
-              DM.GUI:RefreshSpellList()
-            end
           end,
           timeout = 0,
           whileDead = true,
@@ -314,102 +300,6 @@ function DM:InitializeMainSlashCommands()
     elseif command == "save" then
       DM:SaveSettings()
       DM:PrintMessage("Settings saved")
-    elseif command == "fixdb" or command == "normalizedb" or command == "fixdatabase" then
-      DM:PrintMessage("Attempting to fix database ID format...")
-      if DM.NormalizeDatabaseIDs then
-        local dbSize = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
-        DM:PrintMessage("Current database size: " .. dbSize .. " entries")
-
-        DM:NormalizeDatabaseIDs()
-
-        -- Clean up legacy spellConfig data
-        if DotMasterDB and DotMasterDB.spellConfig then
-          DM:PrintMessage("Removing legacy spellConfig data...")
-          DotMasterDB.spellConfig = nil
-        end
-
-        DM:SaveDMSpellsDB()
-
-        -- Update the UI if database tab is active
-        if DM.GUI and DM.GUI.RefreshDatabaseTabList then
-          DM.GUI:RefreshDatabaseTabList()
-          DM:PrintMessage("UI refreshed with normalized database")
-        end
-
-        DM:PrintMessage("Database fix complete. Database now has " .. DM:TableCount(DM.dmspellsdb) .. " entries")
-      else
-        DM:PrintMessage("Database normalization function not found")
-      end
-    elseif command == "dbstate" or command == "dumpdb" then
-      -- Print detailed information about the database
-      DM:PrintMessage("Database State:")
-
-      -- Check if database exists
-      if not DM.dmspellsdb then
-        DM:PrintMessage("Database is nil!")
-        return
-      end
-
-      -- Print database size
-      local dbSize = DM:TableCount(DM.dmspellsdb)
-      DM:PrintMessage("Database contains " .. dbSize .. " spells")
-
-      -- Check SavedVariables entries
-      if DotMasterDB and DotMasterDB.dmspellsdb then
-        local svSize = DM:TableCount(DotMasterDB.dmspellsdb)
-        DM:PrintMessage("SavedVariables database contains " .. svSize .. " spells")
-      else
-        DM:PrintMessage("SavedVariables database is nil or empty")
-      end
-
-      -- Print type information
-      DM:PrintMessage("Database type: " .. type(DM.dmspellsdb))
-
-      -- Count ID types
-      local stringIds, numberIds, otherIds = 0, 0, 0
-      for id, _ in pairs(DM.dmspellsdb) do
-        if type(id) == "string" then
-          stringIds = stringIds + 1
-        elseif type(id) == "number" then
-          numberIds = numberIds + 1
-        else
-          otherIds = otherIds + 1
-        end
-      end
-
-      DM:PrintMessage("ID Types: " .. stringIds .. " string, " .. numberIds .. " number, " .. otherIds .. " other")
-
-      -- Print details of each spell
-      local count = 0
-      for id, data in pairs(DM.dmspellsdb) do
-        count = count + 1
-        if count <= 10 or dbSize <= 20 then -- Show all if 20 or less, otherwise first 10
-          local colorStr = data.color and
-              string.format("R:%.1f G:%.1f B:%.1f", data.color[1], data.color[2], data.color[3]) or "nil"
-          DM:PrintMessage(string.format(
-            "Spell %d: ID=%s (type=%s), Name=%s, Class=%s, Spec=%s, Icon=%s, Tracked=%s, Enabled=%s, Priority=%s, Color=%s",
-            count,
-            tostring(id),
-            type(id),
-            data.spellname or "nil",
-            data.wowclass or "nil",
-            data.wowspec or "nil",
-            data.spellicon or "nil",
-            data.tracked or "nil",
-            data.enabled or "nil",
-            data.priority or "nil",
-            colorStr
-          ))
-        end
-      end
-
-      if count > 10 and dbSize > 20 then
-        DM:PrintMessage("... and " .. (count - 10) .. " more spells (showing only first 10)")
-      end
-
-      -- Add initialization info
-      DM:PrintMessage("Initialization state: " .. (DM.initState or "unknown"))
-      DM:PrintMessage("Saved variables state: " .. (DotMasterDB and "exists" or "nil"))
     else
       -- Try to toggle main GUI if available, otherwise print help
       if DM.GUI and DM.GUI.frame then
@@ -436,8 +326,6 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
-        DM:PrintMessage("  /dm fixdb - Fix database ID format issues")
-        DM:PrintMessage("  /dm dbstate - Show detailed database state and spells")
       end
     end
   end

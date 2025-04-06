@@ -59,20 +59,14 @@ end
 
 -- Reset all nameplate colors
 function DM:ResetAllNameplates()
-  for unitToken in pairs(self.coloredPlates) do
-    local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
-    if nameplate then
-      self:RestoreDefaultColor(nameplate, unitToken)
-    end
-  end
-  wipe(self.coloredPlates)
+  DM:DebugMsg("API: ResetAllNameplates called - using stub implementation")
+  -- This is a stub that will be replaced with the real implementation
 end
 
 -- Update all nameplate colors
 function DM:UpdateAllNameplates()
-  for unitToken in pairs(self.activePlates) do
-    self:UpdateNameplate(unitToken)
-  end
+  DM:DebugMsg("API: UpdateAllNameplates called - using stub implementation")
+  -- This is a stub that will be replaced with the real implementation
 end
 
 -- Helper function to find the health bar in a nameplate
@@ -171,4 +165,22 @@ function DM:RunPlaterScriptHook(modName, hookName, unitId, unitFrame, modTable)
     -- but added for extra safety.
     DM:DebugMsg("Cannot run hook '%s': Compiled script function is nil for mod '%s'", hookName, modName)
   end
+end
+
+-- Function to start the Find My Dots feature
+function DM:StartFindMyDots()
+  DM:DebugMsg("API: StartFindMyDots called - using stub implementation")
+  -- This is a stub that will be replaced with the real implementation
+
+  -- Show a message to the user
+  DM:PrintMessage("Find My Dots feature is currently disabled in this version. Coming soon!")
+end
+
+-- Expose dummy functions for Plater hooks
+function DM:HookPlaterFunctions()
+  DM:DebugMsg("API: HookPlaterFunctions called - using stub implementation")
+end
+
+function DM:HookPlaterNpcColors()
+  DM:DebugMsg("API: HookPlaterNpcColors called - using stub implementation")
 end

@@ -9,6 +9,13 @@ if DM.initState and DM.initState ~= "bootstrap" then
   return
 end
 
+-- Initialize necessary structures
+DM.settings = DM.settings or {}
+DM.dmspellsdb = DM.dmspellsdb or {}
+DM.activePlates = DM.activePlates or {}
+DM.coloredPlates = DM.coloredPlates or {}
+DM.enabled = true
+
 -- Initialize Debug System Core (Hooks, Logging)
 local debugOK, debugErr = pcall(function()
   if DM.Debug and DM.Debug.Init then
@@ -29,12 +36,25 @@ if not debugOK then
   DM:SimplePrint("Error initializing debug system: " .. tostring(debugErr))
 end
 
+-- Utility function for table size
+function DM:TableCount(table)
+  local count = 0
+  if table then
+    for _ in pairs(table) do
+      count = count + 1
+    end
+  end
+  return count
+end
+
+-- Basic message printing function
+function DM:PrintMessage(message)
+  print("|cFFCC00FFDotMaster:|r " .. message)
+end
+
 -- Check database state for diagnostic purposes
 if DM.dmspellsdb then
-  local count = 0
-  for _ in pairs(DM.dmspellsdb) do
-    count = count + 1
-  end
+  local count = DM:TableCount(DM.dmspellsdb)
   DM:DebugMsg("Database check from core.lua: " .. count .. " spells")
 else
   DM:DebugMsg("Database check from core.lua: NOT LOADED")
