@@ -200,93 +200,153 @@ end
 
 -- Template for the Plater script that will handle DoT tracking
 DM.API.PLATER_SCRIPT_TEMPLATE = {
-  Name = "DotMaster DoT Tracker",
-  Icon = "Interface\\ICONS\\Ability_Rogue_RuptureTN",
-  Desc = "Tracks DoTs on nameplates",
+  Name = "DotMaster Color Handler",
+  Icon = "Interface\\ICONS\\Spell_Shadow_SoulLeech_3.blp",
+  Desc = "Handles nameplate coloring for DoTs managed by DotMaster",
   Author = "DotMaster",
   Time = time(),
-  Enabled = true,
   Revision = 1,
+  PlaterCore = 1,
+  Enabled = true,
   ScriptType = 1,
-  VersionCheck = 1,
 
-  -- These are the required script sections
+  -- OnInit runs once when the script is loaded
   OnInit = [[function(scriptTable)
-    -- Minimal initialization
     print("|cFF00FFDCDotMaster Plater Script Loaded|r")
   end]],
 
+  -- OnUpdate runs many times a second
   OnUpdate = [[function(self, unitId, unitFrame, envTable, scriptTable)
-    -- Empty update function
+    -- This is the DotMaster integration script for Plater
+    -- Ensure we have required objects
+    if not DotMaster then return end
+    if not unitId or not unitFrame or not unitFrame.healthBar then return end
+
+    -- Get color from DotMaster
+    local color
+    if DotMaster.GetColorForUnitThrottled then
+      color = DotMaster.GetColorForUnitThrottled(unitId)
+    elseif DotMaster.GetColorForUnit then
+      color = DotMaster.GetColorForUnit(unitId)
+    end
+
+    -- Apply color if found
+    if color and color.r and color.g and color.b then
+      -- Store original color first time
+      if not unitFrame.DotMasterOrigColor and not unitFrame.DotMasterColored then
+        local r, g, b = unitFrame.healthBar:GetStatusBarColor()
+        unitFrame.DotMasterOrigColor = {r=r, g=g, b=b}
+      end
+
+      -- Set the color
+      unitFrame.healthBar:SetStatusBarColor(color.r, color.g, color.b)
+      unitFrame.DotMasterColored = true
+    else
+      -- Restore original color if it was previously colored by us
+      if unitFrame.DotMasterColored and unitFrame.DotMasterOrigColor then
+        unitFrame.healthBar:SetStatusBarColor(
+          unitFrame.DotMasterOrigColor.r,
+          unitFrame.DotMasterOrigColor.g,
+          unitFrame.DotMasterOrigColor.b
+        )
+        unitFrame.DotMasterColored = false
+      end
+    end
   end]],
 
-  -- Empty code sections that Plater expects
-  OnHide = [[]],
-  OnShow = [[]],
+  -- Required empty sections
+  OnHide = [[function(self, unitId, unitFrame, envTable, scriptTable)
+    -- Restore original color if needed
+    if unitFrame.DotMasterColored and unitFrame.DotMasterOrigColor then
+      unitFrame.healthBar:SetStatusBarColor(
+        unitFrame.DotMasterOrigColor.r,
+        unitFrame.DotMasterOrigColor.g,
+        unitFrame.DotMasterOrigColor.b
+      )
+      unitFrame.DotMasterColored = false
+    end
+  end]],
 
   -- Required structure elements
-  Prio = 99,
   SpellIds = {},
   Hooks = {},
   Options = {},
   OptionsValues = {},
+  UID = "DotMaster" .. time(),
   version = 1,
-  PlaterCore = 1
+  VersionCheck = 1,
+  Prio = 99
 }
 
 -- Function to inject or update the DotMaster script in Plater
 function DM.API:InjectPlaterScript()
   -- Safety check - ensure Plater exists
   if not Plater then
-    DM:PrintMessage("Error: Plater is not loaded or installed!")
+    DM:PrintMessage("Error: Plater is not loaded or installed.")
+    return false
+  end
+
+  -- Ensure Plater database is ready
+  if not Plater.db or not Plater.db.profile or not Plater.db.profile.script_data then
+    DM:PrintMessage("Error: Plater is not fully initialized. Try again later.")
     return false
   end
 
   DM:PrintMessage("Adding DotMaster script to Plater...")
 
-  -- Create a copy of our template
-  local script = DeepCopyTable(DM.API.PLATER_SCRIPT_TEMPLATE)
-  script.Time = time() -- Ensure we have the current time
+  -- Create a script object that won't interfere with Plater's systems
+  local script = {
+    Name = DM.API.PLATER_SCRIPT_TEMPLATE.Name,
+    Icon = DM.API.PLATER_SCRIPT_TEMPLATE.Icon,
+    Desc = DM.API.PLATER_SCRIPT_TEMPLATE.Desc,
+    Author = DM.API.PLATER_SCRIPT_TEMPLATE.Author,
+    Time = time(),
+    Revision = DM.API.PLATER_SCRIPT_TEMPLATE.Revision,
+    PlaterCore = DM.API.PLATER_SCRIPT_TEMPLATE.PlaterCore,
+    Enabled = true,
+    ScriptType = DM.API.PLATER_SCRIPT_TEMPLATE.ScriptType,
+    OnInit = DM.API.PLATER_SCRIPT_TEMPLATE.OnInit,
+    OnUpdate = DM.API.PLATER_SCRIPT_TEMPLATE.OnUpdate,
+    OnHide = DM.API.PLATER_SCRIPT_TEMPLATE.OnHide,
+    SpellIds = {},
+    Hooks = {},
+    Options = {},
+    OptionsValues = {},
+    UID = "DotMaster" .. time(),
+    version = 1,
+    VersionCheck = 1,
+    Prio = 99
+  }
 
-  -- Ensure Plater.db is populated
-  if not Plater.db or not Plater.db.profile or not Plater.db.profile.script_data then
-    DM:PrintMessage("Error: Plater database is not ready!")
-    return false
-  end
-
-  -- Check if our script already exists
+  -- Check if script already exists
   local exists = false
   for i, existingScript in ipairs(Plater.db.profile.script_data) do
     if existingScript and existingScript.Name == script.Name then
-      -- Update existing script
-      -- Preserve important properties from existing script
-      script.Enabled = existingScript.Enabled -- Preserve enabled state
+      -- Preserve enabled state
+      script.Enabled = existingScript.Enabled
+      -- Keep the original UID to avoid issues
+      script.UID = existingScript.UID
 
-      -- Properly increment the revision number
-      script.Revision = (tonumber(existingScript.Revision) or 1) + 1
-      script.version = (tonumber(existingScript.version) or 1) + 1
+      -- Increment version
+      script.version = (existingScript.version or 1) + 1
+      script.Revision = (existingScript.Revision or 1) + 1
 
-      -- Update with our new version
+      -- Replace the existing script
       Plater.db.profile.script_data[i] = script
       exists = true
-      DM:PrintMessage("Updated existing DotMaster script to revision " .. script.Revision)
+      DM:PrintMessage("Updated existing DotMaster script.")
       break
     end
   end
 
-  -- If script doesn't exist, add it
+  -- Add as new script if not found
   if not exists then
-    -- First time adding - make sure index values are numbers
-    script.Revision = 1
-    script.version = 1
-
     table.insert(Plater.db.profile.script_data, script)
-    DM:PrintMessage("Added new DotMaster script to Plater")
+    DM:PrintMessage("Added new DotMaster script to Plater.")
   end
 
-  -- Don't call any Plater refresh or recompile functions
-  -- This will let Plater handle it on its own terms
-  -- A /reload ui will ensure everything is properly loaded
+  -- Important: Tell the user they need to reload
+  DM:PrintMessage("|cFFFFFF00IMPORTANT:|r You MUST type /reload to complete the installation.")
 
   return true
 end
@@ -311,7 +371,7 @@ function DM.API:RemovePlaterScript()
   local found = false
   for i = #Plater.db.profile.script_data, 1, -1 do
     local script = Plater.db.profile.script_data[i]
-    if script and script.Name and (script.Name == "DotMaster DoT Tracker" or script.Name:find("DotMaster")) then
+    if script and script.Name and (script.Name == "DotMaster Color Handler" or script.Name:find("DotMaster")) then
       -- Remove the script from the table
       table.remove(Plater.db.profile.script_data, i)
       found = true

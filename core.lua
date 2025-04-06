@@ -122,4 +122,43 @@ function DM:ColorPickerDebug(message)
   end
 end
 
+-- Nameplate coloring functions for Plater
+-- Cache to store recently calculated colors for each unit
+DM.UnitColorCache = {}
+DM.UnitColorLastUpdate = {}
+
+-- Get color for a unit without throttling
+function DM.GetColorForUnit(unitID)
+  -- This is a stub for future implementation
+  -- Will return a fixed color for now
+  if not unitID then return nil end
+
+  -- For demonstration, always return a fixed color
+  -- In actual implementation, this would check for DoTs on the unit
+  return { r = 0.8, g = 0.2, b = 0.8 }
+end
+
+-- Get color for a unit with throttling (to improve performance)
+function DM.GetColorForUnitThrottled(unitID)
+  if not unitID then return nil end
+
+  -- Check if we've calculated this unit's color recently (within 0.1 seconds)
+  local now = GetTime()
+  local lastUpdate = DM.UnitColorLastUpdate[unitID] or 0
+
+  if now - lastUpdate < 0.1 then
+    -- Return cached color if available
+    return DM.UnitColorCache[unitID]
+  end
+
+  -- Calculate new color
+  local color = DM.GetColorForUnit(unitID)
+
+  -- Cache the result
+  DM.UnitColorCache[unitID] = color
+  DM.UnitColorLastUpdate[unitID] = now
+
+  return color
+end
+
 DM:DebugMsg("Core.lua execution finished.")

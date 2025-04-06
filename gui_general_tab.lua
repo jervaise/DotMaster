@@ -424,21 +424,33 @@ function DM:CreateGeneralTab(parent)
   local platerWarning = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   platerWarning:SetPoint("TOPLEFT", platerTitle, "BOTTOMLEFT", 0, -5)
   platerWarning:SetWidth(400)
-  platerWarning:SetText("|cFFFF0000EXPERIMENTAL: The Plater integration is currently disabled and being improved.")
+  platerWarning:SetText("|cFFFFFF00EXPERIMENTAL:|r Plater integration has been simplified for better compatibility.")
 
   local platerDesc = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   platerDesc:SetPoint("TOPLEFT", platerWarning, "BOTTOMLEFT", 0, -10)
   platerDesc:SetWidth(400)
   platerDesc:SetText(
-  "DotMaster can work with the Plater nameplate addon to display DoT information on nameplates.\n\nIf your Plater installation has been broken, type: /dm platerclean")
+  "DotMaster can work with the Plater nameplate addon to display DoT information on nameplates.\n\nIf your Plater installation has been broken, use: /dm platerclean")
 
   local platerButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
   platerButton:SetPoint("TOPLEFT", platerDesc, "BOTTOMLEFT", 0, -10)
   platerButton:SetSize(200, 25)
   platerButton:SetText("Install DoT Tracker Script")
-  platerButton:SetEnabled(false)
+  platerButton:SetEnabled(true)
   platerButton:SetScript("OnClick", function()
-    DM.GUI:StatusMessage("Plater integration temporarily disabled")
+    if not Plater then
+      DM:PrintMessage("Error: Plater is not installed or enabled!")
+      return
+    end
+
+    if DM.API and DM.API.InjectPlaterScript then
+      local success = DM.API:InjectPlaterScript()
+      if not success then
+        DM:PrintMessage("Failed to inject script. Please check if Plater is enabled.")
+      end
+    else
+      DM:PrintMessage("Error: API not initialized. Try reloading UI.")
+    end
   end)
 
   return parent
