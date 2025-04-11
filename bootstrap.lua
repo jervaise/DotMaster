@@ -110,3 +110,13 @@ function DM:TableCount(table)
   end
   return count
 end
+
+-- Main slash command handler
+SLASH_DOTMASTER1 = "/dm"
+SlashCmdList["DOTMASTER"] = function(msg)
+  if DM.SlashCommand then
+    DM:SlashCommand(msg)
+  else
+    DM:PrintMessage("Still initializing... please try again in a moment.")
+  end
+end

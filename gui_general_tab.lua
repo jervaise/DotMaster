@@ -36,8 +36,8 @@ function DM:CreateGeneralTab(parent)
   -- Create standardized info area
   local infoArea = DotMaster_Components.CreateTabInfoArea(
     parent,
-    "DotMaster: Your DoT Tracking |cFFFF6A00Plater|r Companion",
-    "Colors Plater enemy nameplates\nTracks all your damage-over-time effects in one place\nWorks with any class and specialization"
+    "DotMaster: Your DoT Tracking Companion",
+    "Colors enemy nameplates\nTracks all your damage-over-time effects in one place\nWorks with any class and specialization"
   )
 
   -- ===== NEW MODERN UI DESIGN BEGINS HERE =====
@@ -397,7 +397,7 @@ function DM:CreateGeneralTab(parent)
     "/dm - Toggle this window\n" ..
     "/dm on - Enable the addon\n" ..
     "/dm off - Disable the addon\n" ..
-    "/dm plater - Install DoT Tracker script\n" ..
+    "/dm plater - Get script import string\n" ..
     "/dmdebug - Show the debug console"
   )
 
@@ -411,46 +411,108 @@ function DM:CreateGeneralTab(parent)
   end)
 
   -- Plater Integration
-  parent:MakeHeading("Nameplate Addon Integration", 10)
-
-  local platerFrame = CreateFrame("Frame", nil, parent)
-  platerFrame:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, -250)
+  local platerFrame = CreateFrame("Frame", nil, contentPanel)
+  platerFrame:SetPoint("TOP", commandsText, "BOTTOM", 0, -20)
   platerFrame:SetSize(400, 110)
 
   local platerTitle = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   platerTitle:SetPoint("TOPLEFT", platerFrame, "TOPLEFT", 0, 0)
   platerTitle:SetText("Plater Integration:")
-
-  local platerWarning = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  platerWarning:SetPoint("TOPLEFT", platerTitle, "BOTTOMLEFT", 0, -5)
-  platerWarning:SetWidth(400)
-  platerWarning:SetText("|cFFFFFF00EXPERIMENTAL:|r Plater integration has been simplified for better compatibility.")
+  platerTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
 
   local platerDesc = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  platerDesc:SetPoint("TOPLEFT", platerWarning, "BOTTOMLEFT", 0, -10)
+  platerDesc:SetPoint("TOPLEFT", platerTitle, "BOTTOMLEFT", 0, -5)
   platerDesc:SetWidth(400)
   platerDesc:SetText(
-  "DotMaster can work with the Plater nameplate addon to display DoT information on nameplates.\n\nIf your Plater installation has been broken, use: /dm platerclean")
+    "DotMaster works with Plater nameplate addon to display DoT information on nameplates.\n\n" ..
+    "You can import our script directly or follow manual installation instructions."
+  )
 
-  local platerButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
-  platerButton:SetPoint("TOPLEFT", platerDesc, "BOTTOMLEFT", 0, -10)
-  platerButton:SetSize(200, 25)
-  platerButton:SetText("Install DoT Tracker Script")
-  platerButton:SetEnabled(true)
-  platerButton:SetScript("OnClick", function()
+  -- Create buttons for Plater integration
+  local importButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
+  importButton:SetPoint("TOPLEFT", platerDesc, "BOTTOMLEFT", 0, -10)
+  importButton:SetSize(125, 25)
+  importButton:SetText("Generate Import Code")
+  importButton:SetEnabled(true)
+  importButton:SetScript("OnClick", function()
     if not Plater then
       DM:PrintMessage("Error: Plater is not installed or enabled!")
       return
     end
 
-    if DM.API and DM.API.InjectPlaterScript then
-      local success = DM.API:InjectPlaterScript()
-      if not success then
-        DM:PrintMessage("Failed to inject script. Please check if Plater is enabled.")
-      end
+    if DM.API and DM.API.ShowPlaterImportString then
+      DM.API:ShowPlaterImportString()
     else
       DM:PrintMessage("Error: API not initialized. Try reloading UI.")
     end
+  end)
+
+  -- Add tooltip to the import button
+  importButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Generate Import Code")
+    GameTooltip:AddLine("Creates a window with copyable import code for Plater", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  importButton:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
+  end)
+
+  -- Create manual instructions button
+  local viewScriptButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
+  viewScriptButton:SetPoint("LEFT", importButton, "RIGHT", 5, 0)
+  viewScriptButton:SetSize(125, 25)
+  viewScriptButton:SetText("Manual Instructions")
+  viewScriptButton:SetEnabled(true)
+  viewScriptButton:SetScript("OnClick", function()
+    if not Plater then
+      DM:PrintMessage("Error: Plater is not installed or enabled!")
+      return
+    end
+
+    if DM.API and DM.API.ShowPlaterScriptInstructions then
+      DM.API:ShowPlaterScriptInstructions()
+    else
+      DM:PrintMessage("Error: API not initialized. Try reloading UI.")
+    end
+  end)
+
+  -- Add tooltip to the instructions button
+  viewScriptButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Manual Instructions")
+    GameTooltip:AddLine("Shows step-by-step instructions for manual script installation", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  viewScriptButton:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
+  end)
+
+  -- Add Open Plater button
+  local openPlaterButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
+  openPlaterButton:SetPoint("LEFT", viewScriptButton, "RIGHT", 5, 0)
+  openPlaterButton:SetSize(100, 25)
+  openPlaterButton:SetText("Open Plater")
+  openPlaterButton:SetEnabled(true)
+  openPlaterButton:SetScript("OnClick", function()
+    if not Plater then
+      DM:PrintMessage("Error: Plater is not installed or enabled!")
+      return
+    end
+
+    -- Execute /plater command to open Plater
+    SlashCmdList["PLATER"]("")
+  end)
+
+  -- Add tooltip to the Plater button
+  openPlaterButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Open Plater")
+    GameTooltip:AddLine("Opens the Plater configuration window", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  openPlaterButton:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
   end)
 
   return parent

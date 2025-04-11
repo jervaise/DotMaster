@@ -82,73 +82,13 @@ DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 function DM:CreateGUI()
   DM:DebugMsg("Creating GUI...")
 
-  -- Check if Plater is missing and show a simplified error UI if so
-  if DM.platerMissing then
-    DM:DebugMsg("Showing simplified GUI due to missing Plater dependency")
-
-    -- Create a simple error frame
-    local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(400, 200)
-    frame:SetPoint("CENTER")
-    frame:SetFrameStrata("HIGH")
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-
-    -- Register with UI special frames to enable Escape key closing
-    tinsert(UISpecialFrames, "DotMasterOptionsFrame")
-
-    -- Add a backdrop
-    frame:SetBackdrop({
-      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-      edgeSize = 16,
-      insets = { left = 4, right = 4, top = 4, bottom = 4 },
-    })
-    frame:SetBackdropColor(0, 0, 0, 0.8)
-    frame:SetBackdropBorderColor(1, 0, 0, 0.8) -- Red border for error
-    frame:Hide()
-
-    -- Title
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", 0, -20)
-    title:SetText("|cFFFF0000DotMaster Error|r")
-
-    -- Error message
-    local message = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    message:SetPoint("TOP", title, "BOTTOM", 0, -20)
-    message:SetWidth(360)
-    message:SetText(
-      "This addon requires |cFFFF6A00Plater Nameplates|r to function.\n\nPlease install and enable Plater from CurseForge, WoWInterface, or Wago.")
-    message:SetJustifyH("CENTER")
-
-    -- Close Button
-    local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-    closeButton:SetPoint("TOPRIGHT", -3, -3)
-    closeButton:SetSize(26, 26)
-
-    -- OK Button
-    local okButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    okButton:SetSize(100, 25)
-    okButton:SetPoint("BOTTOM", 0, 20)
-    okButton:SetText("OK")
-    okButton:SetScript("OnClick", function() frame:Hide() end)
-
-    -- Store the frame reference
-    DM.GUI.frame = frame
-    return frame
-  end
-
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
-  local classColor = RAID_CLASS_COLORS[playerClass] or
-      { r = 0.6, g = 0.2, b = 1.0 } -- Default to purple if no class color found
+  local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
 
-  -- Main frame
+  -- Create main frame
   local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(500, 650) -- Increased frame size for better content display
+  frame:SetSize(500, 600)
   frame:SetPoint("CENTER")
   frame:SetFrameStrata("HIGH")
   frame:SetMovable(true)
@@ -156,37 +96,20 @@ function DM:CreateGUI()
   frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
   frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+  frame:Hide()
 
   -- Register with UI special frames to enable Escape key closing
   tinsert(UISpecialFrames, "DotMasterOptionsFrame")
 
-  -- Make frame resizable if supported
-  -- RESIZING FEATURE REMOVED
-
+  -- Add a backdrop
   frame:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
     edgeSize = 16,
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
   })
-  frame:SetBackdropColor(0, 0, 0, 0.8)                                        -- Darker background with better transparency
-  frame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.8) -- Use class color for border
-  frame:Hide()
-
-  -- Define size constraints as fixed values now (no resizing)
-  local minWidth, minHeight = 500, 650
-  local maxWidth, maxHeight = 500, 650
-  local isResizing = false
-
-  -- Resize button and functionality removed
-
-  -- Simple OnSizeChanged handler just to enforce fixed size
-  frame:SetScript("OnSizeChanged", function(self, width, height)
-    -- Always enforce our fixed size if it somehow changes
-    if width ~= minWidth or height ~= minHeight then
-      self:SetSize(minWidth, minHeight)
-    end
-  end)
+  frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+  frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
   -- Title
   local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")

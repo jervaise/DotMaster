@@ -39,8 +39,9 @@ local function HelpCommand(msg)
   print("   |cff00ff00/dm show|r - Shows configuration window");
   print("   |cff00ff00/dm toggle|r - Shows/hides configuration window");
   print("   |cff00ff00/dm debug|r - Toggle debug mode");
-  print("   |cff00ff00/dm plater|r - Inject DotMaster script into Plater");
-  print("   |cff00ff00/dm platerclean|r - Remove DotMaster script from Plater (fixes broken installation)");
+  print("   |cff00ff00/dm plater|r - Get Plater script in chat");
+  print("   |cff00ff00/dm platerimport|r - Open Plater import window");
+  print("   |cff00ff00/dm platervalidate|r - Validate import string (debug)");
 end
 
 -- Process slash commands
@@ -63,42 +64,73 @@ function DM:SlashCommand(msg)
     DM.DEBUG_MODE = not DM.DEBUG_MODE;
     DM:DebugMsg("Debug mode: " .. (DM.DEBUG_MODE and "ON" or "OFF"));
   elseif (msg == "plater") then
-    -- New command to inject script into Plater
-    if DM.API.InjectPlaterScript then
-      local success = DM.API:InjectPlaterScript()
-      if success then
-        -- Success message is now handled inside the InjectPlaterScript function
-        DM:PrintMessage("Important: Please type /reload to complete the Plater script installation")
-      else
-        DM:PrintMessage("Failed to inject script into Plater. Is Plater installed and enabled?")
-      end
+    -- Display script code for manual copy/paste
+    DM:PrintMessage("|cFFFFD100DotMaster Integration Script for Plater:|r")
+
+    DM:PrintMessage("|cFFFFD100Initialization tab:|r")
+    DM:PrintMessage("function (scriptTable)")
+    DM:PrintMessage("  --insert code here")
+    DM:PrintMessage("")
+    DM:PrintMessage("end")
+
+    DM:PrintMessage("|cFFFFD100On Show tab:|r")
+    DM:PrintMessage("function (self, unitId, unitFrame, envTable, scriptTable)")
+    DM:PrintMessage("  ")
+    DM:PrintMessage("end")
+
+    DM:PrintMessage("|cFFFFD100On Update tab:|r")
+    DM:PrintMessage("function (self, unitId, unitFrame, envTable, scriptTable)")
+    DM:PrintMessage("  Plater.SetNameplateColor (unitFrame, scriptTable.config.agonyColor)")
+    DM:PrintMessage("  if envTable._RemainingTime <= scriptTable.config.threshold then")
+    DM:PrintMessage("    envTable.agonyFlash:Play()")
+    DM:PrintMessage("  else")
+    DM:PrintMessage("    envTable.agonyFlash:Stop()")
+    DM:PrintMessage("  end")
+    DM:PrintMessage("end")
+
+    DM:PrintMessage("|cFFFFD100On Hide tab:|r")
+    DM:PrintMessage("function (self, unitId, unitFrame, envTable, scriptTable)")
+    DM:PrintMessage("  Plater.SetNameplateColor (unitFrame)")
+    DM:PrintMessage("  envTable.agonyFlash:Stop()")
+    DM:PrintMessage("end")
+
+    DM:PrintMessage("|cFFFFD100Constructor tab:|r")
+    DM:PrintMessage("function (self, unitId, unitFrame, envTable, scriptTable)")
+    DM:PrintMessage(
+    "  envTable.agonyFlash = envTable.agonyFlash or Plater.CreateFlash (unitFrame.healthBar, 0.5, scriptTable.config.threshold * 2, scriptTable.config.agonyColor)")
+    DM:PrintMessage("end")
+
+    DM:PrintMessage("|cFFFFD100For easier installation, use:|r")
+    DM:PrintMessage("/dm platerimport - Open import dialog window")
+  elseif (msg == "platerimport") then
+    -- Show the import dialog with encoded script
+    if DM.API and DM.API.ShowPlaterImportString then
+      DM.API:ShowPlaterImportString()
     else
-      DM:PrintMessage("API not initialized yet. Try again later.")
+      DM:PrintMessage("API not initialized yet. Try reloading UI.")
     end
-  elseif (msg == "platerclean") then
-    -- New command to remove script from Plater
-    if DM.API.RemovePlaterScript then
-      local success = DM.API:RemovePlaterScript()
-      if success then
-        DM:PrintMessage("DotMaster script removed from Plater")
-      else
-        DM:PrintMessage("Failed to remove script from Plater. Is Plater installed and enabled?")
-      end
+  elseif (msg == "platervalidate") then
+    -- Run validation on our import string against the reference
+    if DM.API and DM.API.ValidateImportString then
+      DM.API:ValidateImportString(true)
     else
-      DM:PrintMessage("API not initialized yet. Try again later.")
+      DM:PrintMessage("API not initialized yet. Try reloading UI.")
     end
   else
+    DM:PrintMessage("Unknown command: " .. msg)
     HelpCommand(msg);
   end
 end
 
--- Utility function for table size
-function DM:TableCount(table)
+-- Helper function to count table entries (for debugging)
+function DM:TableCount(t)
+  if type(t) ~= "table" then
+    return 0
+  end
+
   local count = 0
-  if table then
-    for _ in pairs(table) do
-      count = count + 1
-    end
+  for _ in pairs(t) do
+    count = count + 1
   end
   return count
 end

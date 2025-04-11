@@ -95,7 +95,13 @@
     "UNITNAME_TITLE_GUARDIAN",
     "THREAT_TOOLTIP",
     "UNITNAME_TITLE_PET",
-    "UNITNAME_TITLE_MINION"
+    "UNITNAME_TITLE_MINION",
+    "UIErrorsFrame",
+    "NamePlateDriverFrame",
+    "PlayerCastingBarFrame",
+    "TextureLoadingGroupMixin",
+    "GameMenuFrame",
+    "AddonCompartmentFrame"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.runtime.builtin": {
@@ -110,6 +116,10 @@
     "utf8": "disable"
   },
   "Lua.workspace.library": [
-    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.19.1\\Annotations"
-  ]
+    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.20.0\\Annotations\\Core",
+    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.20.0\\Annotations\\Libraries",
+    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.20.0\\Annotations\\Lua",
+    "c:\\Users\\Suphi Sarigollu\\.cursor\\extensions\\ketho.wow-api-0.20.0\\Annotations\\FrameXML\\Manual"
+  ],
+  "Lua.type.weakUnionCheck": true
 }
