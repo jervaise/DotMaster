@@ -5,6 +5,49 @@ local DM = DotMaster
 
 -- Add these functions at the top of the file, after the local DM = DotMaster line
 
+-- Function to force refresh of all combination colors
+function DM:RefreshCombinationColors()
+  -- Ensure we have access to the combinations UI
+  if not self.GUI or not self.combinations or not self.combinations.data then
+    return false
+  end
+
+  -- Get all visible combination rows
+  local allRows = {}
+  if self.GUI.frame and self.GUI.frame.allRows then
+    allRows = self.GUI.frame.allRows
+  end
+
+  -- Update colors for all rows
+  local updatedCount = 0
+  for id, combo in pairs(self.combinations.data) do
+    for _, row in ipairs(allRows or {}) do
+      if row.comboID == id and row.rowBg and row.nameText and combo.color then
+        -- Get color components
+        local r = combo.color.r or combo.color[1] or 1
+        local g = combo.color.g or combo.color[2] or 0
+        local b = combo.color.b or combo.color[3] or 0
+
+        -- Update background
+        row.rowBg:SetColorTexture(r * 0.2, g * 0.2, b * 0.2, 0.8)
+
+        -- Update text color
+        row.nameText:SetTextColor(r, g, b)
+
+        -- Update color swatch if it exists
+        if row.colorTexture then
+          row.colorTexture:SetColorTexture(r, g, b, 1)
+        end
+
+        updatedCount = updatedCount + 1
+      end
+    end
+  end
+
+  self:DebugMsg("Updated colors for " .. updatedCount .. " combination rows")
+  return true
+end
+
 -- Stub functions for combinations functionality
 function DM:IsCombinationsInitialized()
   return true -- Always return true to avoid initialization errors
@@ -500,11 +543,18 @@ function DM:CreateCombinationsTab(parent)
                   r = newR, g = newG, b = newB, a = newA
                 }
 
-                -- Update the color swatch
-                row.colorTexture:SetColorTexture(newR, newG, newB, newA)
-
                 -- Save the updated combinations data
                 DM:SaveCombinationsDB()
+
+                -- Apply immediate color updates to this row
+                row.colorTexture:SetColorTexture(newR, newG, newB, newA)
+                row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
+                row.nameText:SetTextColor(newR, newG, newB)
+
+                -- Use our refresh function to update all instances of this combo
+                if DM.RefreshCombinationColors then
+                  DM:RefreshCombinationColors()
+                end
               end,
 
               -- Standard color picker function
@@ -960,6 +1010,48 @@ function DM:CreateCombinationsTab(parent)
     self:SetVerticalScroll(newPosition)
   end)
 
+  -- Initialize the tab
+  C_Timer.After(0.2, UpdateCombinationsList)
+
+  -- Add a second delayed refresh to handle reload cases
+  C_Timer.After(2.0, function()
+    if container and container.UpdateCombinationsList then
+      self:DebugMsg("Performing delayed combinations list refresh")
+      container:UpdateCombinationsList()
+
+      -- Add a third refresh specifically for fixing color issues
+      C_Timer.After(0.5, function()
+        if DM.combinations and DM.combinations.data and next(DM.combinations.data) then
+          -- Force the update of each row's colors if it exists
+          for id, combo in pairs(DM.combinations.data) do
+            for _, row in ipairs(allRows or {}) do
+              if row.comboID == id and row.rowBg and row.nameText and combo.color then
+                -- Get color components
+                local r = combo.color.r or combo.color[1] or 1
+                local g = combo.color.g or combo.color[2] or 0
+                local b = combo.color.b or combo.color[3] or 0
+
+                -- Update background
+                row.rowBg:SetColorTexture(r * 0.2, g * 0.2, b * 0.2, 0.8)
+
+                -- Update text color
+                row.nameText:SetTextColor(r, g, b)
+
+                -- Update color swatch if it exists
+                if row.colorTexture then
+                  row.colorTexture:SetColorTexture(r, g, b, 1)
+                end
+              end
+            end
+          end
+        end
+      end)
+    end
+  end)
+
+  -- Register functions with container and main GUI for external calls
+  container.UpdateCombinationsList = UpdateCombinationsList
+
   return container
 end
 
@@ -1292,7 +1384,7 @@ function DM:ShowCombinationDialog(comboID)
           dialog.comboID .. ", isExpanded state preserved as: " .. tostring(dialog.isExpanded))
       else
         -- Create new
-        local newID = DM:CreateCombination(name, spells, color)
+        local newID = DM.API:CreateCombination(name, color, spells)
         self:DebugMsg("Created new combination with ID: " .. tostring(newID) .. ", isExpanded set to false by default")
 
         -- Force immediate flag setting in case the UI refreshes before database is saved

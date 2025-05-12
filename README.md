@@ -73,6 +73,7 @@ The `Docs/Project Scope.md` contains the project vision, feature roadmap, and ta
 
 ## Version History
 
+- **1.0.4**: Update with version 1.0.4 changes
 - **1.0.3**: GUI isolation from backend with API layer implementation
 - **1.0.2**: Added spell combination tracking
 - **1.0.1**: Performance improvements and bug fixes

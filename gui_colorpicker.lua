@@ -8,6 +8,18 @@ local colorpicker = DotMaster_ColorPicker
 -- Module initialization message
 DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Color picker module loaded")
 
+-- Add debug method for color picker if it doesn't exist
+if not DM.ColorPickerDebug then
+  DM.ColorPickerDebug = function(self, message)
+    -- Fall back to standard PrintMessage if available
+    if self.PrintMessage then
+      self:PrintMessage("ColorPicker: " .. message)
+    else
+      print("|cFFCC00FFDotMaster ColorPicker:|r " .. message)
+    end
+  end
+end
+
 -- Helper function for color picker
 function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
   -- Use the proper debug function

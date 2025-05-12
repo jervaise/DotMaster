@@ -14,7 +14,7 @@ function DM:SaveSettings()
 
   -- Update DotMasterDB with current settings
   DotMasterDB.enabled = settings.enabled
-  DotMasterDB.version = "1.0.4"
+  DotMasterDB.version = "1.0.5"
 
   -- Save force threat color setting
   DotMasterDB.settings = DotMasterDB.settings or {}
@@ -23,6 +23,11 @@ function DM:SaveSettings()
   DotMasterDB.settings.borderThickness = settings.borderThickness
   DotMasterDB.settings.flashExpiring = settings.flashExpiring
   DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
+
+  -- Re-install Plater mod with updated config
+  if self.InstallPlaterMod then
+    self:InstallPlaterMod()
+  end
 end
 
 -- Load settings from saved variables

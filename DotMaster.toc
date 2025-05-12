@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Tracks your damage-over-time abilities on nameplates
 ## Author: DM Dev Team
-## Version: 1.0.3
+## Version: 1.0.5
 ## SavedVariables: DotMasterDB
 ## X-Curse-Project-ID: 123456
 ## X-Wago-ID: 123456
@@ -21,9 +21,11 @@ Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 # Core files
 bootstrap.lua
 core.lua
+plater_integration.lua
 api.lua
-Old_Backend/spell_database.lua
-Old_Backend/find_my_dots.lua
+spell_database.lua
+find_my_dots.lua
+combinations_db.lua
 settings.lua
 minimap.lua
 
@@ -36,7 +38,7 @@ gui_combinations_tab.lua
 gui_colorpicker.lua
 gui_spell_row.lua
 gui_spell_selection.lua
-Old_Backend/gui_database_tab.lua
+gui_database_tab.lua
 
 # Initialize the addon
 init.lua

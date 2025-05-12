@@ -27,8 +27,19 @@ end
 
 -- Spell tracking functions
 function DM.API:GetTrackedSpells()
-  -- Return empty table to populate the Tracked Spells tab
-  return {}
+  local spells = {}
+  -- Use the tracked spells database
+  for id, entry in pairs(DotMaster.dmspellsdb or {}) do
+    if entry.enabled and entry.enabled ~= 0 then
+      table.insert(spells, {
+        spellID = tonumber(id),
+        color = entry.color,
+        priority = entry.priority,
+        name = entry.spellname,
+      })
+    end
+  end
+  return spells
 end
 
 function DM.API:TrackSpell(spellID, spellName, spellIcon, color, priority)
@@ -48,22 +59,158 @@ end
 
 -- Combination functions
 function DM.API:GetCombinations()
-  -- Return empty table to populate the Combinations tab
-  return {}
+  local combos = {}
+  -- Use the combinations database
+  if DotMaster.combinations and DotMaster.combinations.data then
+    for id, combo in pairs(DotMaster.combinations.data) do
+      if combo.enabled then
+        table.insert(combos, {
+          comboID = id,
+          spellList = combo.spells,
+          color = combo.color,
+          priority = combo.priority,
+          name = combo.name,
+        })
+      end
+    end
+  end
+  return combos
 end
 
-function DM.API:CreateCombination(name, color)
-  -- Stub for creating a new combination
-  return "combo_" .. tostring(GetTime()) -- Return a fake ID
+function DM.API:CreateCombination(name, color, spells)
+  -- Try to use the backend implementation
+  if DM.CreateCombination then
+    return DM:CreateCombination(name, spells or {}, color)
+  end
+
+  -- Fallback implementation if the backend function is not available
+  -- This implements the full functionality directly in the API layer
+
+  -- Ensure DotMasterDB and combinations structure exist
+  if not DotMasterDB then DotMasterDB = {} end
+  if not DotMasterDB.combinations then
+    DotMasterDB.combinations = {
+      settings = { enabled = true, priorityOverIndividual = true },
+      data = {}
+    }
+  end
+  if not DotMasterDB.combinations.data then DotMasterDB.combinations.data = {} end
+
+  -- Create a reference in the addon table
+  DM.combinations = DotMasterDB.combinations
+
+  -- Generate a unique ID using timestamp
+  local id = "combo_" .. time()
+
+  -- Find the highest priority and increment by 1
+  local priority = 1
+  if DM.combinations.data then
+    for _, combo in pairs(DM.combinations.data) do
+      if combo and combo.priority and combo.priority >= priority then
+        priority = combo.priority + 1
+      end
+    end
+  end
+
+  -- Create the new combination
+  DM.combinations.data[id] = {
+    name = name or "New Combination",
+    spells = spells or {},
+    color = color or { r = 1, g = 0, b = 0, a = 1 },
+    priority = priority,
+    enabled = true,
+    threshold = "all", -- "all" or numeric value
+    isExpanded = false -- ALWAYS start collapsed
+  }
+
+  -- Save changes to DotMasterDB
+  DotMasterDB.combinations = DM.combinations
+
+  -- Debug message if available
+  if DM.DebugMsg then
+    DM:DebugMsg("API Layer: Created new combination with ID: " .. id)
+  end
+
+  return id
 end
 
 function DM.API:UpdateCombination(comboID, name, enabled, color)
-  -- Stub for updating a combination
+  -- Try to use the backend implementation if it exists
+  if DM.UpdateCombination then
+    -- Convert parameters to an updates table as expected by the backend
+    local updates = {
+      name = name,
+      enabled = enabled,
+      color = color
+    }
+    return DM:UpdateCombination(comboID, updates)
+  end
+
+  -- Fallback implementation if backend function is not available
+
+  -- Ensure combinations data structure exists
+  if not DM.combinations or not DM.combinations.data then
+    return false
+  end
+
+  if not comboID or not DM.combinations.data[comboID] then
+    if DM.DebugMsg then
+      DM:DebugMsg("API Layer: Cannot update combination - ID not found: " .. tostring(comboID))
+    end
+    return false
+  end
+
+  -- Apply updates
+  if name ~= nil then DM.combinations.data[comboID].name = name end
+  if enabled ~= nil then DM.combinations.data[comboID].enabled = enabled end
+  if color ~= nil then DM.combinations.data[comboID].color = color end
+
+  -- Save changes to DotMasterDB
+  if DotMasterDB then
+    DotMasterDB.combinations = DM.combinations
+  end
+
+  -- Debug message if available
+  if DM.DebugMsg then
+    DM:DebugMsg("API Layer: Updated combination with ID: " .. comboID)
+  end
+
   return true
 end
 
 function DM.API:DeleteCombination(comboID)
-  -- Stub for deleting a combination
+  -- Try to use the backend implementation
+  if DM.DeleteCombination then
+    return DM:DeleteCombination(comboID)
+  end
+
+  -- Fallback implementation if backend function is not available
+
+  -- Ensure combinations data structure exists
+  if not DM.combinations or not DM.combinations.data then
+    return false
+  end
+
+  if not comboID or not DM.combinations.data[comboID] then
+    if DM.DebugMsg then
+      DM:DebugMsg("API Layer: Cannot delete combination - ID not found: " .. tostring(comboID))
+    end
+    return false
+  end
+
+  -- Remove the combination
+  DM.combinations.data[comboID] = nil
+
+  -- Save changes to DotMasterDB
+  if DotMasterDB then
+    DotMasterDB.combinations = DM.combinations
+  end
+
+  -- Debug message if available
+  if DM.DebugMsg then
+    DM:DebugMsg("API Layer: Deleted combination with ID: " .. comboID)
+  end
+
   return true
 end
 

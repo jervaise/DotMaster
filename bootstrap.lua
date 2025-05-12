@@ -31,7 +31,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  version = "1.0.4",
+  version = "1.0.5",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -76,6 +76,20 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DM.CreateGUI then
       DM:CreateGUI()
     end
+
+    -- Add a delayed refresh of the combinations list
+    C_Timer.After(1.0, function()
+      if DM.GUI and DM.GUI.UpdateCombinationsList then
+        DM.GUI:UpdateCombinationsList()
+
+        -- Add a single refresh to ensure colors are properly applied
+        C_Timer.After(0.5, function()
+          if DM.RefreshCombinationColors then
+            DM:RefreshCombinationColors()
+          end
+        end)
+      end
+    end)
   elseif event == "PLAYER_LOGOUT" then
     -- Save settings on logout
     if DM.SaveSettings then

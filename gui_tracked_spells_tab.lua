@@ -644,74 +644,103 @@ function GUI:RefreshTrackedSpellTabList()
       currentRightOffset = -10 -- Gap between Down arrow and Swatch
 
       -- 4. Color Swatch
-      local initialColor
-      if spellData.color and type(spellData.color) == "table" and #spellData.color >= 3 then
-        local r_check = tonumber(spellData.color[1]) or 1
-        local g_check = tonumber(spellData.color[2]) or 0
-        local b_check = tonumber(spellData.color[3]) or 0
-        initialColor = { r_check, g_check, b_check }
-      else
-        DM:DatabaseDebug(string.format("Spell %d using default color (invalid/missing data: %s)", spellID,
-          tostring(spellData.color)))
-        initialColor = { 1, 0, 0 } -- Default to red
-      end
-
-      -- Debug the state of the color data and colorpicker function
-      DM:DatabaseDebug(string.format("Creating color swatch for spell %d with color: R=%.2f, G=%.2f, B=%.2f",
-        spellID, initialColor[1], initialColor[2], initialColor[3]))
-
-      -- Get reference to the colorpicker function directly from DotMaster_ColorPicker
-      local colorSwatchFunc = _G["DotMaster_CreateColorSwatch"]
-      if not colorSwatchFunc then
-        DM:DatabaseDebug(
-          "ERROR: DotMaster_CreateColorSwatch function not available, trying to get from DotMaster_ColorPicker")
-        colorSwatchFunc = DotMaster_ColorPicker and DotMaster_ColorPicker.CreateColorSwatch
-      end
-
-      -- Create the color swatch with proper error handling
-      local colorSwatch
-      if colorSwatchFunc then
-        -- Call with pcall to catch any errors
-        local success, result = pcall(function()
-          return colorSwatchFunc(
-            spellFrame,
-            initialColor[1],
-            initialColor[2],
-            initialColor[3],
-            function(newR, newG, newB) -- Callback for when color changes
-              DM:DatabaseDebug(string.format("Color changed for spell %d: R=%.2f, G=%.2f, B=%.2f",
-                spellID, newR, newG, newB))
-
-              if DM.dmspellsdb[spellID] then
-                DM.dmspellsdb[spellID].color = { newR, newG, newB }
-                DM:SaveDMSpellsDB() -- Make sure to save the database
-                DM:DatabaseDebug(string.format("Updated color for spell %d in database", spellID))
-              end
-            end
-          )
-        end)
-
-        if success and result then
-          colorSwatch = result
-          DM:DatabaseDebug(string.format("Successfully created color swatch for spell %d", spellID))
-        else
-          DM:DatabaseDebug(string.format("Error creating color swatch: %s", tostring(result)))
-          -- Create fallback if function call failed
-          colorSwatch = CreateFrame("Button", nil, spellFrame)
+      -- Get the initial color or use default
+      local r, g, b = 1, 0, 0 -- Default red color
+      if spellData.color and type(spellData.color) == "table" then
+        if #spellData.color >= 3 then
+          r = tonumber(spellData.color[1]) or 1
+          g = tonumber(spellData.color[2]) or 0
+          b = tonumber(spellData.color[3]) or 0
         end
-      else
-        -- Create a basic fallback swatch if the function doesn't exist
-        DM:DatabaseDebug("Creating fallback color swatch (colorpicker function not found)")
-        colorSwatch = CreateFrame("Button", nil, spellFrame)
       end
 
-      -- Set up the fallback appearance if needed
-      if not colorSwatchFunc or not colorSwatch.GetColor then
-        colorSwatch:SetSize(24, 24)
-        local texture = colorSwatch:CreateTexture(nil, "OVERLAY")
-        texture:SetAllPoints()
-        texture:SetColorTexture(initialColor[1], initialColor[2], initialColor[3])
-      end
+      -- Create a swatch button as fallback
+      local colorSwatch = CreateFrame("Button", nil, spellFrame)
+      colorSwatch:SetSize(24, 24)
+
+      -- Create border for better visibility
+      local border = colorSwatch:CreateTexture(nil, "BACKGROUND")
+      border:SetAllPoints()
+      border:SetColorTexture(0.1, 0.1, 0.1, 1)
+
+      -- Create a texture for the color with slight inner border
+      local texture = colorSwatch:CreateTexture(nil, "ARTWORK")
+      texture:SetPoint("TOPLEFT", 2, -2)
+      texture:SetPoint("BOTTOMRIGHT", -2, 2)
+      texture:SetColorTexture(r, g, b, 1)
+
+      -- Add hover effect
+      colorSwatch:SetScript("OnEnter", function(self)
+        border:SetColorTexture(0.3, 0.3, 0.3, 1)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Color Values")
+        GameTooltip:AddLine(
+          "R: " .. math.floor(r * 255) .. " G: " .. math.floor(g * 255) .. " B: " .. math.floor(b * 255), 1, 1, 1)
+        GameTooltip:AddLine("Click to change color", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+      end)
+
+      colorSwatch:SetScript("OnLeave", function()
+        border:SetColorTexture(0.1, 0.1, 0.1, 1)
+        GameTooltip:Hide()
+      end)
+
+      -- Color picker click handler
+      colorSwatch:SetScript("OnClick", function()
+        -- Use standard WoW color picker
+        local function colorFunc()
+          -- Get color values using the appropriate API for the client version
+          local newR, newG, newB
+          if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
+            newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
+          else
+            -- Fallback for other API versions
+            newR, newG, newB = r, g, b
+          end
+
+          -- Update texture
+          texture:SetColorTexture(newR, newG, newB, 1)
+          -- Update values
+          r, g, b = newR, newG, newB
+          -- Save to database
+          if DM.dmspellsdb[spellID] then
+            DM.dmspellsdb[spellID].color = { newR, newG, newB }
+            DM:SaveDMSpellsDB()
+          end
+        end
+
+        local function cancelFunc()
+          local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
+          texture:SetColorTexture(prevR, prevG, prevB, 1)
+        end
+
+        -- Use the modern or legacy API as appropriate
+        if ColorPickerFrame.SetupColorPickerAndShow then
+          local info = {}
+          info.swatchFunc = colorFunc
+          info.cancelFunc = cancelFunc
+          info.r = r
+          info.g = g
+          info.b = b
+          info.opacity = 1
+          info.hasOpacity = false
+          ColorPickerFrame:SetupColorPickerAndShow(info)
+        else
+          -- Legacy method
+          ColorPickerFrame.func = colorFunc
+          ColorPickerFrame.cancelFunc = cancelFunc
+          ColorPickerFrame.opacityFunc = nil
+          ColorPickerFrame.hasOpacity = false
+          ColorPickerFrame.previousValues = { r, g, b }
+
+          -- Set color via Content if available
+          if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
+            ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
+          end
+
+          ColorPickerFrame:Show()
+        end
+      end)
 
       -- Position the swatch
       colorSwatch:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
