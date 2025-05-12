@@ -5,7 +5,23 @@ local DM = DotMaster
 
 -- Initialize function for the minimap icon
 function DM:InitializeMinimapIcon()
-  DM:DebugMsg("Initializing minimap icon...")
+  -- First check if required WoW API functions exist
+  if not CreateFrame then
+    DM:PrintMessage("Error: CreateFrame API not available. Minimap functionality disabled.")
+    return
+  end
+
+  -- Basic check if we're ready to initialize
+  if not DM or type(DM) ~= "table" then
+    print("DotMaster error: Addon not properly initialized")
+    return
+  end
+
+  -- Ensure this function doesn't run more than once
+  if DM.minimapInitialized then
+    return
+  end
+  DM.minimapInitialized = true
 
   -- Create or access saved variables for the minimap icon
   if not DotMasterDB then
@@ -34,14 +50,33 @@ function DM:InitializeMinimapIcon()
   -- Use API settings to override DotMasterDB for minimap state
   DotMasterDB.minimap.hide = settings.minimapIcon.hide
 
-  -- Set up LDB data broker object
-  local LDB = LibStub("LibDataBroker-1.1")
+  -- Check for required libraries
+  if not LibStub then
+    DM:PrintMessage("Error: LibStub not found. Minimap functionality disabled.")
+    return
+  end
 
-  -- Create the LibDataBroker object
+  -- Try to create required library objects
+  local LDB = LibStub:GetLibrary("LibDataBroker-1.1", true)
+  if not LDB then
+    DM:PrintMessage("Error: LibDataBroker-1.1 not found. Minimap functionality disabled.")
+    return
+  end
+
+  local LibDBIcon = LibStub:GetLibrary("LibDBIcon-1.0", true)
+  if not LibDBIcon then
+    DM:PrintMessage("Error: LibDBIcon-1.0 not found. Minimap functionality disabled.")
+    return
+  end
+
+  -- Use a simpler icon setup
+  local iconPath = "Interface\\AddOns\\DotMaster\\Media\\dotmaster-icon.tga"
+
+  -- Simple LDB object creation
   DM.minimapLDB = LDB:NewDataObject("DotMaster", {
     type = "launcher",
     text = "DotMaster",
-    icon = "Interface\\AddOns\\DotMaster\\Media\\dotmaster-icon.tga",
+    icon = iconPath,
     OnClick = function(_, button)
       if button == "LeftButton" then
         -- Toggle main interface
@@ -53,7 +88,6 @@ function DM:InitializeMinimapIcon()
           end
         end
       elseif button == "RightButton" then
-        -- Simplified right-click behavior
         DM:PrintMessage("Right-click functionality is currently disabled")
       end
     end,
@@ -71,42 +105,54 @@ function DM:InitializeMinimapIcon()
     return
   end
 
-  -- Register with LibDBIcon
-  local LibDBIcon = LibStub("LibDBIcon-1.0")
-  if LibDBIcon and DM.minimapLDB then
-    LibDBIcon:Register("DotMaster", DM.minimapLDB, DotMasterDB.minimap)
+  -- Simple registration
+  if not DotMasterDB.minimap then
+    DotMasterDB.minimap = {
+      hide = false,
+      minimapPos = 220,
+      radius = 80
+    }
+  end
 
-    -- Apply saved visibility state immediately
-    if DotMasterDB.minimap.hide then
-      LibDBIcon:Hide("DotMaster")
-    else
-      LibDBIcon:Show("DotMaster")
-    end
+  LibDBIcon:Register("DotMaster", DM.minimapLDB, DotMasterDB.minimap)
+
+  -- Apply saved visibility state immediately
+  if DotMasterDB.minimap.hide then
+    LibDBIcon:Hide("DotMaster")
   else
-    DM:PrintMessage("Error: Failed to initialize minimap icon")
+    LibDBIcon:Show("DotMaster")
+  end
+end
+
+-- Additional function to toggle minimap icon
+function DM:ToggleMinimapIcon()
+  -- Basic check for LibDBIcon
+  local LibDBIcon = LibStub and LibStub:GetLibrary("LibDBIcon-1.0", true)
+  if not LibDBIcon then
+    DM:PrintMessage("Error: LibDBIcon-1.0 not available for toggle")
+    return
   end
 
-  -- Additional function to toggle minimap icon
-  function DM:ToggleMinimapIcon()
-    -- Get latest settings
-    local settings = DM.API:GetSettings()
+  -- Get latest settings
+  local settings = DM.API:GetSettings()
 
-    -- Apply the saved state
-    DotMasterDB.minimap.hide = settings.minimapIcon.hide
-
-    local LibDBIcon = LibStub("LibDBIcon-1.0")
-    if LibDBIcon then
-      if DotMasterDB.minimap.hide then
-        LibDBIcon:Hide("DotMaster")
-      else
-        LibDBIcon:Show("DotMaster")
-      end
-    end
-
-    DM:DebugMsg("Minimap icon visibility set to: " .. (DotMasterDB.minimap.hide and "hidden" or "shown"))
+  -- Update saved state
+  if not DotMasterDB then DotMasterDB = {} end
+  if not DotMasterDB.minimap then
+    DotMasterDB.minimap = { hide = false }
   end
 
-  DM:DebugMsg("Minimap icon initialized successfully")
+  if not settings.minimapIcon then settings.minimapIcon = {} end
+
+  -- Set the hide value
+  DotMasterDB.minimap.hide = settings.minimapIcon.hide
+
+  -- Apply to minimap icon
+  if DotMasterDB.minimap.hide then
+    LibDBIcon:Hide("DotMaster")
+  else
+    LibDBIcon:Show("DotMaster")
+  end
 end
 
 -- Add minimap slash command
@@ -139,37 +185,29 @@ function DM:AddMinimapSlashCommand()
     -- Call the original handler for other commands
     originalSlashHandler(msg)
   end
-
-  -- Add the minimap command to the help messages
-  local originalHelpHandler = function()
-    DM:PrintMessage("Available commands:")
-    DM:PrintMessage("  /dm on - Enable addon")
-    DM:PrintMessage("  /dm off - Disable addon")
-    DM:PrintMessage("  /dm status - Display debug information")
-    DM:PrintMessage("  /dm show - Show GUI (if loaded)")
-    DM:PrintMessage("  /dm reset - Reset to default settings")
-    DM:PrintMessage("  /dm save - Force save settings")
-    DM:PrintMessage("  /dm reload - Reload UI")
-    DM:PrintMessage("  /dm minimap - Toggle minimap icon")
-  end
 end
 
 -- Hook into the initialization process
 local function HookInitialization()
   -- Check if bootstrap has finished
   if DM.initState and DM.initState == "player_login" then
-    -- Initialize the minimap icon
-    DM:InitializeMinimapIcon()
-
-    -- Add minimap slash command
-    DM:AddMinimapSlashCommand()
+    -- Use a larger delay to ensure all APIs are loaded
+    C_Timer.After(2.0, function()
+      -- Initialize the minimap icon
+      DM:InitializeMinimapIcon()
+      -- Add minimap slash command
+      DM:AddMinimapSlashCommand()
+    end)
   else
     -- Wait for player login event
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self, event)
-      DM:InitializeMinimapIcon()
-      DM:AddMinimapSlashCommand()
+      -- Use a larger delay to ensure all APIs are loaded
+      C_Timer.After(2.0, function()
+        DM:InitializeMinimapIcon()
+        DM:AddMinimapSlashCommand()
+      end)
       self:UnregisterAllEvents()
     end)
   end

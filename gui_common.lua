@@ -50,7 +50,6 @@ end
 -- Add Database tab component function
 DotMaster_Components.CreateDatabaseTab = function(parent)
   -- Create a simplified database tab since the real one is not available
-  DM:DatabaseDebug("Creating simplified Database Tab (original moved to Old_Backend)")
 
   -- Create standardized info area
   local infoArea = DotMaster_Components.CreateTabInfoArea(
@@ -80,8 +79,6 @@ DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 
 -- Create the main GUI
 function DM:CreateGUI()
-  DM:DebugMsg("Creating GUI...")
-
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
@@ -193,13 +190,11 @@ function DM:CreateGUI()
       if self.id == 2 then -- Tracked Spells tab
         -- Refresh tracked spells tab
         if DM.GUI.RefreshTrackedSpellTabList then
-          DM:DatabaseDebug("Refreshing Tracked Spells tab list")
           DM.GUI:RefreshTrackedSpellTabList("")
         end
       elseif self.id == 4 then -- Database tab (now index 4 instead of 3)
         -- Refresh database tab
         if DM.GUI.RefreshDatabaseTabList then
-          DM:DatabaseDebug("Refreshing Database tab list")
           DM.GUI:RefreshDatabaseTabList("")
         end
       end
@@ -218,43 +213,36 @@ function DM:CreateGUI()
 
   -- Ensure functions exist before calling them
   if DM.CreateGeneralTab then
-    DM:DebugMsg("Using DM:CreateGeneralTab directly")
     DM:CreateGeneralTab(tabFrames[1])
   elseif DotMaster_Components.CreateGeneralTab then
-    DM:DebugMsg("Using DotMaster_Components.CreateGeneralTab")
     DotMaster_Components.CreateGeneralTab(tabFrames[1])
   else
-    DM:DebugMsg("ERROR: CreateGeneralTab function not found!")
+    print("Error: CreateGeneralTab function not found!")
   end
 
   -- Create Tracked Spells tab content
   if DotMaster_Components.CreateTrackedSpellsTab then
-    DM:DatabaseDebug("Using DotMaster_Components.CreateTrackedSpellsTab")
     DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
   else
-    DM:DatabaseDebug("ERROR: CreateTrackedSpellsTab function not found!")
+    print("Error: CreateTrackedSpellsTab function not found!")
   end
 
   -- Create Combinations tab content
   if DotMaster_Components.CreateCombinationsTab then
-    DM:DatabaseDebug("Using DotMaster_Components.CreateCombinationsTab")
     DotMaster_Components.CreateCombinationsTab(tabFrames[3])
   else
-    DM:DatabaseDebug("ERROR: CreateCombinationsTab function not found!")
+    print("Error: CreateCombinationsTab function not found!")
   end
 
   -- Create Database tab content (now index 4 instead of 3)
   if DotMaster_Components.CreateDatabaseTab then
-    DM:DatabaseDebug("Using DotMaster_Components.CreateDatabaseTab")
     DotMaster_Components.CreateDatabaseTab(tabFrames[4])
   else
-    DM:DatabaseDebug("ERROR: CreateDatabaseTab function not found!")
+    print("Error: CreateDatabaseTab function not found!")
   end
 
   -- Initialize GUI frame
   DM.GUI.frame = frame
-
-  DM:DebugMsg("GUI creation complete, frame exists: " .. (DM.GUI.frame and "Yes" or "No"))
 
   return frame
 end

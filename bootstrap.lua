@@ -15,20 +15,14 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Implement a simplified debug message handler for development
+-- Stub for debug message handler (to be replaced with new debug system)
 function DM:DebugMsg(message)
-  -- Only print to console in development mode
-  if DM.DEBUG_MODE then
-    DM:SimplePrint(message)
-  end
+  -- Debug functionality removed, will be replaced with new system
 end
 
--- Define a stub for database debug messages for API compatibility
+-- Stub for database debug messages (to be replaced with new debug system)
 function DM:DatabaseDebug(message)
-  -- Only print to console in development mode
-  if DM.DEBUG_MODE then
-    DM:SimplePrint("[DATABASE] " .. message)
-  end
+  -- Debug functionality removed, will be replaced with new system
 end
 
 -- Define minimal constants and defaults
@@ -37,7 +31,6 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  debug = false,
   version = "1.0.3",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
@@ -54,44 +47,32 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
   if event == "ADDON_LOADED" and arg1 == DM.addonName then
     -- This is the critical point where SavedVariables become available
     DM.initState = "addon_loaded"
-    DM:DebugMsg("ADDON_LOADED triggered - SavedVariables available")
 
     -- Load saved settings
     if DM.LoadSettings then
       DM:LoadSettings()
-      DM:DebugMsg("Settings loaded")
-    else
-      DM:DebugMsg("WARNING: LoadSettings not available yet")
     end
 
     DM.pendingInitialization = false
   elseif event == "PLAYER_LOGIN" then
     DM.initState = "player_login"
-    DM:DebugMsg("PLAYER_LOGIN triggered")
 
     -- Register main slash commands if available
     if DM.InitializeMainSlashCommands then
       DM:InitializeMainSlashCommands()
-      DM:DebugMsg("Main slash commands initialized")
     end
 
     -- Initialize minimap icon
     if DM.InitializeMinimapIcon then
       DM:InitializeMinimapIcon()
-      DM:DebugMsg("Minimap icon initialized")
     end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
-    DM:DebugMsg("PLAYER_ENTERING_WORLD triggered")
 
     -- Create GUI if available
     if DM.CreateGUI then
       DM:CreateGUI()
-      DM:DebugMsg("GUI created")
     end
-
-    -- Print final initialization message
-    DM:DebugMsg("Initialization complete - v" .. (DM.defaults and DM.defaults.version or "unknown"))
   elseif event == "PLAYER_LOGOUT" then
     -- Save settings on logout
     if DM.SaveSettings then

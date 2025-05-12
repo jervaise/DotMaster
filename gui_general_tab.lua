@@ -158,13 +158,23 @@ function DM:CreateGeneralTab(parent)
     DM.API:SaveSettings(settings)
 
     -- Toggle minimap icon if LibDBIcon is available
-    local LibDBIcon = LibStub("LibDBIcon-1.0")
-    if LibDBIcon then
-      if settings.minimapIcon.hide then
-        LibDBIcon:Hide("DotMaster")
+    local success, err = pcall(function()
+      if DM.ToggleMinimapIcon then
+        DM:ToggleMinimapIcon()
       else
-        LibDBIcon:Show("DotMaster")
+        local LibDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
+        if LibDBIcon then
+          if settings.minimapIcon.hide then
+            LibDBIcon:Hide("DotMaster")
+          else
+            LibDBIcon:Show("DotMaster")
+          end
+        end
       end
+    end)
+
+    if not success and DM.DEBUG_MODE then
+      DM:DebugMsg("Error toggling minimap icon: " .. tostring(err))
     end
   end)
 
@@ -383,24 +393,6 @@ function DM:CreateGeneralTab(parent)
     "5. Use /dm to toggle this window, /dm on or /dm off to enable/disable"
   )
 
-  -- Create a command list section at the bottom
-  local commandsTitle = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  commandsTitle:SetPoint("TOP", infoBox, "BOTTOM", 0, -15)
-  commandsTitle:SetText("Slash Commands")
-  commandsTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
-
-  local commandsText = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  commandsText:SetPoint("TOP", commandsTitle, "BOTTOM", 0, -5)
-  commandsText:SetWidth(370)
-  commandsText:SetJustifyH("CENTER")
-  commandsText:SetText(
-    "/dm - Toggle this window\n" ..
-    "/dm on - Enable the addon\n" ..
-    "/dm off - Disable the addon\n" ..
-    "/dm plater - Get script import string\n" ..
-    "/dmdebug - Show the debug console"
-  )
-
   -- Register special event to fix broken checkbox text when moving between zones
   -- Only restore after zone changes to avoid unnecessary text setting
   local eventFrame = CreateFrame("Frame")
@@ -410,109 +402,12 @@ function DM:CreateGeneralTab(parent)
     C_Timer.After(0.5, RestoreCheckboxTexts)
   end)
 
-  -- Plater Integration
-  local platerFrame = CreateFrame("Frame", nil, contentPanel)
-  platerFrame:SetPoint("TOP", commandsText, "BOTTOM", 0, -20)
-  platerFrame:SetSize(400, 110)
-
-  local platerTitle = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  platerTitle:SetPoint("TOPLEFT", platerFrame, "TOPLEFT", 0, 0)
-  platerTitle:SetText("Plater Integration:")
-  platerTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
-
-  local platerDesc = platerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  platerDesc:SetPoint("TOPLEFT", platerTitle, "BOTTOMLEFT", 0, -5)
-  platerDesc:SetWidth(400)
-  platerDesc:SetText(
-    "DotMaster works with Plater nameplate addon to display DoT information on nameplates.\n\n" ..
-    "You can import our script directly or follow manual installation instructions."
-  )
-
-  -- Create buttons for Plater integration
-  local importButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
-  importButton:SetPoint("TOPLEFT", platerDesc, "BOTTOMLEFT", 0, -10)
-  importButton:SetSize(125, 25)
-  importButton:SetText("Generate Import Code")
-  importButton:SetEnabled(true)
-  importButton:SetScript("OnClick", function()
-    if not Plater then
-      DM:PrintMessage("Error: Plater is not installed or enabled!")
-      return
+  -- Add a protected call to fix any potential issues with removed elements
+  pcall(function()
+    -- This will safely execute and catch any errors related to removed UI elements
+    if contentPanel then
+      contentPanel:SetHeight(contentPanel:GetHeight() - 40) -- Adjust height to compensate for removed section
     end
-
-    if DM.API and DM.API.ShowPlaterImportString then
-      DM.API:ShowPlaterImportString()
-    else
-      DM:PrintMessage("Error: API not initialized. Try reloading UI.")
-    end
-  end)
-
-  -- Add tooltip to the import button
-  importButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Generate Import Code")
-    GameTooltip:AddLine("Creates a window with copyable import code for Plater", 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  importButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
-
-  -- Create manual instructions button
-  local viewScriptButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
-  viewScriptButton:SetPoint("LEFT", importButton, "RIGHT", 5, 0)
-  viewScriptButton:SetSize(125, 25)
-  viewScriptButton:SetText("Manual Instructions")
-  viewScriptButton:SetEnabled(true)
-  viewScriptButton:SetScript("OnClick", function()
-    if not Plater then
-      DM:PrintMessage("Error: Plater is not installed or enabled!")
-      return
-    end
-
-    if DM.API and DM.API.ShowPlaterScriptInstructions then
-      DM.API:ShowPlaterScriptInstructions()
-    else
-      DM:PrintMessage("Error: API not initialized. Try reloading UI.")
-    end
-  end)
-
-  -- Add tooltip to the instructions button
-  viewScriptButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Manual Instructions")
-    GameTooltip:AddLine("Shows step-by-step instructions for manual script installation", 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  viewScriptButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
-  end)
-
-  -- Add Open Plater button
-  local openPlaterButton = CreateFrame("Button", nil, platerFrame, "UIPanelButtonTemplate")
-  openPlaterButton:SetPoint("LEFT", viewScriptButton, "RIGHT", 5, 0)
-  openPlaterButton:SetSize(100, 25)
-  openPlaterButton:SetText("Open Plater")
-  openPlaterButton:SetEnabled(true)
-  openPlaterButton:SetScript("OnClick", function()
-    if not Plater then
-      DM:PrintMessage("Error: Plater is not installed or enabled!")
-      return
-    end
-
-    -- Execute /plater command to open Plater
-    SlashCmdList["PLATER"]("")
-  end)
-
-  -- Add tooltip to the Plater button
-  openPlaterButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Open Plater")
-    GameTooltip:AddLine("Opens the Plater configuration window", 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  openPlaterButton:SetScript("OnLeave", function(self)
-    GameTooltip:Hide()
   end)
 
   return parent
