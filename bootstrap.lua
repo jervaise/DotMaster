@@ -15,15 +15,8 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Stub for debug message handler (to be replaced with new debug system)
-function DM:DebugMsg(message)
-  -- Debug functionality removed, will be replaced with new system
-end
-
--- Stub for database debug messages (to be replaced with new debug system)
-function DM:DatabaseDebug(message)
-  -- Debug functionality removed, will be replaced with new system
-end
+-- Remove old debug stubs since we're replacing them with the new system
+-- The Debug module will have proper implementations
 
 -- Define minimal constants and defaults
 DM.addonName = "DotMaster"
@@ -53,6 +46,11 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       DM:LoadSettings()
     end
 
+    -- Initialize debug system
+    if DM.Debug and DM.Debug.Initialize then
+      DM.Debug:Initialize()
+    end
+
     DM.pendingInitialization = false
   elseif event == "PLAYER_LOGIN" then
     DM.initState = "player_login"
@@ -66,12 +64,27 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DM.InitializeMinimapIcon then
       DM:InitializeMinimapIcon()
     end
+
+    -- Initialize debug console
+    if DM.debugFrame and DM.debugFrame.Initialize then
+      DM.debugFrame:Initialize()
+
+      -- Log debug initialization
+      if DM.Debug then
+        DM.Debug:Loading("Debug console initialized")
+      end
+    end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
 
     -- Create GUI if available
     if DM.CreateGUI then
       DM:CreateGUI()
+    end
+
+    -- Log addon ready status
+    if DM.Debug then
+      DM.Debug:Loading("DotMaster initialized and ready")
     end
   elseif event == "PLAYER_LOGOUT" then
     -- Save settings on logout

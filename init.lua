@@ -11,5 +11,7 @@ if not DotMaster_Components then
   DotMaster_Components = {}
 end
 
--- Log initialization completion
-DM:DebugMsg("DotMaster GUI framework initialized.")
+-- Log initialization completion using new debug system
+if DM.Debug then
+  DM.Debug:Loading("DotMaster GUI framework initialized")
+end

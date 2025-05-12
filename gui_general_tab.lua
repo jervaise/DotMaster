@@ -61,6 +61,58 @@ function DM:CreateGeneralTab(parent)
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
 
+  -- Create Debug Console Button at the bottom
+  local debugButton = CreateFrame("Button", "DotMasterDebugConsoleButton", contentPanel, "UIPanelButtonTemplate")
+  debugButton:SetSize(120, 22)
+  debugButton:SetPoint("BOTTOM", contentPanel, "BOTTOM", 0, 15)
+  debugButton:SetText("Debug Console")
+
+  -- Add a slight glow to indicate it's a special tool
+  local debugGlow = debugButton:CreateTexture(nil, "OVERLAY")
+  debugGlow:SetTexture("Interface\\Buttons\\UI-Button-Outline")
+  debugGlow:SetPoint("TOPLEFT", debugButton, "TOPLEFT", -3, 3)
+  debugGlow:SetPoint("BOTTOMRIGHT", debugButton, "BOTTOMRIGHT", 3, -3)
+  debugGlow:SetBlendMode("ADD")
+  debugGlow:SetAlpha(0.3)
+
+  -- Toggle the debug console when clicked
+  debugButton:SetScript("OnClick", function()
+    if DM.debugFrame then
+      DM.debugFrame:Toggle()
+    end
+  end)
+
+  -- Handle mouseover tooltip
+  debugButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Debug Console")
+    GameTooltip:AddLine("Toggle the debug console for advanced troubleshooting", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+
+  debugButton:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+
+  -- Adjust visibility based on developer mode setting
+  local function UpdateDebugButtonVisibility()
+    if settings.developerMode then
+      debugButton:Show()
+      debugGlow:Show()
+    else
+      debugButton:Hide()
+      debugGlow:Hide()
+    end
+  end
+
+  -- Ensure developerMode setting exists
+  if settings.developerMode == nil then
+    settings.developerMode = false
+  end
+
+  -- Update button visibility initially
+  UpdateDebugButtonVisibility()
+
   -- Create an image and settings layout with flex positioning
   local imagePanel = CreateFrame("Frame", nil, contentPanel)
   imagePanel:SetSize(150, 170) -- Increased from 150x150 to 150x170 to fit the checkbox area
@@ -359,10 +411,29 @@ function DM:CreateGeneralTab(parent)
     DM.API:SaveSettings(settings)
   end)
 
+  -- Create developer mode checkbox
+  local developerCheckbox = CreateStyledCheckbox("DotMasterDeveloperCheckbox",
+    checkboxContainer, flashingCheckbox, -4, "Developer Mode")
+  developerCheckbox:SetChecked(settings.developerMode)
+
+  -- Set up developer mode checkbox handler
+  developerCheckbox:SetScript("OnClick", function(self)
+    local developerMode = self:GetChecked()
+
+    -- Update settings
+    settings.developerMode = developerMode
+    DM.API:SaveSettings(settings)
+
+    -- Update debug button visibility
+    UpdateDebugButtonVisibility()
+
+    DM:PrintMessage("Developer Mode " .. (developerMode and "Enabled" or "Disabled"))
+  end)
+
   -- Create a second area for information about the addon in a nice box
   local infoBox = CreateFrame("Frame", nil, contentPanel, "BackdropTemplate")
   infoBox:SetSize(370, 140)
-  infoBox:SetPoint("TOP", contentPanel, "TOP", 0, -200)
+  infoBox:SetPoint("TOP", contentPanel, "TOP", 0, -220)
   infoBox:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",

@@ -24,6 +24,7 @@ core.lua
 api.lua
 settings.lua
 minimap.lua
+debug.lua
 
 # GUI
 gui.lua
@@ -34,6 +35,7 @@ gui_combinations_tab.lua
 gui_colorpicker.lua
 gui_spell_row.lua
 gui_spell_selection.lua
+gui_debug_console.lua
 
 # Initialize the addon
 init.lua

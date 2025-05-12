@@ -23,6 +23,12 @@ function DM:SaveSettings()
   DotMasterDB.settings.borderThickness = settings.borderThickness
   DotMasterDB.settings.flashExpiring = settings.flashExpiring
   DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
+  DotMasterDB.settings.developerMode = settings.developerMode
+
+  -- Save debug settings if they exist
+  if settings.debug then
+    DotMasterDB.debug = settings.debug
+  end
 end
 
 -- Load settings from saved variables
@@ -40,7 +46,8 @@ function DM:LoadSettings()
     borderThickness = 2,
     flashExpiring = false,
     flashThresholdSeconds = 3.0,
-    minimapIcon = { hide = false }
+    minimapIcon = { hide = false },
+    developerMode = false
   }
 
   -- Load settings from saved variables if available
@@ -64,6 +71,10 @@ function DM:LoadSettings()
     if DotMasterDB.settings.flashThresholdSeconds ~= nil then
       settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
     end
+
+    if DotMasterDB.settings.developerMode ~= nil then
+      settings.developerMode = DotMasterDB.settings.developerMode
+    end
   end
 
   -- Load minimap settings
@@ -71,11 +82,19 @@ function DM:LoadSettings()
     settings.minimapIcon = DotMasterDB.minimap
   end
 
+  -- Load debug settings if they exist
+  if DotMasterDB.debug then
+    settings.debug = DotMasterDB.debug
+  end
+
   -- Set the enabled state in both API and core for compatibility
   DM.enabled = settings.enabled
 
   -- Save to API
   DM.API:SaveSettings(settings)
+
+  -- Set up debug database reference for direct access
+  DM.db = settings
 end
 
 -- Initialize the main slash commands
@@ -103,6 +122,13 @@ function DM:InitializeMainSlashCommands()
       DM.GUI.frame:Show()
     elseif command == "reload" then
       ReloadUI()
+    elseif command == "debug" then
+      -- Toggle debug console
+      if DM.debugFrame then
+        DM.debugFrame:Toggle()
+      else
+        DM:PrintMessage("Debug console not available")
+      end
     elseif command == "reset" then
       -- Create confirmation dialog
       if StaticPopupDialogs and StaticPopup_Show then
@@ -128,7 +154,8 @@ function DM:InitializeMainSlashCommands()
               borderThickness = 2,
               flashExpiring = false,
               flashThresholdSeconds = 3.0,
-              minimapIcon = { hide = false }
+              minimapIcon = { hide = false },
+              developerMode = false
             }
 
             DM.enabled = defaultSettings.enabled
@@ -167,6 +194,7 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm on - Enable addon")
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
+        DM:PrintMessage("  /dm debug - Toggle debug console")
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
