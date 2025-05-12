@@ -5,16 +5,16 @@ local DM = DotMaster
 DotMaster_ColorPicker = {}
 local colorpicker = DotMaster_ColorPicker
 
--- Module initialization message
-DM:DebugMsg("|cFFCC00FFDotMaster Debug:|r Color picker module loaded")
+-- Module initialization message using new debug system
+if DM.Debug then
+  DM.Debug:Loading("Color picker module loaded")
+end
 
 -- Helper function for color picker
 function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
-  -- Use the proper debug function
-  DM:ColorPickerDebug("CreateColorSwatch ENTRY - R:" .. tostring(r) .. " G:" .. tostring(g) .. " B:" .. tostring(b))
-
-  if DM.DEBUG_CATEGORIES.colorpicker then
-    DM:ColorPickerDebug("Creating swatch RGB - R:" .. tostring(r) .. " G:" .. tostring(g) .. " B:" .. tostring(b))
+  -- Use the proper debug function from the new system
+  if DM.Debug then
+    DM.Debug:UI("CreateColorSwatch ENTRY - R:%.2f G:%.2f B:%.2f", r or 0, g or 0, b or 0)
   end
 
   local swatch = CreateFrame("Button", nil, parent)
@@ -52,15 +52,21 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
   -- Use standard WoW color picker with updated API
   swatch:SetScript("OnClick", function()
-    DM:ColorPickerDebug("Color swatch clicked")
+    if DM.Debug then
+      DM.Debug:UI("Color swatch clicked")
+    end
 
     -- Check if ColorPickerFrame exists
     if not ColorPickerFrame then
-      DM:ColorPickerDebug("ERROR: ColorPickerFrame does not exist!")
+      if DM.Debug then
+        DM.Debug:Error("ColorPickerFrame does not exist!")
+      end
       return
     end
 
-    DM:ColorPickerDebug("Setting up ColorPickerFrame functions")
+    if DM.Debug then
+      DM.Debug:UI("Setting up ColorPickerFrame functions")
+    end
 
     -- Store current color for cancelFunc
     local currentR, currentG, currentB = r, g, b
@@ -71,35 +77,48 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
       if restore then
         -- User canceled, restore original color
-        DM:ColorPickerDebug("Color canceled, reverting to original")
+        if DM.Debug then
+          DM.Debug:UI("Color canceled, reverting to original")
+        end
         newR, newG, newB = currentR, currentG, currentB
       else
         -- Get selected color from color picker
-        DM:ColorPickerDebug("Getting new color from color picker")
+        if DM.Debug then
+          DM.Debug:UI("Getting new color from color picker")
+        end
         -- Check available APIs for getting color
         if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
-          DM:ColorPickerDebug("Using Content.ColorPicker API")
+          if DM.Debug then
+            DM.Debug:UI("Using Content.ColorPicker API")
+          end
           newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
         elseif ColorPickerFrame.GetColorRGB then
-          DM:ColorPickerDebug("Using GetColorRGB API")
+          if DM.Debug then
+            DM.Debug:UI("Using GetColorRGB API")
+          end
           newR, newG, newB = ColorPickerFrame:GetColorRGB()
         else
           -- Try to get color via individual RGB functions (fallback method)
-          DM:ColorPickerDebug("Using fallback RGB methods")
+          if DM.Debug then
+            DM.Debug:UI("Using fallback RGB methods")
+          end
           if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
             newR = ColorPickerFrame.Content.ColorPicker:GetColorValueTexture() or currentR
             newG = ColorPickerFrame.Content.ColorPicker:GetColorSaturationTexture() or currentG
             newB = ColorPickerFrame.Content.ColorPicker:GetColorBrightnessTexture() or currentB
           else
-            DM:ColorPickerDebug("Couldn't get color - using defaults")
+            if DM.Debug then
+              DM.Debug:UI("Couldn't get color - using defaults")
+            end
             newR, newG, newB = currentR, currentG, currentB
           end
         end
       end
 
       -- Apply color to swatch
-      DM:ColorPickerDebug("Setting texture color to: " ..
-        tostring(newR) .. ", " .. tostring(newG) .. ", " .. tostring(newB))
+      if DM.Debug then
+        DM.Debug:UI("Setting texture color to: %.2f, %.2f, %.2f", newR, newG, newB)
+      end
       texture:SetColorTexture(newR, newG, newB)
 
       -- Update color reference values
@@ -107,22 +126,30 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
       -- Call user callback if provided
       if callback then
-        DM:ColorPickerDebug("Running callback function with " ..
-          tostring(newR) .. ", " .. tostring(newG) .. ", " .. tostring(newB))
+        if DM.Debug then
+          DM.Debug:UI("Running callback function with %.2f, %.2f, %.2f", newR, newG, newB)
+        end
         callback(newR, newG, newB)
-        DM:ColorPickerDebug("Callback completed, saving settings")
-        -- Renklerin kaydedildiğinden emin olmak için SaveSettings'i doğrudan çağır
-        DM:SaveSettings()
+        if DM.Debug then
+          DM.Debug:UI("Callback completed")
+        end
+        -- Ensure settings are saved
+        if DM.SaveSettings then
+          DM:SaveSettings()
+        end
       end
     end
 
     -- Set up color picker
-    DM:ColorPickerDebug("Setting up color picker with color: " ..
-      tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+    if DM.Debug then
+      DM.Debug:UI("Setting up color picker with color: %.2f, %.2f, %.2f", r, g, b)
+    end
 
     -- Modern API
     if ColorPickerFrame.SetupColorPickerAndShow then
-      DM:ColorPickerDebug("Using SetupColorPickerAndShow API")
+      if DM.Debug then
+        DM.Debug:UI("Using SetupColorPickerAndShow API")
+      end
       local info = {}
       info.swatchFunc = colorPickerCallback
       info.cancelFunc = function() colorPickerCallback(true) end
@@ -136,11 +163,15 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame:SetupColorPickerAndShow(info)
     else
       -- Legacy API fallback
-      DM:ColorPickerDebug("Using legacy color picker API")
+      if DM.Debug then
+        DM.Debug:UI("Using legacy color picker API")
+      end
 
       -- Set frame attributes directly
       if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-        DM:ColorPickerDebug("Using Content.ColorPicker.SetColorRGB")
+        if DM.Debug then
+          DM.Debug:UI("Using Content.ColorPicker.SetColorRGB")
+        end
         ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
       end
 
@@ -152,9 +183,13 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
       ColorPickerFrame.previousValues = { r = r, g = g, b = b }
 
       -- Show the frame
-      DM:ColorPickerDebug("About to show ColorPickerFrame")
+      if DM.Debug then
+        DM.Debug:UI("About to show ColorPickerFrame")
+      end
       ColorPickerFrame:Show()
-      DM:ColorPickerDebug("After Show() - IsShown: " .. tostring(ColorPickerFrame:IsShown()))
+      if DM.Debug then
+        DM.Debug:UI("After Show() - IsShown: %s", tostring(ColorPickerFrame:IsShown()))
+      end
     end
   end)
 
@@ -164,7 +199,9 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
     texture:SetColorTexture(r, g, b, 1)
   end
 
-  DM:ColorPickerDebug("Color swatch created successfully")
+  if DM.Debug then
+    DM.Debug:UI("Color swatch created successfully")
+  end
   return swatch
 end
 
