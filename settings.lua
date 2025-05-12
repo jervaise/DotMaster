@@ -118,10 +118,22 @@ function DM:InitializeMainSlashCommands()
       DM.API:SaveSettings(settings)
       DM.API:EnableAddon(false)
       DM:PrintMessage("Disabled")
-    elseif command == "show" and DM.GUI and DM.GUI.frame then
-      DM.GUI.frame:Show()
-    elseif command == "reload" then
-      ReloadUI()
+    elseif command == "show" then
+      -- Use our SlashCommand method from core.lua
+      if DM.SlashCommand then
+        DM:SlashCommand("show")
+      else
+        -- Fallback direct method
+        if not DM.GUI or not DM.GUI.frame then
+          DM:CreateGUI()
+        end
+        if DM.GUI and DM.GUI.frame then
+          DM.GUI.frame:Show()
+        end
+      end
+    elseif command == "toggle" then
+      -- Use our ToggleGUI method
+      DM:ToggleGUI()
     elseif command == "debug" then
       -- Toggle debug console
       if DM.debugFrame then
@@ -129,6 +141,8 @@ function DM:InitializeMainSlashCommands()
       else
         DM:PrintMessage("Debug console not available")
       end
+    elseif command == "reload" then
+      ReloadUI()
     elseif command == "reset" then
       -- Create confirmation dialog
       if StaticPopupDialogs and StaticPopup_Show then
@@ -178,17 +192,9 @@ function DM:InitializeMainSlashCommands()
       DM:SaveSettings()
       DM:PrintMessage("Settings saved")
     else
-      -- Try to toggle main GUI if available, otherwise print help
-      if DM.GUI and DM.GUI.frame then
-        if DM.GUI.frame:IsShown() then
-          DM.GUI.frame:Hide()
-        else
-          DM.GUI.frame:Show()
-        end
-      elseif command == "show" and DM.GUI and DM.GUI.frame then
-        DM.GUI.frame:Show()
-      elseif command == "reload" then
-        ReloadUI()
+      -- Use our help command from core.lua or else print help
+      if DM.SlashCommand then
+        DM:SlashCommand(msg)
       else
         DM:PrintMessage("Available commands:")
         DM:PrintMessage("  /dm on - Enable addon")

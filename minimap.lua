@@ -79,14 +79,11 @@ function DM:InitializeMinimapIcon()
     icon = iconPath,
     OnClick = function(_, button)
       if button == "LeftButton" then
-        -- Toggle main interface
-        if DM.GUI and DM.GUI.frame then
-          if DM.GUI.frame:IsShown() then
-            DM.GUI.frame:Hide()
-          else
-            DM.GUI.frame:Show()
-          end
+        -- Toggle main interface using our convenience function
+        if DM.Debug then
+          DM.Debug:UI("Minimap icon clicked, toggling GUI")
         end
+        DM:ToggleGUI()
       elseif button == "RightButton" then
         DM:PrintMessage("Right-click functionality is currently disabled")
       end

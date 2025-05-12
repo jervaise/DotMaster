@@ -26,26 +26,114 @@ local function HelpCommand(msg)
   print("   |cff00ff00/dm help|r - Shows this help");
   print("   |cff00ff00/dm show|r - Shows configuration window");
   print("   |cff00ff00/dm toggle|r - Shows/hides configuration window");
+  print("   |cff00ff00/dm on|r - Enable DotMaster");
+  print("   |cff00ff00/dm off|r - Disable DotMaster");
+  print("   |cff00ff00/dm debug|r - Toggle debug console");
+  print("   |cff00ff00/dm minimap|r - Toggle minimap icon");
 end
 
 -- Process slash commands
 function DM:SlashCommand(msg)
   msg = string.lower(msg);
+
+  -- Log slash command in debug console
+  if DM.Debug then
+    DM.Debug:General("Slash command received: %s", msg)
+  end
+
   if (msg == "" or msg == "help") then
     HelpCommand(msg);
   elseif (msg == "show") then
-    DM.GUI:Show();
+    -- Create GUI if it doesn't exist
+    if not DM.GUI or not DM.GUI.frame then
+      if DM.Debug then
+        DM.Debug:UI("Creating GUI from slash command")
+      end
+      DM:CreateGUI()
+    end
+
+    -- Show GUI
+    if DM.GUI and DM.GUI.frame then
+      DM.GUI.frame:Show()
+      if DM.Debug then
+        DM.Debug:UI("GUI shown via slash command")
+      end
+    else
+      DM:PrintMessage("Could not display GUI. Please try again.")
+      if DM.Debug then
+        DM.Debug:Error("Failed to show GUI - frame not created")
+      end
+    end
   elseif (msg == "toggle") then
-    DM.GUI:Toggle();
+    -- Create GUI if it doesn't exist
+    if not DM.GUI or not DM.GUI.frame then
+      DM:CreateGUI()
+    end
+
+    -- Toggle GUI visibility
+    if DM.GUI and DM.GUI.frame then
+      if DM.GUI.frame:IsShown() then
+        DM.GUI.frame:Hide()
+        if DM.Debug then
+          DM.Debug:UI("GUI hidden via slash command")
+        end
+      else
+        DM.GUI.frame:Show()
+        if DM.Debug then
+          DM.Debug:UI("GUI shown via slash command")
+        end
+      end
+    else
+      DM:PrintMessage("Could not toggle GUI. Please try again.")
+      if DM.Debug then
+        DM.Debug:Error("Failed to toggle GUI - frame not created")
+      end
+    end
+  elseif (msg == "debug") then
+    -- Toggle debug console
+    if DM.debugFrame then
+      DM.debugFrame:Toggle()
+      if DM.Debug then
+        DM.Debug:General("Debug console toggled via slash command")
+      end
+    else
+      DM:PrintMessage("Debug console not available")
+      if DM.Debug then
+        DM.Debug:Error("Debug console not available")
+      end
+    end
   elseif (msg == "on") then
     DM.enabled = true
     DM:PrintMessage("DotMaster enabled")
+    if DM.Debug then
+      DM.Debug:General("DotMaster enabled via slash command")
+    end
   elseif (msg == "off") then
     DM.enabled = false
     DM:PrintMessage("DotMaster disabled")
+    if DM.Debug then
+      DM.Debug:General("DotMaster disabled via slash command")
+    end
   else
     DM:PrintMessage("Unknown command: " .. msg)
     HelpCommand(msg);
+  end
+end
+
+-- Add convenience function for GUI toggle
+function DM:ToggleGUI()
+  -- Create GUI if it doesn't exist
+  if not DM.GUI or not DM.GUI.frame then
+    DM:CreateGUI()
+  end
+
+  -- Toggle GUI visibility
+  if DM.GUI and DM.GUI.frame then
+    if DM.GUI.frame:IsShown() then
+      DM.GUI.frame:Hide()
+    else
+      DM.GUI.frame:Show()
+    end
   end
 end
 

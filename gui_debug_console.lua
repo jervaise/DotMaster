@@ -329,10 +329,10 @@ function DebugConsole:CopyToClipboard()
 
   -- Create temporary frame for copying
   local copyFrame = AceGUI and AceGUI:Create("Frame") or
-  CreateFrame("Frame", "DotMasterCopyFrame", UIParent, "BackdropTemplate")
+      CreateFrame("Frame", "DotMasterCopyFrame", UIParent, "BackdropTemplate")
   copyFrame:SetTitle("Debug Console - Copy")
 
-  if copyFrame.SetLayout then   -- AceGUI
+  if copyFrame.SetLayout then -- AceGUI
     copyFrame:SetLayout("Fill")
     copyFrame:SetWidth(600)
     copyFrame:SetHeight(400)
@@ -346,7 +346,7 @@ function DebugConsole:CopyToClipboard()
     editbox:HighlightText()
 
     copyFrame:AddChild(editbox)
-  else   -- Fallback
+  else -- Fallback
     copyFrame:SetSize(600, 400)
     copyFrame:SetPoint("CENTER")
     copyFrame:SetBackdrop({
