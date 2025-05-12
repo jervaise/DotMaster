@@ -30,6 +30,7 @@ local function HelpCommand(msg)
   print("   |cff00ff00/dm off|r - Disable DotMaster");
   print("   |cff00ff00/dm debug|r - Toggle debug console");
   print("   |cff00ff00/dm minimap|r - Toggle minimap icon");
+  print("   |cff00ff00/dm status|r - Show debug status information");
 end
 
 -- Process slash commands
@@ -102,6 +103,9 @@ function DM:SlashCommand(msg)
         DM.Debug:Error("Debug console not available")
       end
     end
+  elseif (msg == "status") then
+    -- Check GUI status
+    DM:CheckGUIStatus()
   elseif (msg == "on") then
     DM.enabled = true
     DM:PrintMessage("DotMaster enabled")
@@ -134,6 +138,47 @@ function DM:ToggleGUI()
     else
       DM.GUI.frame:Show()
     end
+  end
+end
+
+-- Add debug function to check GUI status
+function DM:CheckGUIStatus()
+  print("|cFFFF00FFDEBUG:|r Checking GUI status:")
+
+  -- Check if GUI namespace exists
+  if not DM.GUI then
+    print("- DM.GUI namespace does not exist")
+    return
+  end
+
+  print("- DM.GUI namespace exists")
+
+  -- Check if frame exists
+  if not DM.GUI.frame then
+    print("- DM.GUI.frame does not exist")
+    return
+  end
+
+  print("- DM.GUI.frame exists: " .. tostring(DM.GUI.frame:GetName() or "unnamed"))
+  print("- GUI is " .. (DM.GUI.frame:IsShown() and "VISIBLE" or "HIDDEN"))
+
+  -- Check components
+  if DM.GUI.tabSystem then
+    print("- TabSystem exists")
+  else
+    print("- TabSystem does not exist")
+  end
+
+  -- Check DotMaster_Components
+  if DotMaster_Components then
+    print("- DotMaster_Components exists")
+    if DotMaster_Components.CreateTabSystem then
+      print("- CreateTabSystem exists")
+    else
+      print("- CreateTabSystem does not exist")
+    end
+  else
+    print("- DotMaster_Components does not exist")
   end
 end
 
@@ -252,99 +297,91 @@ function DM:UpdateNameplateForUnit(unit)
   end
 end
 
--- Create GUI function
+-- Core CreateGUI function - acts as a wrapper for the main implementation in gui_common.lua
 function DM:CreateGUI()
-  -- Early exit if we've already created the GUI
+  -- Print a clear debug message to help diagnose issues
+  print("|cFFFF00FFDEBUG:|r DM:CreateGUI in core.lua called (wrapper)")
+
+  -- Check if we already have a GUI frame
   if DM.GUI and DM.GUI.frame then
     return DM.GUI.frame
   end
 
   if DM.Debug then
-    DM.Debug:Loading("Creating GUI")
+    DM.Debug:Loading("Creating GUI (core wrapper)")
   end
 
-  -- Create GUI namespace if needed
+  -- Ensure we have a GUI namespace
   DM.GUI = DM.GUI or {}
 
-  -- Create main GUI frame
-  local frame = CreateFrame("Frame", "DotMasterGUI", UIParent, "BackdropTemplate")
-  frame:SetSize(450, 550)
-  frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-  frame:SetMovable(true)
-  frame:EnableMouse(true)
-  frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-  frame:SetClampedToScreen(true)
-  frame:SetFrameStrata("DIALOG")
-
-  -- Set backdrop
-  frame:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true,
-    tileSize = 32,
-    edgeSize = 32,
-    insets = { left = 8, right = 8, top = 8, bottom = 8 }
-  })
-
-  -- Create title text
-  local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  titleText:SetPoint("TOP", frame, "TOP", 0, -15)
-  titleText:SetText("DotMaster")
-
-  -- Create close button
-  local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-  closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -5, -5)
-
-  -- Create tabs
+  -- Call the implementation from gui_common.lua if it exists
   if DotMaster_Components and DotMaster_Components.CreateTabSystem then
-    local tabSystem = DotMaster_Components.CreateTabSystem(frame, 430, 480)
-    tabSystem:SetPoint("TOP", titleText, "BOTTOM", 0, -5)
+    if DM.Debug then
+      DM.Debug:Loading("Using DotMaster_Components.CreateTabSystem")
+    end
 
-    -- Add General tab
-    local generalTab = tabSystem:AddTab("General", function(parent)
-      if DM.CreateGeneralTab then
-        return DM:CreateGeneralTab(parent)
+    -- Call the implementation in gui_common.lua directly by our own method
+    local frame = DM.GUI.CreateGUI and DM.GUI.CreateGUI()
+    if frame then
+      return frame
+    else
+      if DM.Debug then
+        DM.Debug:Error("GUI.CreateGUI returned nil")
       end
-      return parent
-    end)
+    end
+  else
+    -- Fallback to very basic frame if we can't find the other implementation
+    if DM.Debug then
+      DM.Debug:Error("DotMaster_Components not found, using fallback GUI")
+    end
 
-    -- Add Tracked Spells tab
-    local trackedSpellsTab = tabSystem:AddTab("Tracked Spells", function(parent)
-      if DM.CreateTrackedSpellsTab then
-        return DM:CreateTrackedSpellsTab(parent)
-      end
-      return parent
-    end)
+    -- Create a basic frame as fallback
+    local frame = CreateFrame("Frame", "DotMasterGUI", UIParent, "BackdropTemplate")
+    frame:SetSize(450, 550)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetClampedToScreen(true)
+    frame:SetFrameStrata("DIALOG")
 
-    -- Add Combinations tab
-    local combinationsTab = tabSystem:AddTab("Combinations", function(parent)
-      if DM.CreateCombinationsTab then
-        return DM:CreateCombinationsTab(parent)
-      end
-      return parent
-    end)
+    -- Set backdrop
+    frame:SetBackdrop({
+      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+      edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+      tile = true,
+      tileSize = 32,
+      edgeSize = 32,
+      insets = { left = 8, right = 8, top = 8, bottom = 8 }
+    })
 
-    -- Initialize the tab system
-    tabSystem:Initialize()
-    tabSystem:SelectTab(1)
+    -- Create title text
+    local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("TOP", frame, "TOP", 0, -15)
+    titleText:SetText("DotMaster")
 
-    -- Store reference to tab system
-    DM.GUI.tabSystem = tabSystem
+    -- Create close button
+    local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -5, -5)
+
+    -- Create message about incomplete setup
+    local errorMsg = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    errorMsg:SetPoint("CENTER", frame, "CENTER", 0, 0)
+    errorMsg:SetWidth(400)
+    errorMsg:SetText("GUI components could not be loaded properly.\nPlease check the addon installation.")
+    errorMsg:SetJustifyH("CENTER")
+    errorMsg:SetTextColor(1, 0.2, 0.2, 1)
+
+    -- Store reference to main frame
+    DM.GUI.frame = frame
+
+    -- Hide by default
+    frame:Hide()
+
+    return frame
   end
-
-  -- Store reference to main frame
-  DM.GUI.frame = frame
-
-  -- Hide by default
-  frame:Hide()
-
-  if DM.Debug then
-    DM.Debug:Loading("GUI created successfully")
-  end
-
-  return frame
 end
 
 -- Main event handler

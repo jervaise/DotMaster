@@ -77,9 +77,30 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
 
-    -- Create GUI if available
+    -- Create GUI if available, with more debugging
     if DM.CreateGUI then
-      DM:CreateGUI()
+      -- Add delay to ensure all components are ready
+      C_Timer.After(0.5, function()
+        if DM.Debug then
+          DM.Debug:Loading("Creating GUI during PLAYER_ENTERING_WORLD")
+        end
+
+        local frame = DM:CreateGUI()
+
+        if frame then
+          if DM.Debug then
+            DM.Debug:Loading("GUI frame created successfully: " .. tostring(frame:GetName()))
+          end
+        else
+          if DM.Debug then
+            DM.Debug:Error("Failed to create GUI frame")
+          end
+        end
+      end)
+    else
+      if DM.Debug then
+        DM.Debug:Error("DM.CreateGUI function not available")
+      end
     end
 
     -- Log addon ready status

@@ -141,6 +141,13 @@ function DM:InitializeMainSlashCommands()
       else
         DM:PrintMessage("Debug console not available")
       end
+    elseif command == "status" then
+      -- Check GUI status
+      if DM.CheckGUIStatus then
+        DM:CheckGUIStatus()
+      else
+        DM:PrintMessage("Status check not available")
+      end
     elseif command == "reload" then
       ReloadUI()
     elseif command == "reset" then
@@ -201,6 +208,7 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
         DM:PrintMessage("  /dm debug - Toggle debug console")
+        DM:PrintMessage("  /dm status - Show debug status information")
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
