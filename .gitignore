@@ -20,3 +20,7 @@ desktop.ini
 
 # Zip files
 *.zip 
+
+# Plater integration files
+Plater/
+Plater_PerfUnits/ 
