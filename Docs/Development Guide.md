@@ -18,7 +18,6 @@ Files are organized by their functional areas with a prefix-based naming convent
   - `api.lua` - API layer between GUI and backend
   - `settings.lua` - Settings management
   - `init.lua` - Final initialization sequence
-  - `debug.lua` - Debug console functionality
 
 - **GUI Files**: User interface components
   - `gui.lua` - Main GUI framework
@@ -29,7 +28,6 @@ Files are organized by their functional areas with a prefix-based naming convent
   - `gui_colorpicker.lua` - Color selection interface
   - `gui_spell_row.lua` - Individual spell row component
   - `gui_spell_selection.lua` - Spell selection dialog
-  - `gui_debug_console.lua` - Debug console interface
 
 - **Utility Files**:
   - `minimap.lua` - Minimap button functionality
@@ -121,90 +119,6 @@ Always test changes thoroughly in-game:
 2. Test across multiple character classes when relevant
 3. Check console for errors using `/script print(GetLastError())`
 4. Test edge cases (empty data, large data sets, etc.)
-
-## Debug System
-
-DotMaster includes a comprehensive debug system that provides categorized, 
-filterable logging for development and troubleshooting.
-
-### Debug Categories
-
-The debug system organizes messages into the following categories:
-
-- **General**: General information
-- **Database**: Database access/modifications
-- **Performance**: Performance metrics and timing
-- **UI Events**: User interface events
-- **Loading/Init**: Loading and initialization
-- **API Calls**: API layer interactions
-- **Combat**: Combat-related events
-- **Errors**: Error messages and exceptions
-
-### Using the Debug System
-
-To log messages, use the Debug module's logging functions:
-
-```lua
--- Standard logging with a category
-DM.Debug:Log(DM.Debug.CATEGORY.GENERAL, "Simple message")
-
--- Formatted logging with parameters
-DM.Debug:Log(DM.Debug.CATEGORY.DATABASE, "Saving spell %d with priority %d", spellID, priority)
-
--- Category-specific convenience functions
-DM.Debug:General("Simple general message")
-DM.Debug:Database("Loaded %d spells", #spells)
-DM.Debug:Performance("Operation took %.2fms", timing)
-DM.Debug:UI("Button %s clicked", buttonName)
-DM.Debug:Loading("Module %s initialized", moduleName)
-DM.Debug:API("API call: %s", functionName)
-DM.Debug:Combat("Processing combat event: %s", eventName)
-DM.Debug:Error("Failed to load spell data: %s", errorMsg)
-
--- Throttled logging (only logs once every X seconds for a given key)
-DM.Debug:LogThrottled("key_name", 5, DM.Debug.CATEGORY.PERFORMANCE, "Frequent event throttled to once per 5 seconds")
-
--- Performance measurement
-DM.Debug:LogPerformance("Operation name", function()
-  -- Code to measure
-  return result
-end)
-```
-
-### Accessing the Debug Console
-
-The debug console interface can be accessed through:
-
-1. The Developer Mode checkbox in the General tab
-2. The Debug Console button at the bottom of the interface
-3. Directly from code with `DM.debugFrame:Toggle()`
-
-### Debug Console Features
-
-- **Message Filtering**: Filter by text or category
-- **Copy to Clipboard**: Export logs for sharing
-- **Category Toggles**: Enable/disable categories
-- **Timestamps**: View when events occurred
-- **Auto-scroll**: Follow newest messages
-
-### Performance Considerations
-
-The debug system is designed with performance in mind:
-
-- Messages for disabled categories are ignored completely
-- Throttling prevents log flooding
-- Message processing is batched for minimal impact
-- Developer Mode limits debug UI availability to developers
-
-### Integration Guidelines
-
-When implementing new features:
-
-1. Add appropriate debug logging for important operations
-2. Use the correct category for each type of message
-3. Include relevant data in log messages
-4. Use throttling for frequent events
-5. Measure performance of critical operations
 
 ## Release Process
 

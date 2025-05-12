@@ -1,12 +1,8 @@
 -- DotMaster gui.lua
--- Basic GUI functionality and initialization
+-- Ana GUI işlevselliği ve temel yapılar
 
 local DM = DotMaster
--- Initialize GUI namespace
-DM.GUI = DM.GUI or {}
-
--- Print debug message to verify loading
-print("|cFFFF00FFDEBUG:|r gui.lua loaded, GUI namespace initialized")
+DM.GUI = {}
 
 -- Helper function to check if a spell ID already exists
 function DM:SpellExists(spellID)
@@ -41,9 +37,4 @@ function DM:SpellExists(spellID)
   return false
 end
 
--- Add a simple placeholder CreateGUI in the GUI namespace
--- that will be replaced by the implementation in gui_common.lua
-DM.GUI.CreateGUI = function()
-  print("|cFFFF00FFDEBUG:|r Placeholder CreateGUI called, this should be replaced by gui_common.lua")
-  return nil
-end
+-- Removed duplicate CreateGUI function - Using the implementation from gui_common.lua instead

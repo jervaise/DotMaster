@@ -15,8 +15,15 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Remove old debug stubs since we're replacing them with the new system
--- The Debug module will have proper implementations
+-- Stub for debug message handler (to be replaced with new debug system)
+function DM:DebugMsg(message)
+  -- Debug functionality removed, will be replaced with new system
+end
+
+-- Stub for database debug messages (to be replaced with new debug system)
+function DM:DatabaseDebug(message)
+  -- Debug functionality removed, will be replaced with new system
+end
 
 -- Define minimal constants and defaults
 DM.addonName = "DotMaster"
@@ -24,7 +31,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  version = "1.0.3",
+  version = "1.0.4",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -39,16 +46,14 @@ DM:RegisterEvent("PLAYER_LOGOUT")
 DM:SetScript("OnEvent", function(self, event, arg1, ...)
   if event == "ADDON_LOADED" and arg1 == DM.addonName then
     -- This is the critical point where SavedVariables become available
+    -- Load legacy databases
+    if DM.LoadSpellDatabase then DM:LoadSpellDatabase() end
+    if DM.LoadDMSpellsDB then DM:LoadDMSpellsDB() end
     DM.initState = "addon_loaded"
 
     -- Load saved settings
     if DM.LoadSettings then
       DM:LoadSettings()
-    end
-
-    -- Initialize debug system
-    if DM.Debug and DM.Debug.Initialize then
-      DM.Debug:Initialize()
     end
 
     DM.pendingInitialization = false
@@ -64,48 +69,12 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DM.InitializeMinimapIcon then
       DM:InitializeMinimapIcon()
     end
-
-    -- Initialize debug console
-    if DM.debugFrame and DM.debugFrame.Initialize then
-      DM.debugFrame:Initialize()
-
-      -- Log debug initialization
-      if DM.Debug then
-        DM.Debug:Loading("Debug console initialized")
-      end
-    end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
 
-    -- Create GUI if available, with more debugging
+    -- Create GUI if available
     if DM.CreateGUI then
-      -- Add delay to ensure all components are ready
-      C_Timer.After(0.5, function()
-        if DM.Debug then
-          DM.Debug:Loading("Creating GUI during PLAYER_ENTERING_WORLD")
-        end
-
-        local frame = DM:CreateGUI()
-
-        if frame then
-          if DM.Debug then
-            DM.Debug:Loading("GUI frame created successfully: " .. tostring(frame:GetName()))
-          end
-        else
-          if DM.Debug then
-            DM.Debug:Error("Failed to create GUI frame")
-          end
-        end
-      end)
-    else
-      if DM.Debug then
-        DM.Debug:Error("DM.CreateGUI function not available")
-      end
-    end
-
-    -- Log addon ready status
-    if DM.Debug then
-      DM.Debug:Loading("DotMaster initialized and ready")
+      DM:CreateGUI()
     end
   elseif event == "PLAYER_LOGOUT" then
     -- Save settings on logout

@@ -1,308 +1,163 @@
 -- DotMaster api.lua
--- Provides a clean API contract between the GUI and backend systems
+-- API layer that isolates the GUI from backend implementation
 
--- Reference to main addon
 local DM = DotMaster
-local API = {}
-DM.API = API
+DM.API = {}
 
--- API Methods ---------------------------------------------
-
--- Get addon settings
-function API:GetSettings()
-  if DM.Debug then
-    DM.Debug:Database("API:GetSettings() called")
-  end
-
-  -- Return settings from core
-  return DM.db or {}
-end
-
--- Save addon settings
-function API:SaveSettings(settings)
-  if DM.Debug then
-    DM.Debug:Database("API:SaveSettings() called")
-  end
-
-  -- Pass to core
-  DM.db = settings
-end
-
--- Get all tracked spells
-function API:GetTrackedSpells()
-  if DM.Debug then
-    DM.Debug:Database("API:GetTrackedSpells() called")
-  end
-
-  -- Get spells from settings
-  local db = self:GetSettings()
-  if not db.trackedSpells then
-    db.trackedSpells = {}
-  end
-
-  return db.trackedSpells
-end
-
--- Start tracking a new spell
-function API:TrackSpell(spellID, spellName, spellIcon, color, priority)
-  if DM.Debug then
-    DM.Debug:Database("API:TrackSpell(%d, %s, _, _, %d) called", spellID, spellName, priority)
-  end
-
-  -- Validate inputs
-  if not spellID or not spellName or not spellIcon then
-    if DM.Debug then
-      DM.Debug:Error("API:TrackSpell() called with invalid parameters")
+-- Helper function to create a deep copy of a table (in case CopyTable is not available)
+local function DeepCopyTable(orig)
+  local orig_type = type(orig)
+  local copy
+  if orig_type == 'table' then
+    copy = {}
+    for orig_key, orig_value in next, orig, nil do
+      copy[DeepCopyTable(orig_key)] = DeepCopyTable(orig_value)
     end
-    return false
-  end
-
-  -- Get tracked spells
-  local trackedSpells = self:GetTrackedSpells()
-
-  -- Check if spell is already tracked
-  for _, spell in pairs(trackedSpells) do
-    if spell.id == spellID then
-      -- Update existing spell
-      spell.name = spellName
-      spell.icon = spellIcon
-      if color then spell.color = color end
-      if priority then spell.priority = priority end
-
-      if DM.Debug then
-        DM.Debug:Database("Updated existing spell: %s (%d)", spellName, spellID)
-      end
-      return true
-    end
-  end
-
-  -- Add new spell
-  local spell = {
-    id = spellID,
-    name = spellName,
-    icon = spellIcon,
-    color = color or { r = 1, g = 0, b = 0, a = 1 },
-    priority = priority or 0,
-    enabled = true
-  }
-
-  table.insert(trackedSpells, spell)
-
-  if DM.Debug then
-    DM.Debug:Database("Added new spell: %s (%d)", spellName, spellID)
-  end
-  return true
-end
-
--- Stop tracking a spell
-function API:UntrackSpell(spellID)
-  if DM.Debug then
-    DM.Debug:Database("API:UntrackSpell(%d) called", spellID)
-  end
-
-  -- Validate input
-  if not spellID then
-    if DM.Debug then
-      DM.Debug:Error("API:UntrackSpell() called with invalid parameter")
-    end
-    return false
-  end
-
-  -- Get tracked spells
-  local trackedSpells = self:GetTrackedSpells()
-
-  -- Find and remove spell
-  for i, spell in ipairs(trackedSpells) do
-    if spell.id == spellID then
-      table.remove(trackedSpells, i)
-      if DM.Debug then
-        DM.Debug:Database("Removed spell with ID: %d", spellID)
-      end
-      return true
-    end
-  end
-
-  if DM.Debug then
-    DM.Debug:Database("Spell not found: %d", spellID)
-  end
-  return false
-end
-
--- Update a tracked spell's properties
-function API:UpdateSpell(spellID, properties)
-  if DM.Debug then
-    DM.Debug:Database("API:UpdateSpell(%d, properties) called", spellID)
-  end
-
-  -- Validate inputs
-  if not spellID or not properties then
-    if DM.Debug then
-      DM.Debug:Error("API:UpdateSpell() called with invalid parameters")
-    end
-    return false
-  end
-
-  -- Get tracked spells
-  local trackedSpells = self:GetTrackedSpells()
-
-  -- Find and update spell
-  for _, spell in ipairs(trackedSpells) do
-    if spell.id == spellID then
-      -- Update properties
-      for k, v in pairs(properties) do
-        spell[k] = v
-      end
-
-      if DM.Debug then
-        DM.Debug:Database("Updated spell %d properties", spellID)
-      end
-      return true
-    end
-  end
-
-  if DM.Debug then
-    DM.Debug:Database("Spell not found for update: %d", spellID)
-  end
-  return false
-end
-
--- Get all combinations
-function API:GetCombinations()
-  if DM.Debug then
-    DM.Debug:Database("API:GetCombinations() called")
-  end
-
-  -- Get combinations from settings
-  local db = self:GetSettings()
-  if not db.combinations then
-    db.combinations = {}
-  end
-
-  return db.combinations
-end
-
--- Create a new combination
-function API:CreateCombination(name, spellIDs, color)
-  if DM.Debug then
-    DM.Debug:Database("API:CreateCombination(%s, spellIDs, color) called", name)
-  end
-
-  -- Validate inputs
-  if not name or not spellIDs or #spellIDs == 0 then
-    if DM.Debug then
-      DM.Debug:Error("API:CreateCombination() called with invalid parameters")
-    end
-    return false
-  end
-
-  -- Get combinations
-  local combinations = self:GetCombinations()
-
-  -- Create new combination
-  local combination = {
-    name = name,
-    spellIDs = spellIDs,
-    color = color or { r = 1, g = 1, b = 0, a = 1 },
-    enabled = true
-  }
-
-  table.insert(combinations, combination)
-
-  if DM.Debug then
-    DM.Debug:Database("Created new combination: %s with %d spells", name, #spellIDs)
-  end
-  return true
-end
-
--- Get a combination by name
-function API:GetCombinationByName(name)
-  if DM.Debug then
-    DM.Debug:Database("API:GetCombinationByName(%s) called", name)
-  end
-
-  -- Validate input
-  if not name then
-    if DM.Debug then
-      DM.Debug:Error("API:GetCombinationByName() called with invalid parameter")
-    end
-    return nil
-  end
-
-  -- Get combinations
-  local combinations = self:GetCombinations()
-
-  -- Find combination by name
-  for _, combination in ipairs(combinations) do
-    if combination.name == name then
-      return combination
-    end
-  end
-
-  return nil
-end
-
--- Delete a combination by name
-function API:DeleteCombination(name)
-  if DM.Debug then
-    DM.Debug:Database("API:DeleteCombination(%s) called", name)
-  end
-
-  -- Validate input
-  if not name then
-    if DM.Debug then
-      DM.Debug:Error("API:DeleteCombination() called with invalid parameter")
-    end
-    return false
-  end
-
-  -- Get combinations
-  local combinations = self:GetCombinations()
-
-  -- Find and remove combination
-  for i, combination in ipairs(combinations) do
-    if combination.name == name then
-      table.remove(combinations, i)
-      if DM.Debug then
-        DM.Debug:Database("Deleted combination: %s", name)
-      end
-      return true
-    end
-  end
-
-  if DM.Debug then
-    DM.Debug:Database("Combination not found: %s", name)
-  end
-  return false
-end
-
--- Enable/disable the addon
-function API:EnableAddon(enabled)
-  if DM.Debug then
-    DM.Debug:General("API:EnableAddon(%s) called", tostring(enabled))
-  end
-
-  -- Get settings
-  local settings = self:GetSettings()
-
-  -- Update enabled state
-  settings.enabled = enabled
-
-  -- Apply changes
-  self:SaveSettings(settings)
-
-  -- Update display
-  if enabled then
-    if DM.EnableNameplateHook then
-      DM:EnableNameplateHook()
-    end
+    setmetatable(copy, DeepCopyTable(getmetatable(orig)))
   else
-    if DM.DisableNameplateHook then
-      DM:DisableNameplateHook()
-    end
+    copy = orig
   end
+  return copy
+end
 
+-- Version info
+function DM.API:GetVersion()
+  return "1.0.4"
+end
+
+-- Spell tracking functions
+function DM.API:GetTrackedSpells()
+  -- Return empty table to populate the Tracked Spells tab
+  return {}
+end
+
+function DM.API:TrackSpell(spellID, spellName, spellIcon, color, priority)
+  -- Stub for adding a spell to tracking
   return true
 end
 
--- Return the API module
-return API
+function DM.API:UntrackSpell(spellID)
+  -- Stub for removing a spell from tracking
+  return true
+end
+
+function DM.API:UpdateSpellSettings(spellID, enabled, priority, color)
+  -- Stub for updating spell settings
+  return true
+end
+
+-- Combination functions
+function DM.API:GetCombinations()
+  -- Return empty table to populate the Combinations tab
+  return {}
+end
+
+function DM.API:CreateCombination(name, color)
+  -- Stub for creating a new combination
+  return "combo_" .. tostring(GetTime()) -- Return a fake ID
+end
+
+function DM.API:UpdateCombination(comboID, name, enabled, color)
+  -- Stub for updating a combination
+  return true
+end
+
+function DM.API:DeleteCombination(comboID)
+  -- Stub for deleting a combination
+  return true
+end
+
+function DM.API:AddSpellToCombination(comboID, spellID, priority)
+  -- Stub for adding a spell to a combination
+  return true
+end
+
+function DM.API:RemoveSpellFromCombination(comboID, spellID)
+  -- Stub for removing a spell from a combination
+  return true
+end
+
+-- Spell database functions
+function DM.API:GetSpellDatabase()
+  -- Return empty table to populate the Database tab
+  return {}
+end
+
+function DM.API:AddSpellToDatabase(spellID, spellName, spellIcon, class, spec)
+  -- Stub for adding a spell to the database
+  return true
+end
+
+function DM.API:RemoveSpellFromDatabase(spellID)
+  -- Stub for removing a spell from the database
+  return true
+end
+
+-- Settings functions
+function DM.API:GetSettings()
+  -- Return default settings to populate the General tab
+  return {
+    enabled = true,
+    forceColor = false,
+    borderOnly = false,
+    borderThickness = 2,
+    flashExpiring = false,
+    flashThresholdSeconds = 3.0,
+    minimapIcon = {
+      hide = false
+    }
+  }
+end
+
+function DM.API:SaveSettings(settings)
+  -- Stub for saving settings
+  return true
+end
+
+function DM.API:EnableAddon(enabled)
+  -- Stub for enabling/disabling the addon
+  return true
+end
+
+-- Spell handling utilities
+function DM.API:GetSpellInfo(spellID)
+  -- Use WoW's GetSpellInfo for real spell data
+  return GetSpellInfo(spellID)
+end
+
+function DM.API:SpellExists(spellID)
+  -- Stub to check if a spell exists in our database
+  return false
+end
+
+-- Add these functions to support color picker and spell selection
+
+-- Show color picker (stub)
+function DM:ShowColorPicker(r, g, b, callback)
+  -- Use the built-in color picker directly for now
+  local function colorFunc()
+    local r, g, b = ColorPickerFrame:GetColorRGB()
+    callback(r, g, b)
+  end
+
+  local function cancelFunc()
+    local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
+    callback(prevR, prevG, prevB)
+  end
+
+  ColorPickerFrame.func = colorFunc
+  ColorPickerFrame.cancelFunc = cancelFunc
+  ColorPickerFrame.previousValues = { r, g, b }
+  ColorPickerFrame:SetColorRGB(r, g, b)
+  ColorPickerFrame:Show()
+end
+
+-- Show spell selection (stub)
+function DM:ShowSpellSelection(parent, callback)
+  DM:PrintMessage("Spell selection is not available in this version")
+
+  -- Return a valid default if needed
+  if callback then
+    callback(0, "Unknown Spell", "Interface\\Icons\\INV_Misc_QuestionMark")
+  end
+end

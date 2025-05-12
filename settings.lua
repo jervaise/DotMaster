@@ -14,7 +14,7 @@ function DM:SaveSettings()
 
   -- Update DotMasterDB with current settings
   DotMasterDB.enabled = settings.enabled
-  DotMasterDB.version = "1.0.3"
+  DotMasterDB.version = "1.0.4"
 
   -- Save force threat color setting
   DotMasterDB.settings = DotMasterDB.settings or {}
@@ -23,12 +23,6 @@ function DM:SaveSettings()
   DotMasterDB.settings.borderThickness = settings.borderThickness
   DotMasterDB.settings.flashExpiring = settings.flashExpiring
   DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
-  DotMasterDB.settings.developerMode = settings.developerMode
-
-  -- Save debug settings if they exist
-  if settings.debug then
-    DotMasterDB.debug = settings.debug
-  end
 end
 
 -- Load settings from saved variables
@@ -46,8 +40,7 @@ function DM:LoadSettings()
     borderThickness = 2,
     flashExpiring = false,
     flashThresholdSeconds = 3.0,
-    minimapIcon = { hide = false },
-    developerMode = false
+    minimapIcon = { hide = false }
   }
 
   -- Load settings from saved variables if available
@@ -71,10 +64,6 @@ function DM:LoadSettings()
     if DotMasterDB.settings.flashThresholdSeconds ~= nil then
       settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
     end
-
-    if DotMasterDB.settings.developerMode ~= nil then
-      settings.developerMode = DotMasterDB.settings.developerMode
-    end
   end
 
   -- Load minimap settings
@@ -82,19 +71,11 @@ function DM:LoadSettings()
     settings.minimapIcon = DotMasterDB.minimap
   end
 
-  -- Load debug settings if they exist
-  if DotMasterDB.debug then
-    settings.debug = DotMasterDB.debug
-  end
-
   -- Set the enabled state in both API and core for compatibility
   DM.enabled = settings.enabled
 
   -- Save to API
   DM.API:SaveSettings(settings)
-
-  -- Set up debug database reference for direct access
-  DM.db = settings
 end
 
 -- Initialize the main slash commands
@@ -118,36 +99,8 @@ function DM:InitializeMainSlashCommands()
       DM.API:SaveSettings(settings)
       DM.API:EnableAddon(false)
       DM:PrintMessage("Disabled")
-    elseif command == "show" then
-      -- Use our SlashCommand method from core.lua
-      if DM.SlashCommand then
-        DM:SlashCommand("show")
-      else
-        -- Fallback direct method
-        if not DM.GUI or not DM.GUI.frame then
-          DM:CreateGUI()
-        end
-        if DM.GUI and DM.GUI.frame then
-          DM.GUI.frame:Show()
-        end
-      end
-    elseif command == "toggle" then
-      -- Use our ToggleGUI method
-      DM:ToggleGUI()
-    elseif command == "debug" then
-      -- Toggle debug console
-      if DM.debugFrame then
-        DM.debugFrame:Toggle()
-      else
-        DM:PrintMessage("Debug console not available")
-      end
-    elseif command == "status" then
-      -- Check GUI status
-      if DM.CheckGUIStatus then
-        DM:CheckGUIStatus()
-      else
-        DM:PrintMessage("Status check not available")
-      end
+    elseif command == "show" and DM.GUI and DM.GUI.frame then
+      DM.GUI.frame:Show()
     elseif command == "reload" then
       ReloadUI()
     elseif command == "reset" then
@@ -175,8 +128,7 @@ function DM:InitializeMainSlashCommands()
               borderThickness = 2,
               flashExpiring = false,
               flashThresholdSeconds = 3.0,
-              minimapIcon = { hide = false },
-              developerMode = false
+              minimapIcon = { hide = false }
             }
 
             DM.enabled = defaultSettings.enabled
@@ -199,16 +151,22 @@ function DM:InitializeMainSlashCommands()
       DM:SaveSettings()
       DM:PrintMessage("Settings saved")
     else
-      -- Use our help command from core.lua or else print help
-      if DM.SlashCommand then
-        DM:SlashCommand(msg)
+      -- Try to toggle main GUI if available, otherwise print help
+      if DM.GUI and DM.GUI.frame then
+        if DM.GUI.frame:IsShown() then
+          DM.GUI.frame:Hide()
+        else
+          DM.GUI.frame:Show()
+        end
+      elseif command == "show" and DM.GUI and DM.GUI.frame then
+        DM.GUI.frame:Show()
+      elseif command == "reload" then
+        ReloadUI()
       else
         DM:PrintMessage("Available commands:")
         DM:PrintMessage("  /dm on - Enable addon")
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
-        DM:PrintMessage("  /dm debug - Toggle debug console")
-        DM:PrintMessage("  /dm status - Show debug status information")
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")

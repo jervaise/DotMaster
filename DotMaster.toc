@@ -18,28 +18,25 @@ Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
-# Bootstrap and core structure
-bootstrap.lua
-
-# GUI Base Components
-gui.lua
-gui_common.lua
-
 # Core files
+bootstrap.lua
 core.lua
 api.lua
+Old_Backend/spell_database.lua
+Old_Backend/find_my_dots.lua
 settings.lua
 minimap.lua
-debug.lua
 
-# GUI Components
+# GUI
+gui.lua
+gui_common.lua
 gui_general_tab.lua
 gui_tracked_spells_tab.lua
 gui_combinations_tab.lua
 gui_colorpicker.lua
 gui_spell_row.lua
 gui_spell_selection.lua
-gui_debug_console.lua
+Old_Backend/gui_database_tab.lua
 
 # Initialize the addon
 init.lua
