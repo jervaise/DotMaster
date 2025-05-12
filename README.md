@@ -73,6 +73,7 @@ The `Docs/Project Scope.md` contains the project vision, feature roadmap, and ta
 
 ## Version History
 
+- **1.0.5**: Fixed color refresh handling for combinations to ensure proper display after color changes
 - **1.0.4**: Update with version 1.0.4 changes
 - **1.0.3**: GUI isolation from backend with API layer implementation
 - **1.0.2**: Added spell combination tracking
