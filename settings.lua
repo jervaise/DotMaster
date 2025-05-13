@@ -14,18 +14,42 @@ function DM:SaveSettings()
 
   -- Update DotMasterDB with current settings
   DotMasterDB.enabled = settings.enabled
-  DotMasterDB.version = "1.0.5"
+  DotMasterDB.version = "1.0.7"
 
   -- Save force threat color setting
   DotMasterDB.settings = DotMasterDB.settings or {}
   DotMasterDB.settings.forceColor = settings.forceColor
   DotMasterDB.settings.borderOnly = settings.borderOnly
-  DotMasterDB.settings.borderThickness = settings.borderThickness
+
+  -- Keep existing borderThickness if it exists to avoid overwriting with old value
+  -- This handles cases where the UI has been updated but settings object hasn't
+  if not DotMasterDB.settings.borderThickness then
+    DotMasterDB.settings.borderThickness = settings.borderThickness
+    print("|cFFFF9900DotMaster-BorderDebug: INITIALIZED thickness value " ..
+      settings.borderThickness .. " to DotMasterDB|r")
+  else
+    -- Only update if different
+    if DotMasterDB.settings.borderThickness ~= settings.borderThickness then
+      print("|cFFFF9900DotMaster-BorderDebug: UPDATED thickness from " .. DotMasterDB.settings.borderThickness ..
+        " to " .. settings.borderThickness .. " in DotMasterDB|r")
+      DotMasterDB.settings.borderThickness = settings.borderThickness
+    else
+      print("|cFFFF9900DotMaster-BorderDebug: SAVED thickness value " .. settings.borderThickness .. " to DotMasterDB|r")
+    end
+  end
+
   DotMasterDB.settings.flashExpiring = settings.flashExpiring
   DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
 
-  -- Re-install Plater mod with updated config
+  -- Save current settings to class/spec profile
+  if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+    DM.ClassSpec:SaveCurrentSettings()
+  end
+
+  -- DIRECTLY reinstall the Plater mod with these settings
+  -- Note: This may be temporarily disabled by AutoSave to prevent double-pushing
   if self.InstallPlaterMod then
+    DM:PrintMessage("Embedding your current DotMaster configuration into bokmaster...")
     self:InstallPlaterMod()
   end
 end
@@ -81,6 +105,102 @@ function DM:LoadSettings()
 
   -- Save to API
   DM.API:SaveSettings(settings)
+
+  -- Initialize class/spec integration
+  if DM.ClassSpec and DM.ClassSpec.Initialize then
+    DM.ClassSpec:Initialize()
+  end
+end
+
+-- Tracks if border thickness has been changed during this session
+function DM:TrackBorderThicknessChange()
+  -- Initialize original thickness if not set
+  if not DM.originalBorderThickness then
+    -- Use DotMasterDB directly if available
+    if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
+      DM.originalBorderThickness = DotMasterDB.settings.borderThickness
+    else
+      local settings = DM.API:GetSettings()
+      DM.originalBorderThickness = settings.borderThickness
+    end
+    print("|cFFFF9900DotMaster-Debug: Original thickness initialized to " .. DM.originalBorderThickness .. "|r")
+    return false
+  end
+
+  -- Check if current thickness differs from original
+  -- Use DotMasterDB directly for most accurate value
+  local currentThickness
+  if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
+    currentThickness = DotMasterDB.settings.borderThickness
+    print("|cFFFF9900DotMaster-Debug: Using thickness from DotMasterDB: " .. currentThickness .. "|r")
+  else
+    local settings = DM.API:GetSettings()
+    currentThickness = settings.borderThickness
+    print("|cFFFF9900DotMaster-Debug: Using thickness from API: " .. currentThickness .. "|r")
+  end
+
+  local changed = DM.originalBorderThickness ~= currentThickness
+  print("|cFFFF9900DotMaster-Debug: Thickness check - Original: " .. DM.originalBorderThickness ..
+    " Current: " .. currentThickness .. " Changed: " .. tostring(changed) .. "|r")
+
+  return changed
+end
+
+-- Shows reload UI popup for border thickness changes
+function DM:ShowReloadUIPopupForBorderThickness()
+  -- Force creation of popup dialog template
+  if not StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] then
+    StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] = {
+      text = "Border thickness has changed.\n\nReload UI to fully apply this change?",
+      button1 = "Reload Now",
+      button2 = "Later",
+      OnAccept = function()
+        ReloadUI()
+      end,
+      OnCancel = function()
+        DM:PrintMessage("Remember to reload your UI to fully apply border thickness changes.")
+        -- Update the stored original value to prevent repeated prompts
+        local settings = DM.API:GetSettings()
+        DM.originalBorderThickness = settings.borderThickness
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+  end
+
+  local settings = DM.API:GetSettings()
+
+  if DM:TrackBorderThicknessChange() then
+    -- Update text with current values
+    StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"].text =
+        "Border thickness has changed from " .. DM.originalBorderThickness ..
+        " to " .. settings.borderThickness ..
+        ".\n\nReload UI to fully apply this change?";
+
+    print("|cFFFF9900DotMaster-Debug: Showing reload popup for thickness change|r")
+
+    -- Show the popup
+    StaticPopup_Show("DOTMASTER_RELOAD_CONFIRM")
+    return true
+  else
+    print("|cFFFF9900DotMaster-Debug: No thickness change detected, not showing popup|r")
+  end
+
+  return false
+end
+
+-- Force push settings to bokmaster
+function DM:ForcePushToBokmaster()
+  if DM.InstallPlaterMod then
+    DM:PrintMessage("Force pushing current settings to bokmaster...")
+    DM:InstallPlaterMod()
+    return true
+  else
+    DM:PrintMessage("Error: bokmaster installation function not found")
+    return false
+  end
 end
 
 -- Initialize the main slash commands
@@ -94,20 +214,21 @@ function DM:InitializeMainSlashCommands()
       local settings = DM.API:GetSettings()
       settings.enabled = true
       DM.enabled = true
-      DM.API:SaveSettings(settings)
-      DM.API:EnableAddon(true)
+      DM:AutoSave()
       DM:PrintMessage("Enabled")
     elseif command == "off" or command == "disable" then
       local settings = DM.API:GetSettings()
       settings.enabled = false
       DM.enabled = false
-      DM.API:SaveSettings(settings)
-      DM.API:EnableAddon(false)
+      DM:AutoSave()
       DM:PrintMessage("Disabled")
     elseif command == "show" and DM.GUI and DM.GUI.frame then
       DM.GUI.frame:Show()
     elseif command == "reload" then
       ReloadUI()
+    elseif command == "push" or command == "bokmaster" then
+      -- Force push to bokmaster
+      DM:ForcePushToBokmaster()
     elseif command == "reset" then
       -- Create confirmation dialog
       if StaticPopupDialogs and StaticPopup_Show then
@@ -137,11 +258,8 @@ function DM:InitializeMainSlashCommands()
             }
 
             DM.enabled = defaultSettings.enabled
-            DM.API:SaveSettings(defaultSettings)
+            DM:AutoSave()
             DM:PrintMessage("Settings reset to defaults")
-
-            -- Save and update UI
-            DM:SaveSettings()
           end,
           timeout = 0,
           whileDead = true,
@@ -172,6 +290,7 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm on - Enable addon")
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
+        DM:PrintMessage("  /dm push - Force push settings to bokmaster")
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
@@ -187,7 +306,51 @@ function DM:AutoSave()
     DM.saveTimer:Cancel()
   end
 
-  DM.saveTimer = C_Timer.NewTimer(1, function()
+  -- Update status message if it exists
+  if DM.GUI and DM.GUI.statusMessage then
+    DM.GUI.statusMessage:SetText("Auto-saving: Pending...")
+    DM.GUI.statusMessage:SetTextColor(1, 0.82, 0) -- Gold color for pending
+  end
+
+  DM.saveTimer = C_Timer.NewTimer(0.5, function() -- Reduced from 1s to 0.5s for more responsive feel
+    -- First update the saved variables with current settings
+    -- but don't push to Plater from inside SaveSettings to avoid double-pushing
+    -- Store the current InstallPlaterMod function
+    local originalInstallPlaterMod = DM.InstallPlaterMod
+    DM.InstallPlaterMod = nil -- Temporarily disable so SaveSettings doesn't call it
+
+    -- Save settings
     DM:SaveSettings()
+
+    -- Restore the original function
+    DM.InstallPlaterMod = originalInstallPlaterMod
+
+    -- Now push to Plater with a slight delay to ensure settings are fully saved
+    C_Timer.After(0.1, function()
+      -- Push to Plater with more reliable call
+      if DM.InstallPlaterMod then
+        DM:PrintMessage("Auto-save: Pushing settings to bokmaster...")
+        DM:InstallPlaterMod()
+      end
+
+      -- Update class/spec specific settings
+      if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+        DM.ClassSpec:SaveCurrentSettings()
+      end
+    end)
+
+    -- Update status message if it exists
+    if DM.GUI and DM.GUI.statusMessage then
+      DM.GUI.statusMessage:SetText("Auto-saved & Pushed to Plater")
+      DM.GUI.statusMessage:SetTextColor(0.2, 1, 0.2) -- Green for success
+
+      -- Reset back to default message after 2 seconds
+      C_Timer.After(2, function()
+        if DM.GUI and DM.GUI.statusMessage then
+          DM.GUI.statusMessage:SetText("Auto-saving: Enabled")
+          DM.GUI.statusMessage:SetTextColor(0.7, 0.7, 0.7)
+        end
+      end)
+    end
   end)
 end

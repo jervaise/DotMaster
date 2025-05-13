@@ -73,6 +73,8 @@ The `Docs/Project Scope.md` contains the project vision, feature roadmap, and ta
 
 ## Version History
 
+- **1.0.7**: Added auto-save functionality, instant bokmaster integration, UI reload prompts for border thickness changes
+- **1.0.6**: Improved Plater integration with direct config embedding that ensures consistent nameplate coloring
 - **1.0.5**: Fixed color refresh handling for combinations to ensure proper display after color changes
 - **1.0.4**: Update with version 1.0.4 changes
 - **1.0.3**: GUI isolation from backend with API layer implementation

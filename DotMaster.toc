@@ -1,8 +1,8 @@
-## Interface: 100200
+## Interface: 100206
 ## Title: DotMaster
-## Notes: Tracks your damage-over-time abilities on nameplates
+## Notes: Colors nameplates for your DoTs and active debuffs.
 ## Author: DM Dev Team
-## Version: 1.0.5
+## Version: 1.0.7
 ## SavedVariables: DotMasterDB
 ## X-Curse-Project-ID: 123456
 ## X-Wago-ID: 123456
@@ -22,6 +22,7 @@ Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 bootstrap.lua
 core.lua
 plater_integration.lua
+class_spec_integration.lua
 api.lua
 spell_database.lua
 find_my_dots.lua

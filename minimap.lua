@@ -44,7 +44,8 @@ function DM:InitializeMinimapIcon()
       minimapPos = 220,
       radius = 80
     }
-    DM.API:SaveSettings(settings)
+    -- Use AutoSave instead of direct SaveSettings
+    DM:AutoSave()
   end
 
   -- Use API settings to override DotMasterDB for minimap state
@@ -172,8 +173,8 @@ function DM:AddMinimapSlashCommand()
       if not settings.minimapIcon then settings.minimapIcon = {} end
       settings.minimapIcon.hide = not settings.minimapIcon.hide
 
-      -- Save settings
-      DM.API:SaveSettings(settings)
+      -- Use AutoSave instead of direct SaveSettings
+      DM:AutoSave()
 
       -- Apply change
       DM:ToggleMinimapIcon()

@@ -31,7 +31,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,
-  version = "1.0.5",
+  version = "1.0.7",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -54,6 +54,14 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     -- Load saved settings
     if DM.LoadSettings then
       DM:LoadSettings()
+
+      -- Initialize border thickness tracking
+      if DM.API and DM.API.GetSettings then
+        local settings = DM.API:GetSettings()
+        DM.originalBorderThickness = settings.borderThickness
+        print("|cFFFF9900DotMaster-Debug: Initialized border thickness tracking on load: " ..
+          (DM.originalBorderThickness or "nil") .. "|r")
+      end
     end
 
     DM.pendingInitialization = false
@@ -86,6 +94,22 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
         C_Timer.After(0.5, function()
           if DM.RefreshCombinationColors then
             DM:RefreshCombinationColors()
+          end
+        end)
+      end
+    end)
+
+    -- Make sure bokmaster mod is up to date with our latest code
+    C_Timer.After(2.0, function()
+      if DM.InstallPlaterMod then
+        DM:InstallPlaterMod()
+        DM:PrintMessage("Reinstalled bokmaster mod with latest code.")
+
+        -- Force push config with test spell
+        C_Timer.After(0.5, function()
+          if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+            DM.ClassSpec:PushConfigToPlater()
+            DM:PrintMessage("Force pushed configuration to bokmaster.")
           end
         end)
       end

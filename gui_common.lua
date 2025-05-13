@@ -56,6 +56,12 @@ function DM:CreateGUI()
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
 
+  -- Track border thickness changes
+  if not DM.originalBorderThickness then
+    local settings = DM.API:GetSettings()
+    DM.originalBorderThickness = settings.borderThickness
+  end
+
   -- Create main frame
   local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
   frame:SetSize(500, 600)
@@ -95,12 +101,135 @@ function DM:CreateGUI()
   closeButton:SetPoint("TOPRIGHT", -3, -3)
   closeButton:SetSize(26, 26)
 
+  -- Add force push on close
+  closeButton:HookScript("OnClick", function()
+    -- Force push to bokmaster with current settings
+    if DM.InstallPlaterMod then
+      DM:PrintMessage("Force pushing settings to bokmaster before closing...")
+      DM:InstallPlaterMod()
+    end
+  end)
+
+  -- Also hook the escape key closing
+  frame:HookScript("OnHide", function()
+    -- Get current settings from both DotMasterDB and API
+    local settings = DM.API:GetSettings()
+
+    -- Force refresh settings from DotMasterDB to ensure we have the latest values
+    if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
+      settings.borderThickness = DotMasterDB.settings.borderThickness
+      print("|cFFFF9900DotMaster-Debug: Refreshed border thickness from DotMasterDB: " ..
+      settings.borderThickness .. "|r")
+    end
+
+    -- Force push to bokmaster with current settings when window is closed by any means
+    if DM.InstallPlaterMod then
+      DM:InstallPlaterMod()
+    end
+
+    -- Direct check for border thickness change to ensure popup appears
+    if DM.originalBorderThickness and settings.borderThickness and
+        DM.originalBorderThickness ~= settings.borderThickness then
+      print("|cFFFF9900DotMaster-Debug: Border thickness changed from " ..
+        DM.originalBorderThickness .. " to " .. settings.borderThickness .. " - showing popup|r")
+
+      -- Create popup directly
+      StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] = {
+        text = "Border thickness has changed from " .. DM.originalBorderThickness ..
+            " to " .. settings.borderThickness ..
+            ".\n\nReload UI to fully apply this change?",
+        button1 = "Reload Now",
+        button2 = "Later",
+        OnAccept = function()
+          ReloadUI()
+        end,
+        OnCancel = function()
+          DM:PrintMessage("Remember to reload your UI to fully apply border thickness changes.")
+          -- Update the stored original value to prevent repeated prompts
+          DM.originalBorderThickness = settings.borderThickness
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+      }
+      StaticPopup_Show("DOTMASTER_RELOAD_CONFIRM")
+    else
+      print("|cFFFF9900DotMaster-Debug: Final thickness check - Original: " ..
+        (DM.originalBorderThickness or "nil") .. " Current: " ..
+        (settings.borderThickness or "nil") .. "|r")
+
+      -- Use the standard function as a fallback
+      if DM.ShowReloadUIPopupForBorderThickness then
+        DM:ShowReloadUIPopupForBorderThickness()
+      end
+    end
+  end)
+
   -- Author credit
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("BOTTOM", 0, 15) -- Keep increased bottom margin
-  -- Read version from SavedVariables, fallback to defaults if not found
-  local versionString = (DotMasterDB and DotMasterDB.version) or (DM.defaults and DM.defaults.version) or "N/A"
+  author:SetPoint("BOTTOM", 0, 12) -- Increase from 5 to 12 to add more space
+  -- Read version from API first, then SavedVariables, fallback to defaults if not found
+  local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
+      (DotMasterDB and DotMasterDB.version) or
+      (DM.defaults and DM.defaults.version) or "N/A"
   author:SetText("by Jervaise - v" .. versionString)
+
+  -- Create a footer frame that will contain global buttons
+  local footerFrame = CreateFrame("Frame", "DotMasterFooterFrame", frame)
+  footerFrame:SetHeight(45)                                       -- Increased from 40 to 45
+  footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 25) -- Increased y-offset from 20 to 25
+  footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 25)
+
+  -- Add a subtle separator line at the top of the footer
+  local separator = footerFrame:CreateTexture(nil, "ARTWORK")
+  separator:SetHeight(1)
+  separator:SetColorTexture(0.3, 0.3, 0.3, 0.8)
+  separator:SetPoint("TOPLEFT", footerFrame, "TOPLEFT", 0, 0)
+  separator:SetPoint("TOPRIGHT", footerFrame, "TOPRIGHT", 0, 0)
+
+  -- Create the save button in the footer with class-colored styling
+  local saveButton = CreateFrame("Button", "DotMasterSaveButton", footerFrame, "UIPanelButtonTemplate")
+  saveButton:SetSize(140, 24)
+  saveButton:SetPoint("CENTER", footerFrame, "CENTER", 0, 0) -- Centered vertically in the footer
+  saveButton:SetText("Save Settings")
+  saveButton:Hide()                                          -- Hide the save button since we're auto-saving
+
+  -- Add a status message text in place of the save button
+  local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
+  statusMessage:SetText("Auto-saving: Enabled")
+  statusMessage:SetTextColor(0.7, 0.7, 0.7)
+  DM.GUI.statusMessage = statusMessage -- Store reference for later updates
+
+  -- Add a subtle class-colored glow to the save button
+  if classColor then
+    local normalTexture = saveButton:GetNormalTexture()
+    if normalTexture then
+      normalTexture:SetVertexColor(
+        classColor.r * 0.7 + 0.3,
+        classColor.g * 0.7 + 0.3,
+        classColor.b * 0.7 + 0.3
+      )
+    end
+  end
+
+  saveButton:SetScript("OnClick", function()
+    -- Save DotMaster configuration
+    DM.API:SaveSettings(DM.API:GetSettings())
+
+    -- Push to Plater
+    if DM.InstallPlaterMod then
+      DM:InstallPlaterMod()
+    end
+
+    -- Update class/spec specific settings
+    if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+      DM.ClassSpec:SaveCurrentSettings()
+    end
+
+    DM:PrintMessage("Settings saved and pushed to Plater")
+  end)
 
   -- Create tab system
   local tabHeight = 30
@@ -118,7 +247,7 @@ function DM:CreateGUI()
     -- Tab content frames
     tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
     tabFrames[i]:SetPoint("TOPLEFT", 10, -(45 + tabHeight))
-    tabFrames[i]:SetPoint("BOTTOMRIGHT", -10, 30)
+    tabFrames[i]:SetPoint("BOTTOMRIGHT", -10, 60) -- Increased from 30 to 60 to make room for footer
     tabFrames[i]:Hide()
 
     -- Custom tab buttons

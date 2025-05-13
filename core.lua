@@ -15,9 +15,12 @@ DM.enabled = true
 -- Set up basic defaults
 DM.defaults = DM.defaults or {
   enabled = true,
-  version = "1.0.5",
+  forceColor = false,
+  borderOnly = false,
+  borderThickness = 2,
   flashExpiring = false,
   flashThresholdSeconds = 3.0,
+  version = "1.0.7",
   trackSwapBuffs = true
 }
 

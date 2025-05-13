@@ -354,16 +354,37 @@ function DM:CreateCombinationsTab(parent)
       end
     end
 
-    -- Get combinations and sort them by priority
-    local combos = {}
+    -- Get combinations filtered for the current class
+    local sortedCombos = {}
+    local currentClass = select(2, UnitClass("player"))
+
     if DM.combinations and DM.combinations.data then
       for id, data in pairs(DM.combinations.data) do
-        table.insert(combos, { id = id, data = data })
+        -- Check if this combination should be shown for the current class
+        local showCombo = true
+
+        -- If the combination has spells, check if any are from another class
+        if data.spells and #data.spells > 0 then
+          for _, spellID in ipairs(data.spells) do
+            if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+              local spellData = DM.dmspellsdb[spellID]
+              -- If spell is from another class (not current and not UNKNOWN), don't show this combo
+              if spellData.wowclass and spellData.wowclass ~= currentClass and spellData.wowclass ~= "UNKNOWN" then
+                showCombo = false
+                break
+              end
+            end
+          end
+        end
+
+        if showCombo then
+          table.insert(sortedCombos, { id = id, data = data })
+        end
       end
     end
 
-    -- Normalize priorities to ensure sequential ordering
-    table.sort(combos, function(a, b)
+    -- Sort combinations by priority
+    table.sort(sortedCombos, function(a, b)
       if a.data.priority and b.data.priority then
         return a.data.priority < b.data.priority
       elseif a.data.priority then
@@ -371,13 +392,13 @@ function DM:CreateCombinationsTab(parent)
       elseif b.data.priority then
         return false
       else
-        return a.data.name < b.data.name
+        return (a.data.name or "") < (b.data.name or "")
       end
     end)
 
-    -- Reassign priorities to ensure they are consecutive numbers
+    -- Normalize priorities to ensure sequential ordering
     local prioritiesChanged = false
-    for i, combo in ipairs(combos) do
+    for i, combo in ipairs(sortedCombos) do
       -- Ensure every combination has a valid priority
       if not combo.data.priority then
         DM.combinations.data[combo.id].priority = i
@@ -394,26 +415,6 @@ function DM:CreateCombinationsTab(parent)
       DM:SaveCombinationsDB()
       self:DebugMsg("Normalized combination priorities")
     end
-
-    -- Re-sort with potentially updated priorities
-    local sortedCombos = {}
-    if DM.combinations and DM.combinations.data then
-      for id, data in pairs(DM.combinations.data) do
-        table.insert(sortedCombos, { id = id, data = data })
-      end
-    end
-
-    table.sort(sortedCombos, function(a, b)
-      if a.data.priority and b.data.priority then
-        return a.data.priority < b.data.priority
-      elseif a.data.priority then
-        return true
-      elseif b.data.priority then
-        return false
-      else
-        return (a.data.name or "") < (b.data.name or "")
-      end
-    end)
 
     -- Create or update rows for each combination
     local rowHeight = 40 -- Changed from 30 to 40 to match class header height

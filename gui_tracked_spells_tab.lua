@@ -7,7 +7,59 @@ local GUI = DM.GUI                      -- Alias for convenience
 
 -- Add placeholder functions for the tracked spells list
 function DM.GUI:RefreshTrackedSpellTabList(filter)
-  -- Placeholder function to refresh the tracked spells list
+  -- Get current class
+  local currentClass = select(2, UnitClass("player"))
+
+  -- Create new rows for each spell in DM.dmspellsdb
+  local scrollChild = GUI.trackedScrollChild
+  if not scrollChild then
+    DM:GUIDebug("ERROR: No tracking scroll child in RefreshTrackedSpellTabList")
+    return
+  end
+
+  -- Clear existing rows
+  for _, row in ipairs(GUI.trackedSpellRows or {}) do
+    row:Hide()
+    row:ClearAllPoints()
+  end
+  GUI.trackedSpellRows = GUI.trackedSpellRows or {}
+
+  -- Check if we have any spells
+  if not DM.dmspellsdb then
+    DM:GUIDebug("ERROR: No dmspellsdb found in RefreshTrackedSpellTabList")
+    return
+  end
+
+  -- Get layout references
+  local LAYOUT = DM.GUI.layout
+  local COLUMN_POSITIONS = LAYOUT.columns
+  local COLUMN_WIDTHS = LAYOUT.widths
+
+  -- Create search filter
+  local searchFilter = filter and filter:lower() or ""
+
+  -- Collect all spells into a sorted array
+  local spellList = {}
+  for spellID, spellData in pairs(DM.dmspellsdb) do
+    -- Only include spells for the current class or unknown class
+    if spellData.wowclass == currentClass or spellData.wowclass == "UNKNOWN" then
+      -- Apply search filter if provided
+      local spellName = spellData.spellname or ""
+      if searchFilter == "" or spellName:lower():find(searchFilter, 1, true) then
+        table.insert(spellList, {
+          id = tonumber(spellID),
+          data = spellData,
+          priority = spellData.priority or 999
+        })
+      end
+    end
+  end
+
+  -- Sort by priority
+  table.sort(spellList, function(a, b)
+    return (a.priority or 999) < (b.priority or 999)
+  end)
+
   DM:DebugMsg("RefreshTrackedSpellTabList called with filter: " .. (filter or ""))
 end
 
@@ -823,4 +875,9 @@ function GUI:UpdateTrackedSpellsLayout()
   end
 
   scrollChild:SetHeight(math.max(yOffset + 10, 200))
+end
+
+-- Function to update tracked spells UI
+function GUI:UpdateTrackedSpellsList()
+  self:RefreshTrackedSpellTabList()
 end

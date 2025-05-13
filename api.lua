@@ -22,7 +22,56 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "1.0.4"
+  return "1.0.7"
+end
+
+-- Debug function to print out DotMasterDB contents
+function DM.API:PrintDotMasterDB()
+  if not DotMasterDB then
+    print("DotMaster: DotMasterDB is nil!")
+    return
+  end
+
+  print("DotMaster: DotMasterDB contents:")
+  print("  enabled: " .. tostring(DotMasterDB.enabled))
+
+  if DotMasterDB.settings then
+    print("  settings:")
+    for key, value in pairs(DotMasterDB.settings) do
+      if type(value) ~= "table" then
+        print("    " .. key .. ": " .. tostring(value))
+      else
+        print("    " .. key .. ": [table]")
+      end
+    end
+  else
+    print("  settings: nil")
+  end
+
+  if DotMasterDB.classProfiles then
+    local currentClass, currentSpecID
+    if DM.ClassSpec then
+      currentClass, currentSpecID = DM.ClassSpec:GetCurrentClassAndSpec()
+    end
+
+    print("  classProfiles: " .. tostring(currentClass) .. "/" .. tostring(currentSpecID))
+    if currentClass and currentSpecID and
+        DotMasterDB.classProfiles[currentClass] and
+        DotMasterDB.classProfiles[currentClass][currentSpecID] and
+        DotMasterDB.classProfiles[currentClass][currentSpecID].settings then
+      print("  Current class/spec settings:")
+      local settings = DotMasterDB.classProfiles[currentClass][currentSpecID].settings
+      for key, value in pairs(settings) do
+        if type(value) ~= "table" then
+          print("    " .. key .. ": " .. tostring(value))
+        else
+          print("    " .. key .. ": [table]")
+        end
+      end
+    end
+  else
+    print("  classProfiles: nil")
+  end
 end
 
 -- Spell tracking functions
@@ -36,6 +85,7 @@ function DM.API:GetTrackedSpells()
         color = entry.color,
         priority = entry.priority,
         name = entry.spellname,
+        enabled = true,
       })
     end
   end
@@ -44,16 +94,43 @@ end
 
 function DM.API:TrackSpell(spellID, spellName, spellIcon, color, priority)
   -- Stub for adding a spell to tracking
+
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after tracking spell: " .. (spellName or spellID))
+    end
+  end)
+
   return true
 end
 
 function DM.API:UntrackSpell(spellID)
   -- Stub for removing a spell from tracking
+
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after untracking spell ID: " .. spellID)
+    end
+  end)
+
   return true
 end
 
 function DM.API:UpdateSpellSettings(spellID, enabled, priority, color)
   -- Stub for updating spell settings
+
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after updating spell ID: " .. spellID)
+    end
+  end)
+
   return true
 end
 
@@ -70,6 +147,7 @@ function DM.API:GetCombinations()
           color = combo.color,
           priority = combo.priority,
           name = combo.name,
+          enabled = true,
         })
       end
     end
@@ -131,6 +209,14 @@ function DM.API:CreateCombination(name, color, spells)
     DM:DebugMsg("API Layer: Created new combination with ID: " .. id)
   end
 
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after creating combination: " .. (name or "New Combo"))
+    end
+  end)
+
   return id
 end
 
@@ -175,6 +261,14 @@ function DM.API:UpdateCombination(comboID, name, enabled, color)
     DM:DebugMsg("API Layer: Updated combination with ID: " .. comboID)
   end
 
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after updating combination: " .. comboID)
+    end
+  end)
+
   return true
 end
 
@@ -211,6 +305,14 @@ function DM.API:DeleteCombination(comboID)
     DM:DebugMsg("API Layer: Deleted combination with ID: " .. comboID)
   end
 
+  -- Push changes to Plater after a short delay
+  C_Timer.After(0.2, function()
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      DM.ClassSpec:PushConfigToPlater()
+      print("API: Pushed changes after deleting combination: " .. comboID)
+    end
+  end)
+
   return true
 end
 
@@ -242,27 +344,172 @@ end
 
 -- Settings functions
 function DM.API:GetSettings()
-  -- Return default settings to populate the General tab
+  -- First check if we have class/spec specific settings
+  local classSpecSettings = nil
+  if DM.ClassSpec then
+    local currentClass, currentSpecID = DM.ClassSpec:GetCurrentClassAndSpec()
+    if DotMasterDB and DotMasterDB.classProfiles and
+        DotMasterDB.classProfiles[currentClass] and
+        DotMasterDB.classProfiles[currentClass][currentSpecID] and
+        DotMasterDB.classProfiles[currentClass][currentSpecID].settings then
+      classSpecSettings = DotMasterDB.classProfiles[currentClass][currentSpecID].settings
+    end
+  end
+
+  -- Always get the minimap settings from global config
+  local minimapSettings = DotMasterDB and DotMasterDB.minimap or { hide = false }
+
+  -- Always get these settings from global config
+  local globalSettings = {}
+  if DotMasterDB and DotMasterDB.settings then
+    globalSettings.forceColor = DotMasterDB.settings.forceColor
+    globalSettings.borderOnly = DotMasterDB.settings.borderOnly
+    globalSettings.borderThickness = DotMasterDB.settings.borderThickness
+
+    -- Debug for border thickness value removed for clarity
+
+    globalSettings.flashExpiring = DotMasterDB.settings.flashExpiring
+    globalSettings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
+  end
+
+  -- If we have class/spec settings, use those, otherwise fall back to defaults
+  if classSpecSettings then
+    -- Make a copy to avoid modifying the original
+    local settings = {}
+    for k, v in pairs(classSpecSettings) do
+      settings[k] = v
+    end
+    -- Always use global minimap settings
+    settings.minimapIcon = minimapSettings
+
+    -- ALWAYS use global settings for these visual options
+    if globalSettings.forceColor ~= nil then
+      settings.forceColor = globalSettings.forceColor
+    end
+    if globalSettings.borderOnly ~= nil then
+      settings.borderOnly = globalSettings.borderOnly
+    end
+    if globalSettings.borderThickness ~= nil then
+      -- Make sure we're storing a valid number for border thickness
+      local thickness = tonumber(globalSettings.borderThickness)
+      if thickness == nil or thickness < 1 or thickness > 10 then
+        thickness = 2 -- Default to 2 if invalid
+        print("DotMaster: WARNING - Invalid border thickness value, using default of 2px instead")
+      end
+      settings.borderThickness = thickness
+
+      -- Print a clearly identifiable message for tracking when this happens
+      print("|cFFFF9900DotMaster-BorderDebug: SAVED thickness value " .. thickness .. " to DotMasterDB|r")
+    end
+    if globalSettings.flashExpiring ~= nil then
+      settings.flashExpiring = globalSettings.flashExpiring
+    end
+    if globalSettings.flashThresholdSeconds ~= nil then
+      settings.flashThresholdSeconds = globalSettings.flashThresholdSeconds
+    end
+
+    return settings
+  end
+
+  -- Return default settings if no class/spec settings are available
   return {
-    enabled = true,
-    forceColor = false,
-    borderOnly = false,
-    borderThickness = 2,
-    flashExpiring = false,
-    flashThresholdSeconds = 3.0,
-    minimapIcon = {
-      hide = false
-    }
+    enabled = DotMasterDB and DotMasterDB.enabled ~= nil and DotMasterDB.enabled or true,
+    forceColor = globalSettings.forceColor or false,
+    borderOnly = globalSettings.borderOnly or false,
+    borderThickness = tonumber(globalSettings.borderThickness) or 2,
+    flashExpiring = globalSettings.flashExpiring or false,
+    flashThresholdSeconds = globalSettings.flashThresholdSeconds or 3.0,
+    minimapIcon = minimapSettings
   }
 end
 
 function DM.API:SaveSettings(settings)
-  -- Stub for saving settings
+  -- Store the settings in the saved variables
+  if DotMasterDB then
+    -- Always save minimap settings globally
+    if settings.minimapIcon then
+      DotMasterDB.minimap = settings.minimapIcon
+    end
+
+    -- Save general settings
+    if settings.enabled ~= nil then DotMasterDB.enabled = settings.enabled end
+
+    -- Save UI settings
+    DotMasterDB.settings = DotMasterDB.settings or {}
+
+    -- ALWAYS save certain settings globally to ensure they persist across class/spec changes
+    if settings.forceColor ~= nil then
+      DotMasterDB.settings.forceColor = settings.forceColor
+      print("DotMaster: Force Threat Color setting saved globally: " .. (settings.forceColor and "ENABLED" or "DISABLED"))
+    end
+
+    if settings.borderOnly ~= nil then
+      DotMasterDB.settings.borderOnly = settings.borderOnly
+      print("DotMaster: Border Only setting saved globally: " .. (settings.borderOnly and "ENABLED" or "DISABLED"))
+    end
+
+    if settings.borderThickness ~= nil then
+      -- Make sure we're storing a valid number for border thickness
+      local thickness = tonumber(settings.borderThickness)
+      if thickness == nil or thickness < 1 or thickness > 10 then
+        thickness = 2 -- Default to 2 if invalid
+        print("DotMaster: WARNING - Invalid border thickness value, using default of 2px instead")
+      end
+      DotMasterDB.settings.borderThickness = thickness
+
+      -- Print a clearly identifiable message for tracking when this happens
+      print("|cFFFF9900DotMaster-BorderDebug: SAVED thickness value " .. thickness .. " to DotMasterDB|r")
+    end
+
+    if settings.flashExpiring ~= nil then
+      DotMasterDB.settings.flashExpiring = settings.flashExpiring
+      print("DotMaster: Flash Expiring setting saved globally: " .. (settings.flashExpiring and "ENABLED" or "DISABLED"))
+    end
+
+    if settings.flashThresholdSeconds ~= nil then
+      DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
+      print("DotMaster: Flash Threshold saved globally: " .. settings.flashThresholdSeconds .. " seconds")
+    end
+  end
+
+  -- If we have the ClassSpec functionality, update class/spec profiles
+  if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+    C_Timer.After(0.1, function()
+      DM.ClassSpec:SaveCurrentSettings()
+    end)
+  end
+
+  -- Force reinstall Plater mod immediately when any visual setting changes
+  local visualSettingChanged = settings.forceColor ~= nil or
+      settings.borderOnly ~= nil or
+      settings.borderThickness ~= nil or
+      settings.flashExpiring ~= nil or
+      settings.flashThresholdSeconds ~= nil
+
+  if visualSettingChanged and DM.InstallPlaterMod then
+    C_Timer.After(0.2, function()
+      print("DotMaster: Reinstalling Plater mod with updated visual settings")
+      DM:InstallPlaterMod()
+    end)
+  end
+
   return true
 end
 
 function DM.API:EnableAddon(enabled)
-  -- Stub for enabling/disabling the addon
+  -- Update global enabled state
+  DM.enabled = enabled
+  if DotMasterDB then
+    DotMasterDB.enabled = enabled
+  end
+
+  -- Push changes to Plater immediately to update bokmaster status
+  if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+    C_Timer.After(0.1, function()
+      DM.ClassSpec:PushConfigToPlater()
+    end)
+  end
+
   return true
 end
 

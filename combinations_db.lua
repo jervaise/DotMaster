@@ -587,3 +587,50 @@ if not DM.combinations_db_hooked then
     end
   end)
 end
+
+-- Check if a combination contains only spells from the player's class or unknown class
+function DM:IsCombinationForCurrentClass(comboID)
+  if not comboID or not DM.combinations or not DM.combinations.data then
+    return false
+  end
+
+  local combo = DM.combinations.data[comboID]
+  if not combo or not combo.spells then
+    return false
+  end
+
+  -- Get current player class
+  local currentClass = select(2, UnitClass("player"))
+
+  -- Check each spell in the combination
+  for _, spellID in ipairs(combo.spells) do
+    -- Find the spell in the database
+    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
+      local spellData = DM.dmspellsdb[spellID]
+      -- If spell is from another class (not current and not UNKNOWN), return false
+      if spellData.wowclass and spellData.wowclass ~= currentClass and spellData.wowclass ~= "UNKNOWN" then
+        return false
+      end
+    end
+  end
+
+  -- All spells are from current class or unknown
+  return true
+end
+
+-- Get combinations filtered by the current player's class
+function DM:GetCombinationsForCurrentClass()
+  if not DM.combinations or not DM.combinations.data then
+    return {}
+  end
+
+  local filteredCombos = {}
+
+  for comboID, combo in pairs(DM.combinations.data) do
+    if DM:IsCombinationForCurrentClass(comboID) then
+      filteredCombos[comboID] = combo
+    end
+  end
+
+  return filteredCombos
+end
