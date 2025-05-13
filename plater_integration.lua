@@ -419,12 +419,28 @@ function(self, unitId, unitFrame, envTable, modTable)
 
       -- First pass: check if all required spells are present
       for _, spellID in ipairs(combo.spells) do
-        local auraInfo = Plater.NameplateHasAura(unitFrame, spellID, true) -- true to get detailed info
-        if not auraInfo then
+        local hasAura = Plater.NameplateHasAura(unitFrame, spellID)
+        if not hasAura then
           allSpellsPresent = false
           break
         end
-        table.insert(allSpells, auraInfo)
+
+        -- Get detailed aura info using AuraUtil
+        local auraInfo = nil
+        if AuraUtil and AuraUtil.ForEachAura then
+          AuraUtil.ForEachAura(unitId, "HARMFUL|PLAYER", nil, function(name, icon, count, dispelType, duration, expirationTime, caster, canStealOrPurge, nameplateShowPersonal, spellId)
+            if spellId == spellID then
+              auraInfo = {
+                name = name,
+                duration = duration,
+                expirationTime = expirationTime
+              }
+              return true  -- Stop iteration
+            end
+          end, true)  -- includeNameplateOnly = true
+        end
+
+        table.insert(allSpells, auraInfo or {name = "Unknown", expirationTime = 0})
       end
 
       if allSpellsPresent then
@@ -441,11 +457,13 @@ function(self, unitId, unitFrame, envTable, modTable)
 
           -- Find which aura is expiring soonest
           for _, auraInfo in ipairs(allSpells) do
-            local remainingTime = (auraInfo.expirationTime or 0) - now
-            if remainingTime > 0 and remainingTime < shortestTime then
-              shortestTime = remainingTime
-              expiringName = auraInfo.name
-              expiringColor = combo.color
+            if auraInfo and auraInfo.expirationTime then
+              local remainingTime = (auraInfo.expirationTime or 0) - now
+              if remainingTime > 0 and remainingTime < shortestTime then
+                shortestTime = remainingTime
+                expiringName = auraInfo.name
+                expiringColor = combo.color
+              end
             end
           end
 
@@ -466,8 +484,8 @@ function(self, unitId, unitFrame, envTable, modTable)
 
     for i, spell in ipairs(spells) do
       if spell.enabled and spell.spellID then
-        local auraInfo = Plater.NameplateHasAura(unitFrame, spell.spellID, true) -- true to get detailed info
-        if auraInfo then
+        local hasAura = Plater.NameplateHasAura(unitFrame, spell.spellID)
+        if hasAura then
           -- Apply spell color
           applyColor(spell.color[1], spell.color[2], spell.color[3], spell.color[4] or 1, false) -- false = not threat color
           unitFrame.DM_Text:SetText(spell.name)
@@ -479,11 +497,29 @@ function(self, unitId, unitFrame, envTable, modTable)
             unitFrame.DM_LastExpiryCheck = now
             local threshold = envTable.DM_FLASH_THRESHOLD or 3.0
 
-            local remainingTime = (auraInfo.expirationTime or 0) - now
-            if remainingTime > 0 and remainingTime < threshold then
-              expiringFound = true
-              expiringName = auraInfo.name
-              expiringColor = spell.color
+            -- Get detailed aura info using AuraUtil
+            local auraInfo = nil
+            if AuraUtil and AuraUtil.ForEachAura then
+              AuraUtil.ForEachAura(unitId, "HARMFUL|PLAYER", nil, function(name, icon, count, dispelType, duration, expirationTime, caster, canStealOrPurge, nameplateShowPersonal, spellId)
+                if spellId == spell.spellID then
+                  auraInfo = {
+                    name = name,
+                    duration = duration,
+                    expirationTime = expirationTime
+                  }
+                  return true  -- Stop iteration
+                end
+              end, true)  -- includeNameplateOnly = true
+            end
+
+            -- Check if aura is expiring
+            if auraInfo then
+              local remainingTime = (auraInfo.expirationTime or 0) - now
+              if remainingTime > 0 and remainingTime < threshold then
+                expiringFound = true
+                expiringName = auraInfo.name
+                expiringColor = spell.color
+              end
             end
           end
 
