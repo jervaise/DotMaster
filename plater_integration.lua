@@ -435,9 +435,16 @@ function(self, unitId, unitFrame, envTable, modTable)
                 duration = duration,
                 expirationTime = expirationTime
               }
+
+              -- Debug print to track aura detection
+              local remainingTime = (expirationTime or 0) - now
+              print("DotMaster-Debug: Found aura " .. name .. " (ID: " .. spellId .. ") with " .. string.format("%.1f", remainingTime) .. "s remaining")
+
               return true  -- Stop iteration
             end
           end, true)  -- includeNameplateOnly = true
+        else
+          print("DotMaster-Debug: ERROR - AuraUtil or ForEachAura not available!")
         end
 
         table.insert(allSpells, auraInfo or {name = "Unknown", expirationTime = 0})
@@ -463,6 +470,9 @@ function(self, unitId, unitFrame, envTable, modTable)
                 shortestTime = remainingTime
                 expiringName = auraInfo.name
                 expiringColor = combo.color
+                print("DotMaster-Debug: Combo aura " .. auraInfo.name .. " is EXPIRING in " .. string.format("%.1f", remainingTime) .. "s (threshold: " .. threshold .. "s)")
+              else
+                print("DotMaster-Debug: Combo aura " .. auraInfo.name .. " is NOT EXPIRING - " .. string.format("%.1f", remainingTime) .. "s remaining (threshold: " .. threshold .. "s)")
               end
             end
           end
@@ -507,9 +517,16 @@ function(self, unitId, unitFrame, envTable, modTable)
                     duration = duration,
                     expirationTime = expirationTime
                   }
+
+                  -- Debug print to track aura detection
+                  local remainingTime = (expirationTime or 0) - now
+                  print("DotMaster-Debug: Found aura " .. name .. " (ID: " .. spellId .. ") with " .. string.format("%.1f", remainingTime) .. "s remaining")
+
                   return true  -- Stop iteration
                 end
               end, true)  -- includeNameplateOnly = true
+            else
+              print("DotMaster-Debug: ERROR - AuraUtil or ForEachAura not available!")
             end
 
             -- Check if aura is expiring
@@ -519,6 +536,9 @@ function(self, unitId, unitFrame, envTable, modTable)
                 expiringFound = true
                 expiringName = auraInfo.name
                 expiringColor = spell.color
+                print("DotMaster-Debug: Spell aura " .. auraInfo.name .. " is EXPIRING in " .. string.format("%.1f", remainingTime) .. "s (threshold: " .. threshold .. "s)")
+              else
+                print("DotMaster-Debug: Spell aura " .. auraInfo.name .. " is NOT EXPIRING - " .. string.format("%.1f", remainingTime) .. "s remaining (threshold: " .. threshold .. "s)")
               end
             end
           end
@@ -565,83 +585,114 @@ function(self, unitId, unitFrame, envTable, modTable)
 
   -- Handle expiry flash if found
   if expiringFound and expiringColor then
+    -- Debug print to help troubleshoot
+    print("DotMaster-Debug: FLASH TRIGGERED - " .. (expiringName or "Unknown") .. " expiring in " .. string.format("%.1f", shortestTime) .. "s")
+
     -- Create flash based on settings
     if envTable.DM_BORDER_ONLY then
       -- Border only flash
       if not unitFrame.DM_ExpiryFlashTimer then
+        -- Force a more direct approach to flashing the border
         unitFrame.DM_ExpiryFlashTimer = C_Timer.NewTicker(0.4, function()
           if unitFrame and unitFrame.healthBar and unitFrame:IsShown() then
-            -- Use Plater's built-in function if available
-            if Plater.FlashNameplateBorder then
-              Plater.FlashNameplateBorder(unitFrame, 0.3)
-            else
-              -- Manual flash if Plater function not available
-              local border = unitFrame.healthBar.border
-              if border then
+            -- Create flash directly
+            local border = unitFrame.healthBar.border
+            if border then
+              -- Store original color
+              if not unitFrame.DM_OriginalBorderColor then
                 local r, g, b, a = border:GetVertexColor()
-                local FlashAnimation = border:CreateAnimationGroup()
-                local FadeOut = FlashAnimation:CreateAnimation("Alpha")
-                FadeOut:SetFromAlpha(a or 1)
-                FadeOut:SetToAlpha(0.3)
-                FadeOut:SetDuration(0.15)
-
-                local FadeIn = FlashAnimation:CreateAnimation("Alpha")
-                FadeIn:SetFromAlpha(0.3)
-                FadeIn:SetToAlpha(a or 1)
-                FadeIn:SetDuration(0.15)
-                FadeIn:SetStartDelay(0.15)
-
-                FlashAnimation:Play()
+                unitFrame.DM_OriginalBorderColor = {r, g, b, a or 1}
               end
+
+              -- Get the current alpha
+              local current = border:GetAlpha()
+
+              -- Toggle between normal and bright
+              if current < 0.7 then
+                -- Brighten
+                border:SetAlpha(1.0)
+                border:SetVertexColor(1, 1, 1, 1)
+              else
+                -- Dim
+                border:SetAlpha(0.5)
+                -- Use original color values but with reduced alpha
+                local color = unitFrame.DM_OriginalBorderColor or {1, 0, 1, 1}
+                border:SetVertexColor(color[1], color[2], color[3], 0.5)
+              end
+
+              print("DotMaster-Debug: Border flash - Current alpha: " .. current)
+            else
+              print("DotMaster-Debug: ERROR - Border element not found!")
             end
           else
             -- Cancel timer if nameplate is gone
             if unitFrame.DM_ExpiryFlashTimer then
               unitFrame.DM_ExpiryFlashTimer:Cancel()
               unitFrame.DM_ExpiryFlashTimer = nil
+
+              -- Restore original border color if available
+              if unitFrame and unitFrame.healthBar and unitFrame.healthBar.border and unitFrame.DM_OriginalBorderColor then
+                local color = unitFrame.DM_OriginalBorderColor
+                unitFrame.healthBar.border:SetVertexColor(color[1], color[2], color[3], color[4])
+                unitFrame.healthBar.border:SetAlpha(1.0)
+              end
             end
           end
         end)
       end
     else
       -- Full nameplate flash
-      if not unitFrame.DM_ExpiryFlashAnimation or not unitFrame.DM_ExpiryFlashAnimation:IsPlaying() then
-        -- Get brightened color
-        local r, g, b = expiringColor[1], expiringColor[2], expiringColor[3]
-        local maxChannel = math.max(r, g, b)
-        if maxChannel > 0 then
-          r, g, b = r / maxChannel, g / maxChannel, b / maxChannel
+      if not unitFrame.DM_ExpiryFlashTimer then
+        -- Create a direct flash effect instead of relying on Plater.CreateFlash
+        -- Create a flash overlay if it doesn't exist
+        if not unitFrame.DM_FlashOverlay then
+          unitFrame.DM_FlashOverlay = unitFrame.healthBar:CreateTexture(nil, "OVERLAY")
+          unitFrame.DM_FlashOverlay:SetAllPoints(unitFrame.healthBar)
+          unitFrame.DM_FlashOverlay:SetColorTexture(1, 1, 1, 0) -- Start transparent
+          unitFrame.DM_FlashOverlay:Show()
         end
 
-        -- Use Plater's built-in flash animation
-        if Plater.CreateFlash then
-          unitFrame.DM_ExpiryFlashAnimation = Plater.CreateFlash(unitFrame.healthBar, 0.25, 3, r, g, b, 0.6)
+        -- Ensure it's attached properly
+        unitFrame.DM_FlashOverlay:SetParent(unitFrame.healthBar)
+        unitFrame.DM_FlashOverlay:SetAllPoints(unitFrame.healthBar)
 
-          -- Ensure text elements remain visible
-          if unitFrame.DM_ExpiryFlashAnimation then
-            -- Store original OnPlay function
-            local originalOnPlay = unitFrame.DM_ExpiryFlashAnimation.Anim_OnPlay
+        -- Use the color from the expiring effect
+        local r, g, b = expiringColor[1], expiringColor[2], expiringColor[3]
 
-            -- Override with our own that preserves text elements
-            unitFrame.DM_ExpiryFlashAnimation.Anim_OnPlay = function(...)
-              -- Call original first
-              if originalOnPlay then
-                originalOnPlay(...)
-              end
+        -- Start the flash timer
+        unitFrame.DM_ExpiryFlashTimer = C_Timer.NewTicker(0.3, function()
+          if unitFrame and unitFrame.healthBar and unitFrame:IsShown() and unitFrame.DM_FlashOverlay then
+            local currentAlpha = unitFrame.DM_FlashOverlay:GetAlpha()
 
-              -- Protect text elements
-              if unitFrame.healthBar.unitName then
-                unitFrame.healthBar.unitName:SetDrawLayer("OVERLAY", 7)
-              end
-              if unitFrame.healthBar.lifePercent then
-                unitFrame.healthBar.lifePercent:SetDrawLayer("OVERLAY", 7)
-              end
+            -- Toggle between visible and invisible
+            if currentAlpha < 0.1 then
+              unitFrame.DM_FlashOverlay:SetColorTexture(r, g, b, 0.3)
+              print("DotMaster-Debug: Nameplate flash ON - Alpha: 0.3")
+            else
+              unitFrame.DM_FlashOverlay:SetColorTexture(r, g, b, 0)
+              print("DotMaster-Debug: Nameplate flash OFF - Alpha: 0")
             end
 
-            -- Start the animation
-            unitFrame.DM_ExpiryFlashAnimation:Play()
+            -- Make sure text stays visible
+            if unitFrame.healthBar.unitName then
+              unitFrame.healthBar.unitName:SetDrawLayer("OVERLAY", 7)
+            end
+            if unitFrame.healthBar.lifePercent then
+              unitFrame.healthBar.lifePercent:SetDrawLayer("OVERLAY", 7)
+            end
+          else
+            -- Cancel timer if nameplate is gone
+            if unitFrame.DM_ExpiryFlashTimer then
+              unitFrame.DM_ExpiryFlashTimer:Cancel()
+              unitFrame.DM_ExpiryFlashTimer = nil
+
+              -- Clean up overlay
+              if unitFrame and unitFrame.DM_FlashOverlay then
+                unitFrame.DM_FlashOverlay:SetColorTexture(0, 0, 0, 0)
+              end
+            end
           end
-        end
+        end)
       end
     end
 
@@ -653,18 +704,23 @@ function(self, unitId, unitFrame, envTable, modTable)
     -- No expiring aura, stop any flash
     if unitFrame.DM_ExpiryFlashAnimation then
       unitFrame.DM_ExpiryFlashAnimation:Stop()
+      unitFrame.DM_ExpiryFlashAnimation = nil
     end
     if unitFrame.DM_ExpiryFlashTimer then
       unitFrame.DM_ExpiryFlashTimer:Cancel()
       unitFrame.DM_ExpiryFlashTimer = nil
     end
 
-    -- Restore any text layers
-    if unitFrame.healthBar and unitFrame.healthBar.unitName then
-      unitFrame.healthBar.unitName:SetDrawLayer("OVERLAY", 6)
+    -- Clean up flash overlay
+    if unitFrame.DM_FlashOverlay then
+      unitFrame.DM_FlashOverlay:SetColorTexture(0, 0, 0, 0)
     end
-    if unitFrame.healthBar and unitFrame.healthBar.lifePercent then
-      unitFrame.healthBar.lifePercent:SetDrawLayer("OVERLAY", 6)
+
+    -- Restore border color if we were using border-only mode
+    if envTable.DM_BORDER_ONLY and unitFrame.healthBar and unitFrame.healthBar.border and unitFrame.DM_OriginalBorderColor then
+      local color = unitFrame.DM_OriginalBorderColor
+      unitFrame.healthBar.border:SetVertexColor(color[1], color[2], color[3], color[4])
+      unitFrame.healthBar.border:SetAlpha(1.0)
     end
   end
 end
