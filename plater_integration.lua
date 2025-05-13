@@ -192,6 +192,7 @@ function(self, unitId, unitFrame, envTable, modTable)
   envTable.DM_COMBOS = %s
   envTable.DM_FORCE_THREAT_COLOR = %s
   envTable.DM_BORDER_ONLY = %s
+  envTable.DM_ENABLED = true -- Flag to indicate the addon is enabled
 
   -- Make sure thickness is a valid number with proper conversion
   local borderThickness = tonumber(%s)
@@ -208,21 +209,6 @@ function(self, unitId, unitFrame, envTable, modTable)
 
   envTable.DM_FLASH_EXPIRING = %s
   envTable.DM_FLASH_THRESHOLD = %s
-
-  -- Initialize flash animations for expiring auras
-  if envTable.DM_FLASH_EXPIRING then
-    -- Create flash animations container if it doesn't exist
-    envTable.flashAnimations = envTable.flashAnimations or {}
-
-    -- Initialize a flash animation for the nameplate
-    if envTable.DM_BORDER_ONLY then
-      -- For border-only mode, we'll use Plater's FlashNameplateBorder
-      envTable.lastBorderFlashTime = 0
-    else
-      -- For full nameplate mode, create reusable flash animations
-      -- We'll create these on demand in the update function
-    end
-  end
 
   -- Store last build time for debugging
   envTable.lastBuildTime = %s
@@ -263,16 +249,23 @@ function(self, unitId, unitFrame, envTable, modTable)
       print("|cFFFF9900DotMaster-BorderDebug: Using saved thickness from DB: " .. originalThickness .. "|r")
     end
 
-    -- Actually restore Plater's border thickness to the original value
+    -- Apply the original thickness back to Plater
     if Plater.db and Plater.db.profile then
       Plater.db.profile.border_thickness = originalThickness
-      print("|cFFFF9900DotMaster-BorderDebug: RESET Plater border thickness to " .. originalThickness .. "|r")
+      print("|cFFFF9900DotMaster-BorderDebug: RESTORED border thickness to " .. originalThickness .. "|r")
 
-      -- Update all nameplates to refresh border thickness
+      -- Update all nameplates to use the original border thickness
       if Plater.UpdateAllPlatesBorderThickness then
         Plater.UpdateAllPlatesBorderThickness()
       end
     end
+  end
+
+  -- Create flash animation for border
+  if not envTable.borderFlash then
+    -- Purple color as a default
+    local flashColor = {1, 0, 1, 1}
+    envTable.borderFlash = Plater.CreateFlash(unitFrame.healthBar, 0.5, 2, flashColor)
   end
 
   -- Debug info at initialization
@@ -287,344 +280,271 @@ function(self, unitId, unitFrame, envTable, modTable)
   end
 
   print("DotMaster: Loaded " .. #envTable.DM_SPELLS .. " spells and " .. #envTable.DM_COMBOS .. " combos")
-
-  if envTable.DM_FLASH_EXPIRING then
-    print("DotMaster: Expiry Flash ENABLED (Threshold: " .. envTable.DM_FLASH_THRESHOLD .. " seconds)")
-  else
-    print("DotMaster: Expiry Flash DISABLED")
-  end
 end]],
     spellsLuaCode, combosLuaCode,
     settings.forceColor and "true" or "false",
     settings.borderOnly and "true" or "false",
-    settings.borderThickness,
+    tostring(settings.borderThickness or 2),
     settings.flashExpiring and "true" or "false",
     settings.flashThresholdSeconds or 3.0,
-    GetTime())
+    "GetTime()"
+  )
 
-  local updateCode = [[
-function(self, unitId, unitFrame, envTable, modTable)
-  -- IMPORTANT: This function runs for every nameplate, every frame
-  -- So we need to keep it efficient and avoid excessive debug messages
-
-  -- Quick early exit check - if no nameplate or health bar, nothing to color
-  if not unitFrame or not unitFrame.healthBar then
+  -- Define OnUpdate code
+  local onUpdateCode = [[
+-- OnUpdate
+function (self, unitId, unitFrame, envTable, modTable)
+  -- If the addon is disabled, do nothing
+  if not envTable.DM_ENABLED then
     return
   end
 
-  local unitName = unitFrame.namePlateUnitName or unitId or "Unknown"
+  -- Get the threat status for this unit
+  local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation("player", unitId)
 
-  -- Function to apply color based on border-only setting
-  local function applyColor(r, g, b, a, isThreatColor)
-    a = a or 1
+  -- Handle Force Threat Color mode (highest priority)
+  if envTable.DM_FORCE_THREAT_COLOR and status then
+    -- Get the appropriate player role
+    local isPlayerTank = GetSpecializationRole(GetSpecialization()) == "TANK"
 
-    -- Force threat color should always color the entire nameplate, regardless of border-only setting
-    if isThreatColor then
-      Plater.SetNameplateColor(unitFrame, r, g, b, a)
-      return
-    end
-
-    if envTable.DM_BORDER_ONLY then
-      -- Border-only mode: Set only the border color
-      if unitFrame.healthBar.border then
-        -- Set border color
-        unitFrame.healthBar.border:SetVertexColor(r, g, b, a)
-
-        -- Set custom border color flag
-        unitFrame.customBorderColor = {r, g, b, a}
-
-        -- Reset nameplate color to default (since we're only changing border)
-        Plater.RefreshNameplateColor(unitFrame)
-
-        -- Ensure border is visible - sometimes needed due to Plater updates
-        unitFrame.healthBar.border:Show()
+    -- Set appropriate colors for tanks and non-tanks
+    if isPlayerTank then
+      -- Player is a tank
+      if status == 3 then  -- securely tanking, green border
+        if envTable.DM_BORDER_ONLY then
+          Plater.SetBorderColor(unitFrame, 0, 1, 0)
+        else
+          Plater.SetNameplateColor(unitFrame, {0, 1, 0, 1})
+        end
+        return -- Skip other color logic
+      elseif status == 2 then  -- insecurely tanking, yellow border
+        if envTable.DM_BORDER_ONLY then
+          Plater.SetBorderColor(unitFrame, 1, 1, 0)
+        else
+          Plater.SetNameplateColor(unitFrame, {1, 1, 0, 1})
+        end
+        return -- Skip other color logic
+      elseif status == 1 or status == 0 then -- not tanking, red border
+        if envTable.DM_BORDER_ONLY then
+          Plater.SetBorderColor(unitFrame, 1, 0, 0)
+        else
+          Plater.SetNameplateColor(unitFrame, {1, 0, 0, 1})
+        end
+        return -- Skip other color logic
       end
     else
-      -- Normal mode: Set the entire nameplate color
-      -- Do not modify the border thickness here - let Plater handle it
-      Plater.SetNameplateColor(unitFrame, r, g, b, a)
-    end
-  end
-
-  -- First, check for threat coloring (has priority if enabled)
-  if envTable.DM_FORCE_THREAT_COLOR then
-    -- Get threat info directly
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
-
-    -- For tanks, high threat = good, for DPS/healer, high threat = bad
-    local threatIsActive = false
-
-    if isTank then
-      -- For tanks: color if NOT tanking and in combat
-      if unitFrame.InCombat and not isTanking then
-        -- Apply the no-aggro color for tanks
-        local color = Plater.db.profile.tank.colors.noaggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
-
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ NOT TANKING")
-        unitFrame.DM_Text:Show()
-
-        -- Stop any active flash animations when threat coloring is active
-        if unitFrame.DM_FlashAnimation then
-          unitFrame.DM_FlashAnimation:Stop()
+      -- Player is not a tank
+      if status == 3 or status == 2 or status == 1 then -- If we have aggro in any way, bright red
+        if envTable.DM_BORDER_ONLY then
+          Plater.SetBorderColor(unitFrame, 1, 0, 0)
+        else
+          Plater.SetNameplateColor(unitFrame, {1, 0, 0, 1})
         end
-
-        return -- Exit early, don't process DoTs
-      end
-    else
-      -- For DPS/Healers: color if tanking and in combat
-      if unitFrame.InCombat and isTanking then
-        -- Apply the aggro color for DPS
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
-
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ AGGRO")
-        unitFrame.DM_Text:Show()
-
-        -- Stop any active flash animations when threat coloring is active
-        if unitFrame.DM_FlashAnimation then
-          unitFrame.DM_FlashAnimation:Stop()
-        end
-
-        return -- Exit early, don't process DoTs
+        return -- Skip other color logic
       end
     end
   end
 
-  -- Debug text on the nameplate
-  unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-  unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
+  -- SIMPLE DOT FLASHING TEST CODE
+  if envTable.DM_FLASH_EXPIRING then
+    -- Cache to avoid checking too often
+    if not envTable.lastDoTCheck or (GetTime() - envTable.lastDoTCheck) > 0.2 then
+      envTable.lastDoTCheck = GetTime()
+      envTable.hasDoTsUnder8Seconds = false
 
-  -- Use the directly embedded configuration
-  local spells = envTable.DM_SPELLS or {}
-  local combos = envTable.DM_COMBOS or {}
+      -- Check for any player DoTs on the unit
+      for i = 1, 40 do
+        local name, icon, count, debuffType, duration, expirationTime, source, _, _, spellId = UnitDebuff(unitId, i)
+        if not name then break end
 
-  -- Variables for expiry flash
-  local expiringFound = false
-  local expiringDoTColor = nil
-  local leastRemainingTime = nil
-  local now = GetTime()
-  local threshold = envTable.DM_FLASH_THRESHOLD or 3.0
+        -- Only check player's DoTs
+        if source == "player" then
+          local timeRemaining = expirationTime - GetTime()
 
-  -- Check for combinations first (higher priority)
-  for i, combo in ipairs(combos) do
+          -- Debug output
+          if timeRemaining <= 8 then
+            print("|cFFFF9900DotMaster-DoTDebug: Found DoT " .. name .. " with " .. string.format("%.1f", timeRemaining) .. " seconds remaining|r")
+            envTable.hasDoTsUnder8Seconds = true
+            break
+          end
+        end
+      end
+    end
+
+    -- Flash if DoTs are under 8 seconds
+    if envTable.hasDoTsUnder8Seconds then
+      if not envTable.isFlashing then
+        print("|cFFFF9900DotMaster-DoTDebug: Starting flash for DoT under 8 seconds|r")
+        envTable.isFlashing = true
+        if envTable.DM_BORDER_ONLY then
+          -- Flash border using Plater's built-in function
+          Plater.FlashNameplateBorder(unitFrame, 0.5)
+
+          -- Continue flashing with a timer
+          if envTable.flashTimer then
+            envTable.flashTimer:Cancel()
+          end
+          envTable.flashTimer = C_Timer.NewTicker(0.7, function()
+            if unitFrame:IsShown() then
+              Plater.FlashNameplateBorder(unitFrame, 0.5)
+            else
+              envTable.flashTimer:Cancel()
+              envTable.flashTimer = nil
+            end
+          end)
+        else
+          -- Flash entire nameplate
+          if envTable.borderFlash then
+            envTable.borderFlash:Play()
+          end
+        end
+      end
+    else
+      if envTable.isFlashing then
+        print("|cFFFF9900DotMaster-DoTDebug: Stopping flash, no DoTs under 8 seconds|r")
+        envTable.isFlashing = false
+
+        -- Stop border flash timer
+        if envTable.flashTimer then
+          envTable.flashTimer:Cancel()
+          envTable.flashTimer = nil
+        end
+
+        -- Stop animation
+        if envTable.borderFlash then
+          envTable.borderFlash:Stop()
+        end
+      end
+    end
+  end
+
+  -- Check if any spells are active on the unit
+  local activeSpells, activeColor, highestPriority = {}, nil, -1
+
+  -- First check if any combinations are active
+  for i, combo in ipairs(envTable.DM_COMBOS) do
     if combo.enabled then
       local allSpellsPresent = true
-      local comboSpellDetails = {}
+      local spellsList = {}
 
+      -- Build a list of spells to check and verify all are present
       for _, spellID in ipairs(combo.spells) do
-        local hasAura, auraInfo = Plater.NameplateHasAura(unitFrame, spellID, true) -- Get aura details
-
-        if not hasAura then
-          allSpellsPresent = false
-          break
-        else
-          -- Store details for later use with expiry calculation
-          if auraInfo and auraInfo.expirationTime then
-            table.insert(comboSpellDetails, {
-              spellID = spellID,
-              name = auraInfo.name or "Unknown Spell",
-              expirationTime = auraInfo.expirationTime,
-              remainingTime = auraInfo.expirationTime - now
-            })
-          end
-        end
+        table.insert(spellsList, spellID)
       end
 
-      if allSpellsPresent then
-        -- Apply combination color
-        applyColor(combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1, false) -- false = not threat color
-        unitFrame.DM_Text:SetText("◆ " .. combo.name)
-        unitFrame.DM_Text:Show()
+      -- Check if all required spells are active (simple version - just checks if present)
+      if #spellsList > 0 then
+        for _, spellID in ipairs(spellsList) do
+          local isActive = false
 
-        -- Check for expiring auras in this combo if flash expiry is enabled
-        if envTable.DM_FLASH_EXPIRING and #comboSpellDetails > 0 then
-          -- Sort by remaining time (ascending)
-          table.sort(comboSpellDetails, function(a, b) return a.remainingTime < b.remainingTime end)
+          -- Check if the spell is active using UnitDebuff
+          for i = 1, 40 do
+            local name, _, _, _, _, _, source, _, _, debuffSpellID = UnitDebuff(unitId, i)
+            if not name then break end
 
-          -- Get the DoT with the shortest remaining time
-          local shortestDot = comboSpellDetails[1]
-
-          -- If it's below the threshold, mark it for flashing
-          if shortestDot.remainingTime <= threshold then
-            expiringFound = true
-            expiringDoTColor = {combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1}
-            leastRemainingTime = shortestDot.remainingTime
-          end
-        end
-
-        -- Break after finding a matching combo
-        break
-      end
-    end
-  end
-
-  -- If no combo was found, check for individual spells
-  if not expiringFound then
-    local foundActiveSpell = false
-
-    for i, spell in ipairs(spells) do
-      if spell.enabled and spell.spellID then
-        local hasAura, auraInfo = Plater.NameplateHasAura(unitFrame, spell.spellID, true) -- Get aura details
-
-        if hasAura then
-          -- Apply spell color if no combo was found
-          if not foundActiveSpell then
-            applyColor(spell.color[1], spell.color[2], spell.color[3], spell.color[4] or 1, false) -- false = not threat color
-            unitFrame.DM_Text:SetText(spell.name)
-            unitFrame.DM_Text:Show()
-            foundActiveSpell = true
-          end
-
-          -- Check for expiry if flash expiring is enabled
-          if envTable.DM_FLASH_EXPIRING and auraInfo and auraInfo.expirationTime then
-            local remainingTime = auraInfo.expirationTime - now
-
-            -- If this is the first expiring DoT or has less time than our current shortest
-            if remainingTime <= threshold and (not leastRemainingTime or remainingTime < leastRemainingTime) then
-              expiringFound = true
-              expiringDoTColor = {spell.color[1], spell.color[2], spell.color[3], spell.color[4] or 1}
-              leastRemainingTime = remainingTime
+            if debuffSpellID == spellID and source == "player" then
+              isActive = true
+              break
             end
           end
-        end
-      end
-    end
 
-    -- If no active spells were found, reset nameplate
-    if not foundActiveSpell then
-      if envTable.DM_BORDER_ONLY then
-        -- In border-only mode, let Plater manage default border colors
-        if unitFrame.healthBar.border then
-          unitFrame.customBorderColor = nil  -- Remove any custom border color flag
-          Plater.RefreshNameplateColor(unitFrame)  -- Let Plater handle default border coloring
+          if not isActive then
+            allSpellsPresent = false
+            break
+          end
         end
       else
-        -- In normal mode, reset the entire nameplate
-        Plater.RefreshNameplateColor(unitFrame)
-
-        -- Make sure we're not interfering with Plater's border thickness
-        if unitFrame.healthBar.border then
-          unitFrame.customBorderColor = nil
-        end
+        -- If combo has no spells defined, it can't be active
+        allSpellsPresent = false
       end
 
-      unitFrame.DM_Text:Hide()
+      -- If all spells in the combo are present and its priority is higher
+      if allSpellsPresent and combo.priority > highestPriority then
+        activeColor = combo.color
+        highestPriority = combo.priority
+      end
     end
   end
 
-  -- Handle expiry flash if needed
-  if envTable.DM_FLASH_EXPIRING and expiringFound and expiringDoTColor then
+  -- If no combination was active, check individual spells
+  if not activeColor then
+    for i, spell in ipairs(envTable.DM_SPELLS) do
+      if spell.enabled then
+        local isActive = false
+
+        -- Check if the spell is active using UnitDebuff
+        for i = 1, 40 do
+          local name, _, _, _, _, _, source, _, _, debuffSpellID = UnitDebuff(unitId, i)
+          if not name then break end
+
+          if debuffSpellID == spell.spellID and source == "player" then
+            isActive = true
+            break
+          end
+        end
+
+        -- If the spell is active and its priority is higher than what we've seen so far
+        if isActive and spell.priority > highestPriority then
+          activeColor = spell.color
+          highestPriority = spell.priority
+        end
+      end
+    end
+  end
+
+  -- Apply the appropriate color if any active spells were found
+  if activeColor then
+    -- Apply to border-only or full nameplate based on settings
     if envTable.DM_BORDER_ONLY then
-      -- For border-only mode, use Plater's border flash (throttled to avoid excessive flashing)
-      local currentTime = now
-      if not envTable.lastBorderFlashTime or (currentTime - envTable.lastBorderFlashTime) >= 0.3 then
-        Plater.FlashNameplateBorder(unitFrame, 0.25)
-        envTable.lastBorderFlashTime = currentTime
-      end
+      Plater.SetBorderColor(unitFrame, activeColor[1], activeColor[2], activeColor[3], activeColor[4] or 1)
     else
-      -- For full nameplate mode, use a flash animation
-      if not unitFrame.DM_FlashAnimation then
-        -- Create animation if it doesn't exist
-        unitFrame.DM_FlashAnimation = Plater.CreateFlash(unitFrame.healthBar, 0.35, 2,
-                                                         expiringDoTColor[1], expiringDoTColor[2], expiringDoTColor[3])
-      end
-
-      -- Ensure the animation uses the correct color
-      unitFrame.DM_FlashAnimation.FlashColor[1] = expiringDoTColor[1]
-      unitFrame.DM_FlashAnimation.FlashColor[2] = expiringDoTColor[2]
-      unitFrame.DM_FlashAnimation.FlashColor[3] = expiringDoTColor[3]
-
-      -- Play the animation
-      unitFrame.DM_FlashAnimation:Play()
+      Plater.SetNameplateColor(unitFrame, {activeColor[1], activeColor[2], activeColor[3], activeColor[4] or 1})
     end
   else
-    -- Stop flashing if no DoTs are expiring
-    if unitFrame.DM_FlashAnimation then
-      unitFrame.DM_FlashAnimation:Stop()
-    end
-  end
-end
-]]
-
-  local nameplatAddedCode = [[
-function(self, unitId, unitFrame, envTable, modTable)
-  -- When a nameplate is first added, check threat if enabled
-  if envTable.DM_FORCE_THREAT_COLOR and unitFrame and unitId then
-    -- Function to apply color based on border-only setting
-    local function applyColor(r, g, b, a, isThreatColor)
-      a = a or 1
-
-      -- Force threat color should always color the entire nameplate, regardless of border-only setting
-      if isThreatColor then
-        Plater.SetNameplateColor(unitFrame, r, g, b, a)
-        return
-      end
-
-      if envTable.DM_BORDER_ONLY then
-        -- Border-only mode: Set only the border color
-        if unitFrame.healthBar.border then
-          -- Set border color
-          unitFrame.healthBar.border:SetVertexColor(r, g, b, a)
-
-          -- Set custom border color flag
-          unitFrame.customBorderColor = {r, g, b, a}
-
-          -- Reset nameplate color to default (since we're only changing border)
-          Plater.RefreshNameplateColor(unitFrame)
-
-          -- Ensure border is visible - sometimes needed due to Plater updates
-          unitFrame.healthBar.border:Show()
-        end
-      else
-        -- Normal mode: Set the entire nameplate color
-        Plater.SetNameplateColor(unitFrame, r, g, b, a)
-      end
-    end
-
-    -- Get threat info directly
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
-
-    -- For tanks, high threat = good, for DPS/healer, high threat = bad
-    if isTank then
-      -- For tanks: color if NOT tanking and in combat
-      if unitFrame.InCombat and not isTanking then
-        -- Apply the no-aggro color for tanks
-        local color = Plater.db.profile.tank.colors.noaggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
-
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ NOT TANKING")
-        unitFrame.DM_Text:Show()
-      end
+    -- No active spells, restore normal appearance
+    if envTable.DM_BORDER_ONLY then
+      -- Reset to Plater's default border color handling
+      Plater.SetBorderColor(unitFrame)
     else
-      -- For DPS/Healers: color if tanking and in combat
-      if unitFrame.InCombat and isTanking then
-        -- Apply the aggro color for DPS
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
-
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ AGGRO")
-        unitFrame.DM_Text:Show()
-      end
+      -- Reset to Plater's default nameplate color handling
+      Plater.SetNameplateColor(unitFrame)
     end
   end
+end]]
 
-  -- Initialize flash animation storage
-  if envTable.DM_FLASH_EXPIRING then
-    unitFrame.DM_FlashAnimation = nil -- Will be created on demand in update
+  -- Define OnHide code
+  local onHideCode = [[
+-- OnHide
+function (self, unitId, unitFrame, envTable, modTable)
+  -- Clean up any flash animations if they exist
+  if envTable.flashTimer then
+    envTable.flashTimer:Cancel()
+    envTable.flashTimer = nil
   end
-end
-]]
+
+  if envTable.borderFlash then
+    envTable.borderFlash:Stop()
+  end
+
+  envTable.isFlashing = false
+end]]
+
+  -- Define Nameplate Added code
+  local nameplatAddedCode = [[
+-- Nameplate Added
+function (self, unitId, unitFrame, envTable, modTable)
+  -- Create flash animation for border if it doesn't exist yet
+  if not envTable.borderFlash then
+    -- Purple color as a default
+    local flashColor = {1, 0, 1, 1}
+    envTable.borderFlash = Plater.CreateFlash(unitFrame.healthBar, 0.5, 2, flashColor)
+  end
+
+  -- Initialize variables
+  envTable.isFlashing = false
+  envTable.lastDoTCheck = 0
+  envTable.hasDoTsUnder8Seconds = false
+end]]
 
   local data = Plater.db.profile.hook_data
   local modName = "bokmaster" -- Target the manually added mod
@@ -653,13 +573,15 @@ end
     -- Inject our hooks
     modEntry.Hooks = {
       ["Constructor"] = constructorCode,
-      ["Nameplate Updated"] = updateCode,
-      ["Nameplate Added"] = nameplatAddedCode
+      ["Nameplate Updated"] = onUpdateCode,
+      ["Nameplate Added"] = nameplatAddedCode,
+      ["OnHide"] = onHideCode
     }
     modEntry.HooksTemp = {
       ["Constructor"] = constructorCode,
-      ["Nameplate Updated"] = updateCode,
-      ["Nameplate Added"] = nameplatAddedCode
+      ["Nameplate Updated"] = onUpdateCode,
+      ["Nameplate Added"] = nameplatAddedCode,
+      ["OnHide"] = onHideCode
     }
     modEntry.LastHookEdited = "Constructor" -- Indicate which hook was last edited
 
@@ -704,39 +626,4 @@ end
     DM:PrintMessage(
       "|cFFFF0000Error: Plater mod 'bokmaster' not found. Please add it manually via Plater options and ensure the name is exactly 'bokmaster'.|r")
   end
-end
-
--- Debug function for testing expiry flash functionality
-function DM:DebugFlashExpiry(enable, threshold)
-  if not DM.API then
-    print("Error: DM.API not available. Cannot run debug test.")
-    return
-  end
-
-  -- Get current settings
-  local settings = DM.API:GetSettings()
-  if not settings then
-    print("Error: Failed to get current settings.")
-    return
-  end
-
-  -- Set debug values
-  local oldEnabled = settings.flashExpiring
-  local oldThreshold = settings.flashThresholdSeconds
-
-  -- Update with test values
-  settings.flashExpiring = enable ~= nil and enable or true
-  settings.flashThresholdSeconds = threshold ~= nil and threshold or 3.0
-
-  -- Save and apply changes
-  DM.API:SaveSettings(settings)
-  DM:SaveSettings() -- This will push to bokmaster
-
-  -- Print debug info
-  print("|cFF00FF00DotMaster Debug:|r Flash Expiry " ..
-    (settings.flashExpiring and "|cFF00FF00ENABLED|r" or "|cFFFF0000DISABLED|r") ..
-    " with threshold of |cFF00FFFF" .. settings.flashThresholdSeconds .. " seconds|r")
-  print("|cFF00FF00DotMaster Debug:|r Previous settings were: Enabled=" ..
-    (oldEnabled and "true" or "false") .. ", Threshold=" .. oldThreshold)
-  print("|cFF00FF00DotMaster Debug:|r Run |cFFFFFF00/reload|r to restore previous settings")
 end
