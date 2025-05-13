@@ -61,6 +61,17 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
         DM.originalBorderThickness = settings.borderThickness
         print("|cFFFF9900DotMaster-Debug: Initialized border thickness tracking on load: " ..
           (DM.originalBorderThickness or "nil") .. "|r")
+
+        -- Initialize bokmaster enabled state
+        if DotMasterDB.bokmasterEnabled ~= nil then
+          DM.bokmasterEnabled = DotMasterDB.bokmasterEnabled
+          print("|cFFFF9900DotMaster-Debug: Loaded bokmaster enabled state: " .. tostring(DM.bokmasterEnabled) .. "|r")
+        else
+          DM.bokmasterEnabled = settings.enabled
+          DotMasterDB.bokmasterEnabled = settings.enabled
+          print("|cFFFF9900DotMaster-Debug: Initialized bokmaster enabled state to: " ..
+          tostring(DM.bokmasterEnabled) .. "|r")
+        end
       end
     end
 

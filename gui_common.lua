@@ -119,7 +119,7 @@ function DM:CreateGUI()
     if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
       settings.borderThickness = DotMasterDB.settings.borderThickness
       print("|cFFFF9900DotMaster-Debug: Refreshed border thickness from DotMasterDB: " ..
-      settings.borderThickness .. "|r")
+        settings.borderThickness .. "|r")
     end
 
     -- Force push to bokmaster with current settings when window is closed by any means

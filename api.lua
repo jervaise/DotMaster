@@ -496,11 +496,34 @@ function DM.API:SaveSettings(settings)
   return true
 end
 
+function DM.API:EnableBokmaster(enabled)
+  -- Update bokmaster enabled state only
+  DM.bokmasterEnabled = enabled
+  if DotMasterDB then
+    DotMasterDB.bokmasterEnabled = enabled
+  end
+
+  -- Push changes to Plater immediately to update bokmaster status
+  if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+    C_Timer.After(0.1, function()
+      DM.ClassSpec:PushConfigToPlater()
+    end)
+  end
+
+  return true
+end
+
 function DM.API:EnableAddon(enabled)
   -- Update global enabled state
   DM.enabled = enabled
   if DotMasterDB then
     DotMasterDB.enabled = enabled
+  end
+
+  -- Update bokmaster enabled state to match
+  DM.bokmasterEnabled = enabled
+  if DotMasterDB then
+    DotMasterDB.bokmasterEnabled = enabled
   end
 
   -- Push changes to Plater immediately to update bokmaster status

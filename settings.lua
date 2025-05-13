@@ -21,6 +21,10 @@ function DM:SaveSettings()
   DotMasterDB.settings.forceColor = settings.forceColor
   DotMasterDB.settings.borderOnly = settings.borderOnly
 
+  -- Explicitly save bokmaster enabled state to ensure it persists after reload
+  -- This ensures the Plater integration state matches DotMaster's enabled state
+  DotMasterDB.bokmasterEnabled = settings.enabled
+
   -- Keep existing borderThickness if it exists to avoid overwriting with old value
   -- This handles cases where the UI has been updated but settings object hasn't
   if not DotMasterDB.settings.borderThickness then
@@ -102,6 +106,15 @@ function DM:LoadSettings()
 
   -- Set the enabled state in both API and core for compatibility
   DM.enabled = settings.enabled
+
+  -- Ensure the bokmaster enabled state is consistent with DotMaster's state
+  -- If bokmasterEnabled exists in the DB, use that value, otherwise match DotMaster's state
+  if DotMasterDB.bokmasterEnabled ~= nil then
+    DM.bokmasterEnabled = DotMasterDB.bokmasterEnabled
+  else
+    DM.bokmasterEnabled = settings.enabled
+    DotMasterDB.bokmasterEnabled = settings.enabled
+  end
 
   -- Save to API
   DM.API:SaveSettings(settings)
@@ -229,6 +242,14 @@ function DM:InitializeMainSlashCommands()
     elseif command == "push" or command == "bokmaster" then
       -- Force push to bokmaster
       DM:ForcePushToBokmaster()
+    elseif command == "bokmaster-on" or command == "bok-on" then
+      -- Enable just bokmaster
+      DM.API:EnableBokmaster(true)
+      DM:PrintMessage("bokmaster integration enabled")
+    elseif command == "bokmaster-off" or command == "bok-off" then
+      -- Disable just bokmaster
+      DM.API:EnableBokmaster(false)
+      DM:PrintMessage("bokmaster integration disabled")
     elseif command == "reset" then
       -- Create confirmation dialog
       if StaticPopupDialogs and StaticPopup_Show then
@@ -291,6 +312,8 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
         DM:PrintMessage("  /dm push - Force push settings to bokmaster")
+        DM:PrintMessage("  /dm bokmaster-on - Enable just bokmaster")
+        DM:PrintMessage("  /dm bokmaster-off - Disable just bokmaster")
         DM:PrintMessage("  /dm reset - Reset to default settings")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")

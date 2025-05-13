@@ -303,7 +303,16 @@ function DM.ClassSpec:PushConfigToPlater()
   Plater.db.profile.hook_data[bokMasterIndex].config = configToPush
 
   -- Enable or disable the mod based on DotMaster's enabled setting
-  local isEnabled = DotMasterDB.enabled
+  -- Check for explicit bokmaster enabled flag first, fall back to DotMaster's enabled state
+  local isEnabled
+  if DM.bokmasterEnabled ~= nil then
+    isEnabled = DM.bokmasterEnabled
+    DM:PrintMessage("Using explicit bokmaster enabled setting: " .. (isEnabled and "ENABLED" or "DISABLED"))
+  else
+    isEnabled = DotMasterDB.enabled
+    DM:PrintMessage("Using DotMaster enabled state for bokmaster: " .. (isEnabled and "ENABLED" or "DISABLED"))
+  end
+
   if isEnabled ~= nil then
     Plater.db.profile.hook_data[bokMasterIndex].Enabled = isEnabled
     DM:PrintMessage((isEnabled and "Enabled" or "Disabled") .. " bokmaster Plater mod")
