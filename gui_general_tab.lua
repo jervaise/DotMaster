@@ -80,13 +80,13 @@ function DM:CreateGeneralTab(parent)
   -- Create the two-column layout
   -- Left column for image
   local leftColumn = CreateFrame("Frame", nil, contentPanel)
-  leftColumn:SetSize(150, 150)
-  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 30, -50)
+  leftColumn:SetSize(140, 140)
+  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 10, -50)
 
   -- Right column for settings
   local rightColumn = CreateFrame("Frame", nil, contentPanel)
-  rightColumn:SetSize(240, 200)                                        -- Increased height to accommodate all controls
-  rightColumn:SetPoint("TOPRIGHT", contentPanel, "TOPRIGHT", -30, -70) -- Moved down by 20px
+  rightColumn:SetSize(240, 200)
+  rightColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 180, -70)
 
   -- Add panda image with a subtle border
   local imageBorder = CreateFrame("Frame", nil, leftColumn, "BackdropTemplate")
