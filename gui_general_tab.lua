@@ -108,7 +108,7 @@ function DM:CreateGeneralTab(parent)
   local profileButton = CreateFrame("Button", "DotMasterPlaterProfileButton", leftColumn, "UIPanelButtonTemplate")
   profileButton:SetSize(130, 22)
   profileButton:SetPoint("TOP", imageBorder, "BOTTOM", 0, -10)
-  profileButton:SetText("Get Plater Profile")
+  profileButton:SetText("Jervaise Plater Profile")
 
   -- Add class color to the button
   if classColor then
