@@ -319,32 +319,27 @@ function DM:CreateGeneralTab(parent)
   local extendColorsCheckbox = CreateStyledCheckbox("DotMasterExtendColorsCheckbox",
     rightColumn, borderHeaderContainer, -3, "Extend Plater Colors to Borders")
   extendColorsCheckbox:SetChecked(settings.extendPlaterColors)
+
+  -- Create a checkbox for border-only mode
+  local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
+    rightColumn, extendColorsCheckbox, -3, "Use Borders for DoT Tracking")
+  borderOnlyCheckbox:SetChecked(settings.borderOnly)
+
+  -- Set up click handlers for mutual exclusivity
   extendColorsCheckbox:SetScript("OnClick", function(self)
-    local extendColors = self:GetChecked()
+    -- Always enable this checkbox when clicked
+    self:SetChecked(true)
+    settings.extendPlaterColors = true
 
-    -- Update the local settings
-    settings.extendPlaterColors = extendColors
+    -- Disable the other checkbox
+    borderOnlyCheckbox:SetChecked(false)
+    settings.borderOnly = false
 
-    -- Force-save directly to DotMasterDB
+    -- Save settings
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
-      DotMasterDB.settings.extendPlaterColors = extendColors
-    end
-
-    -- If this option is enabled, disable the border-only option (they're mutually exclusive)
-    if extendColors and borderOnlyCheckbox then
-      borderOnlyCheckbox:SetChecked(false)
-      settings.borderOnly = false
-      if DotMasterDB and DotMasterDB.settings then
-        DotMasterDB.settings.borderOnly = false
-      end
-      -- Update UI state for the borderOnlyCheckbox
-      borderOnlyCheckbox:SetEnabled(not extendColors)
-    else
-      -- Re-enable the border-only checkbox
-      if borderOnlyCheckbox then
-        borderOnlyCheckbox:SetEnabled(true)
-      end
+      DotMasterDB.settings.extendPlaterColors = true
+      DotMasterDB.settings.borderOnly = false
     end
 
     -- AutoSave for serialization
@@ -357,10 +352,32 @@ function DM:CreateGeneralTab(parent)
     end
   end)
 
-  -- Create a checkbox for border-only mode
-  local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    rightColumn, extendColorsCheckbox, -3, "Use Borders for DoT Tracking")
-  borderOnlyCheckbox:SetChecked(settings.borderOnly)
+  -- Set up border checkbox click handler
+  borderOnlyCheckbox:SetScript("OnClick", function(self)
+    -- Always enable this checkbox when clicked
+    self:SetChecked(true)
+    settings.borderOnly = true
+
+    -- Disable the other checkbox
+    extendColorsCheckbox:SetChecked(false)
+    settings.extendPlaterColors = false
+
+    -- Save settings
+    if DotMasterDB ~= nil then
+      if not DotMasterDB.settings then DotMasterDB.settings = {} end
+      DotMasterDB.settings.borderOnly = true
+      DotMasterDB.settings.extendPlaterColors = false
+    end
+
+    -- AutoSave for serialization
+    DM:AutoSave()
+
+    -- Reinstall Plater mod to ensure changes take effect
+    if settings.enabled and Plater and DM.PlaterIntegration then
+      print("DotMaster: Reinstalling Plater mod due to Border Only setting change")
+      DM.PlaterIntegration:InstallPlaterMod()
+    end
+  end)
 
   -- Border thickness control
   if settings.borderThickness == nil then settings.borderThickness = 2 end
@@ -438,57 +455,6 @@ function DM:CreateGeneralTab(parent)
       DM:AutoSave()
     end
   end)
-
-  -- Now set up the border checkbox handler AFTER the thickness container is fully created
-  borderOnlyCheckbox:SetScript("OnClick", function(self)
-    local borderOnly = self:GetChecked()
-
-    -- Update local settings
-    settings.borderOnly = borderOnly
-
-    -- Force-save directly to DotMasterDB
-    if DotMasterDB ~= nil then
-      if not DotMasterDB.settings then DotMasterDB.settings = {} end
-      DotMasterDB.settings.borderOnly = borderOnly
-    end
-
-    -- If this option is enabled, disable the extend colors option (they're mutually exclusive)
-    if borderOnly and extendColorsCheckbox then
-      extendColorsCheckbox:SetChecked(false)
-      settings.extendPlaterColors = false
-      if DotMasterDB and DotMasterDB.settings then
-        DotMasterDB.settings.extendPlaterColors = false
-      end
-      -- Update UI state for the extendColorsCheckbox
-      extendColorsCheckbox:SetEnabled(not borderOnly)
-    else
-      -- Re-enable the extend colors checkbox
-      if extendColorsCheckbox then
-        extendColorsCheckbox:SetEnabled(true)
-      end
-    end
-
-    -- AutoSave for serialization
-    DM:AutoSave()
-
-    -- Reinstall Plater mod to ensure changes take effect
-    if settings.enabled and Plater and DM.PlaterIntegration then
-      print("DotMaster: Reinstalling Plater mod due to Border Only setting change")
-      DM.PlaterIntegration:InstallPlaterMod()
-    end
-
-    -- NOTE: Do NOT show reload popup immediately
-    -- Let the popup appear only when the GUI is closed
-    -- This matches the behavior of the border thickness changes
-  end)
-
-  -- Apply mutual exclusivity on initial load
-  if settings.borderOnly and extendColorsCheckbox then
-    extendColorsCheckbox:SetEnabled(not settings.borderOnly)
-  end
-  if settings.extendPlaterColors and borderOnlyCheckbox then
-    borderOnlyCheckbox:SetEnabled(not settings.extendPlaterColors)
-  end
 
   -- Register event to fix checkbox text
   local eventFrame = CreateFrame("Frame")
