@@ -104,6 +104,94 @@ function DM:CreateGeneralTab(parent)
   pandaImage:SetPoint("CENTER")
   pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
+  -- Add "Get Jervaise Plater Profile" button below the bear image
+  local profileButton = CreateFrame("Button", "DotMasterPlaterProfileButton", leftColumn, "UIPanelButtonTemplate")
+  profileButton:SetSize(130, 22)
+  profileButton:SetPoint("TOP", imageBorder, "BOTTOM", 0, -10)
+  profileButton:SetText("Get Plater Profile")
+
+  -- Add class color to the button
+  if classColor then
+    local normalTexture = profileButton:GetNormalTexture()
+    if normalTexture then
+      normalTexture:SetVertexColor(
+        classColor.r * 0.7 + 0.3,
+        classColor.g * 0.7 + 0.3,
+        classColor.b * 0.7 + 0.3
+      )
+    end
+  end
+
+  -- Create Profile URL Popup function
+  local function ShowProfileURLPopup()
+    -- Create or get the popup frame
+    if not DM.PlaterProfilePopup then
+      local popup = CreateFrame("Frame", "DotMasterPlaterProfilePopup", UIParent, "BackdropTemplate")
+      popup:SetSize(400, 150)
+      popup:SetPoint("CENTER")
+      popup:SetFrameStrata("DIALOG")
+      popup:SetMovable(true)
+      popup:EnableMouse(true)
+      popup:RegisterForDrag("LeftButton")
+      popup:SetScript("OnDragStart", popup.StartMoving)
+      popup:SetScript("OnDragStop", popup.StopMovingOrSizing)
+      popup:Hide()
+
+      -- Add backdrop
+      popup:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 },
+      })
+      popup:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+      popup:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
+      -- Title
+      local title = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+      title:SetPoint("TOP", 0, -16)
+      title:SetText("Jervaise Plater Profile")
+      title:SetTextColor(1, 0.82, 0) -- WoW Gold
+
+      -- Instructions
+      local instructions = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      instructions:SetPoint("TOP", title, "BOTTOM", 0, -10)
+      instructions:SetText("Copy the URL below to import the recommended Plater profile:")
+      instructions:SetTextColor(0.9, 0.9, 0.9)
+
+      -- Create editbox for URL
+      local editBox = CreateFrame("EditBox", "DotMasterProfileURLEditBox", popup, "InputBoxTemplate")
+      editBox:SetSize(350, 20)
+      editBox:SetPoint("TOP", instructions, "BOTTOM", 0, -15)
+      editBox:SetAutoFocus(false)
+      editBox:SetText("https://wago.io/wYmUzrWb5")
+      editBox:SetScript("OnEscapePressed", function() popup:Hide() end)
+      editBox:SetScript("OnEnterPressed", function() editBox:HighlightText() end)
+      editBox:SetScript("OnShow", function()
+        C_Timer.After(0.1, function() editBox:HighlightText() end)
+      end)
+
+      -- Close button
+      local closeButton = CreateFrame("Button", nil, popup, "UIPanelCloseButton")
+      closeButton:SetPoint("TOPRIGHT", -3, -3)
+      closeButton:SetSize(26, 26)
+
+      -- Done button
+      local doneButton = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
+      doneButton:SetSize(80, 22)
+      doneButton:SetPoint("BOTTOM", 0, 15)
+      doneButton:SetText("Done")
+      doneButton:SetScript("OnClick", function() popup:Hide() end)
+
+      DM.PlaterProfilePopup = popup
+    end
+
+    DM.PlaterProfilePopup:Show()
+  end
+
+  -- Set the button's click handler
+  profileButton:SetScript("OnClick", ShowProfileURLPopup)
+
   -- Get settings from API
   local settings = DM.API:GetSettings()
 

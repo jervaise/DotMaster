@@ -171,6 +171,222 @@ function DM:CreateGUI()
   closeButton:SetPoint("TOPRIGHT", -3, -3)
   closeButton:SetSize(26, 26)
 
+  -- Help Button (Question Mark)
+  local helpButton = CreateFrame("Button", nil, frame)
+  helpButton:SetSize(20, 20)
+  helpButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", -2, 0)
+
+  -- Create the texture for the question mark icon
+  local helpIcon = helpButton:CreateTexture(nil, "ARTWORK")
+  helpIcon:SetAllPoints()
+  helpIcon:SetTexture("Interface\\FriendsFrame\\InformationIcon")
+
+  -- Add hover effect
+  helpButton:SetHighlightTexture("Interface\\FriendsFrame\\InformationIcon", "ADD")
+
+  -- Help window creation function
+  local function CreateHelpWindow()
+    -- Create the help window frame
+    local helpFrame = CreateFrame("Frame", "DotMasterHelpFrame", UIParent, "BackdropTemplate")
+    helpFrame:SetSize(500, 600)
+    helpFrame:SetPoint("TOPLEFT", frame, "TOPRIGHT", 5, 0)
+    helpFrame:SetFrameStrata("HIGH")
+    helpFrame:SetMovable(true)
+    helpFrame:EnableMouse(true)
+    helpFrame:RegisterForDrag("LeftButton")
+    helpFrame:SetScript("OnDragStart", helpFrame.StartMoving)
+    helpFrame:SetScript("OnDragStop", helpFrame.StopMovingOrSizing)
+    helpFrame:Hide()
+
+    -- Register with UI special frames to enable Escape key closing
+    tinsert(UISpecialFrames, "DotMasterHelpFrame")
+
+    -- Add a backdrop
+    helpFrame:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 16,
+      insets = { left = 4, right = 4, top = 4, bottom = 4 },
+    })
+    helpFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+    helpFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
+    -- Title
+    local title = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -16)
+    -- Use class color for the title text
+    title:SetText(string.format("|cFF%02x%02x%02xDotMaster Guide|r",
+      classColor.r * 255,
+      classColor.g * 255,
+      classColor.b * 255))
+
+    -- Close Button
+    local helpCloseButton = CreateFrame("Button", nil, helpFrame, "UIPanelCloseButton")
+    helpCloseButton:SetPoint("TOPRIGHT", -3, -3)
+    helpCloseButton:SetSize(26, 26)
+
+    -- Create a scrollable content frame
+    local scrollFrame = CreateFrame("ScrollFrame", "DotMasterHelpScrollFrame", helpFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 20, -45)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -36, 20)
+
+    local content = CreateFrame("Frame", "DotMasterHelpContent", scrollFrame)
+    content:SetSize(450, 1200) -- Make it taller than the scroll frame to enable scrolling
+    scrollFrame:SetScrollChild(content)
+
+    -- Helper function to create section headers
+    local function CreateSection(title, yOffset)
+      local header = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+      header:SetPoint("TOPLEFT", 10, yOffset)
+      header:SetText(title)
+      header:SetTextColor(1, 0.82, 0) -- WoW Gold
+
+      local line = content:CreateTexture(nil, "ARTWORK")
+      line:SetHeight(1)
+      line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
+      line:SetPoint("RIGHT", content, "RIGHT", -10, 0)
+      line:SetColorTexture(0.6, 0.6, 0.6, 0.8)
+
+      return header:GetStringHeight() + 4 -- Return height used by header + line
+    end
+
+    -- Helper function to create content text
+    local function CreateText(text, yOffset, width)
+      local textObj = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      textObj:SetPoint("TOPLEFT", 10, yOffset)
+      textObj:SetWidth(width or 430)
+      textObj:SetJustifyH("LEFT")
+      textObj:SetText(text)
+      textObj:SetTextColor(0.9, 0.9, 0.9)
+
+      return textObj:GetStringHeight() + 10 -- Return height + padding
+    end
+
+    -- Helper function to create feature explanation
+    local function CreateFeature(title, description, yOffset)
+      local featureTitle = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      featureTitle:SetPoint("TOPLEFT", 15, yOffset)
+      featureTitle:SetText("• " .. title)
+      featureTitle:SetTextColor(0.8, 0.95, 1) -- Light blue for feature names
+
+      local featureDesc = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      featureDesc:SetPoint("TOPLEFT", 25, yOffset - featureTitle:GetStringHeight() - 2)
+      featureDesc:SetWidth(415)
+      featureDesc:SetJustifyH("LEFT")
+      featureDesc:SetText(description)
+      featureDesc:SetTextColor(0.9, 0.9, 0.9)
+
+      return featureTitle:GetStringHeight() + featureDesc:GetStringHeight() + 15
+    end
+
+    -- Fill content with DotMaster guide
+    local yOffset = 0
+
+    -- Introduction
+    yOffset = yOffset - CreateSection("What is DotMaster?", yOffset)
+    yOffset = yOffset -
+    CreateText(
+    "DotMaster is an addon that colors enemy nameplates based on the damage-over-time (DoT) effects you apply to them. It works with any class and specialization, making it easier to track which targets have your DoTs applied and which ones need attention.",
+      yOffset)
+
+    -- Overview Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("How DotMaster Works", yOffset)
+    yOffset = yOffset -
+    CreateText(
+    "DotMaster integrates with Plater Nameplates to provide dynamic visual tracking of DoTs through nameplate colors, borders, or both. When you apply a DoT spell to a target, its nameplate or border will change color based on your configuration.",
+      yOffset)
+
+    -- Features Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Key Features", yOffset)
+
+    -- Feature list with explanations
+    yOffset = yOffset -
+    CreateFeature("DoT Tracking",
+      "Colors enemy nameplates based on the DoTs you've applied to them. Track individual DoTs or combinations for more complex rotations.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Expiry Flash",
+      "Nameplates can flash when your DoTs are about to expire, helping you time re-applications perfectly.", yOffset)
+    yOffset = yOffset -
+    CreateFeature("Border Only Mode",
+      "Instead of coloring the entire nameplate, you can opt to only color the border, preserving other nameplate information.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Extend Plater Colors", "Apply Plater's custom NPC colors to nameplate borders for better visibility.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Force Threat Color", "Prioritize threat coloring over DoT coloring for better tanking awareness.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Border Thickness", "Customize the nameplate border thickness to your preference.", yOffset)
+
+    -- Settings Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Settings Explained", yOffset)
+
+    yOffset = yOffset -
+    CreateFeature("General Settings",
+      "Control basic addon functionality, including enabling/disabling the addon, showing the minimap icon, and determining how threat and DoT colors interact.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Tracked Spells",
+      "Add specific spells to track. Each spell can have its own custom color. You can add spells directly from your spellbook or by spell ID.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Combinations",
+      "Create color rules for specific combinations of DoTs. When all DoTs in a combination are active on a target, it will use the combination color instead of individual DoT colors.",
+      yOffset)
+    yOffset = yOffset -
+    CreateFeature("Border Logic",
+      "Control whether DoT colors affect the entire nameplate or just the border. You can also customize the border thickness and extend Plater's NPC colors to borders.",
+      yOffset)
+
+    -- Usage Tips
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Usage Tips", yOffset)
+
+    yOffset = yOffset -
+    CreateText("• Border-only mode is useful when you want to preserve health bar colors but still track DoTs", yOffset)
+    yOffset = yOffset -
+    CreateText(
+    "• For multi-DoT specializations, create combinations for your core DoT sets to easily track targets with all DoTs applied",
+      yOffset)
+    yOffset = yOffset -
+    CreateText("• Extend Plater Colors works only for NPCs with custom colors set in Plater's NPC Colors & Names tab",
+      yOffset)
+    yOffset = yOffset -
+    CreateText("• When adjusting border thickness, you'll need to reload your UI for the changes to apply fully", yOffset)
+    yOffset = yOffset -
+    CreateText(
+    "• If DotMaster Integration is not found in Plater, use the integration button at the bottom of the window", yOffset)
+
+    -- Additional Resources
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Additional Resources", yOffset)
+    yOffset = yOffset -
+    CreateText(
+    "For additional tips, configurations, and Plater profiles optimized for use with DotMaster, check the recommended Plater profile accessible through the 'Get Jervaise Plater Profile' button in the General tab.",
+      yOffset)
+
+    return helpFrame
+  end
+
+  -- Create the help window when the button is clicked
+  local helpWindow = nil
+  helpButton:SetScript("OnClick", function()
+    if not helpWindow then
+      helpWindow = CreateHelpWindow()
+    end
+
+    if helpWindow:IsShown() then
+      helpWindow:Hide()
+    else
+      helpWindow:Show()
+    end
+  end)
+
   -- Add force push on close
   closeButton:HookScript("OnClick", function()
     -- Force push settings to DotMaster Integration when closing
