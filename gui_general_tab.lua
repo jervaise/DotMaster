@@ -327,19 +327,25 @@ function DM:CreateGeneralTab(parent)
 
   -- Set up click handlers for mutual exclusivity
   extendColorsCheckbox:SetScript("OnClick", function(self)
-    -- Always enable this checkbox when clicked
-    self:SetChecked(true)
-    settings.extendPlaterColors = true
+    -- Get the checked state
+    local extendColors = self:GetChecked()
 
-    -- Disable the other checkbox
-    borderOnlyCheckbox:SetChecked(false)
-    settings.borderOnly = false
+    -- Update settings
+    settings.extendPlaterColors = extendColors
 
     -- Save settings
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
-      DotMasterDB.settings.extendPlaterColors = true
-      DotMasterDB.settings.borderOnly = false
+      DotMasterDB.settings.extendPlaterColors = extendColors
+    end
+
+    -- If this option is enabled, disable the other option (they're mutually exclusive)
+    if extendColors and borderOnlyCheckbox then
+      borderOnlyCheckbox:SetChecked(false)
+      settings.borderOnly = false
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.borderOnly = false
+      end
     end
 
     -- AutoSave for serialization
@@ -354,19 +360,25 @@ function DM:CreateGeneralTab(parent)
 
   -- Set up border checkbox click handler
   borderOnlyCheckbox:SetScript("OnClick", function(self)
-    -- Always enable this checkbox when clicked
-    self:SetChecked(true)
-    settings.borderOnly = true
+    -- Get the checked state
+    local borderOnly = self:GetChecked()
 
-    -- Disable the other checkbox
-    extendColorsCheckbox:SetChecked(false)
-    settings.extendPlaterColors = false
+    -- Update settings
+    settings.borderOnly = borderOnly
 
     -- Save settings
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
-      DotMasterDB.settings.borderOnly = true
-      DotMasterDB.settings.extendPlaterColors = false
+      DotMasterDB.settings.borderOnly = borderOnly
+    end
+
+    -- If this option is enabled, disable the other option (they're mutually exclusive)
+    if borderOnly and extendColorsCheckbox then
+      extendColorsCheckbox:SetChecked(false)
+      settings.extendPlaterColors = false
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.extendPlaterColors = false
+      end
     end
 
     -- AutoSave for serialization
