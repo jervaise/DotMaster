@@ -13,16 +13,28 @@ function DM:InstallPlaterMod()
 
   local Plater = _G["Plater"]
   if not (Plater and Plater.db and Plater.db.profile) then
-    DM:PrintMessage("Plater not found or incompatible")
+    if not self.platerNotFoundErrorShown then
+      DM:PrintMessage("Plater not found or incompatible")
+      self.platerNotFoundErrorShown = true
+    end
     return
   end
+
+  -- Reset error flag if Plater was found
+  self.platerNotFoundErrorShown = nil
 
   -- Ensure hook_data table exists
   if not Plater.db.profile.hook_data then
     -- If hook_data doesn't exist, Plater isn't fully ready or has an issue.
-    DM:PrintMessage("Error: Plater hook data not found. Cannot update 'DotMaster Integration' mod.")
+    if not self.platerHookDataErrorShown then
+      DM:PrintMessage("Error: Plater hook data not found. Cannot update 'DotMaster Integration' mod.")
+      self.platerHookDataErrorShown = true
+    end
     return
   end
+
+  -- Reset error flag if hook_data was found
+  self.platerHookDataErrorShown = nil
 
   -- Get spells and combinations from DotMaster API
   local trackedSpells = DM.API:GetTrackedSpells() or {}
@@ -527,7 +539,10 @@ end
     -- Update the mod in the Plater hook DB
   else
     -- If the 'DotMaster Integration' mod was NOT found, print an error and do nothing else
-    DM:PrintMessage(
-      "|cFFFF0000Error: Plater mod 'DotMaster Integration' not found. Please add it manually via Plater options and ensure the name is exactly 'DotMaster Integration'.|r")
+    if not self.dotMasterIntegrationNotFoundErrorShown then
+      DM:PrintMessage(
+        "|cFFFF0000Error: Plater mod 'DotMaster Integration' not found. Please add it manually via Plater options and ensure the name is exactly 'DotMaster Integration'.|r")
+      self.dotMasterIntegrationNotFoundErrorShown = true
+    end
   end
 end

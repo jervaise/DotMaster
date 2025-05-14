@@ -176,16 +176,28 @@ function DM.ClassSpec:PushConfigToPlater()
   -- Find the DotMaster Integration mod index
   local dotMasterIntegrationIndex = self:GetDotMasterIntegrationIndex()
   if not dotMasterIntegrationIndex then
-    DM:PrintMessage("Error: 'DotMaster Integration' mod not found in Plater. Please ensure it's installed correctly.")
+    -- Add a static flag to prevent showing the error message multiple times
+    if not self.errorMessageShown then
+      DM:PrintMessage("Error: 'DotMaster Integration' mod not found in Plater. Please ensure it's installed correctly.")
+      self.errorMessageShown = true
+    end
     return
   end
 
   -- Get Plater reference
   local Plater = _G["Plater"]
   if not Plater then
-    DM:PrintMessage("Error: Plater not found.")
+    -- Add a static flag to prevent showing the error message multiple times
+    if not self.platerErrorMessageShown then
+      DM:PrintMessage("Error: Plater not found.")
+      self.platerErrorMessageShown = true
+    end
     return
   end
+
+  -- Reset error flags if we got this far
+  self.errorMessageShown = nil
+  self.platerErrorMessageShown = nil
 
   -- Push configuration to DotMaster Integration
   -- Only include spells and combos for the current class and spec

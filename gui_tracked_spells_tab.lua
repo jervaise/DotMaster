@@ -260,7 +260,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
   end)
 end
 
--- Helper to group tracked spells by Class -> ID
+-- Helper to group tracked spells by Class -> Spec -> ID
 function GUI:GetGroupedTrackedSpells()
   local grouped = {}
 
@@ -280,6 +280,9 @@ function GUI:GetGroupedTrackedSpells()
     end
   end
 
+  -- Get current player class
+  local currentClass = select(2, UnitClass("player"))
+
   -- Check if database is empty
   local isEmpty = true
   for _ in pairs(DM.dmspellsdb) do
@@ -294,9 +297,9 @@ function GUI:GetGroupedTrackedSpells()
 
   local count = 0
   for idStr, data in pairs(DM.dmspellsdb) do
-    -- Only include tracked spells (using tonumber for robustness)
+    -- Only include tracked spells (using tonumber for robustness) AND only for current class
     local tracked = tonumber(data.tracked)
-    if tracked == 1 then
+    if tracked == 1 and (data.wowclass == currentClass or data.wowclass == "UNKNOWN") then
       -- Convert string ID to number if needed
       local id = tonumber(idStr)
       count = count + 1
@@ -306,9 +309,20 @@ function GUI:GetGroupedTrackedSpells()
         -- Skip this entry
       else
         local className = data.wowclass or "UNKNOWN"
+        local specName = data.wowspec or "General"
 
-        if not grouped[className] then grouped[className] = {} end
-        grouped[className][id] = data
+        -- Initialize class in the table if needed
+        if not grouped[className] then
+          grouped[className] = {}
+        end
+
+        -- Initialize spec in the class table if needed
+        if not grouped[className][specName] then
+          grouped[className][specName] = {}
+        end
+
+        -- Add the spell to the appropriate spec group
+        grouped[className][specName][id] = data
       end
     end
   end
@@ -356,18 +370,22 @@ function GUI:RefreshTrackedSpellTabList()
       child:SetParent(nil)
     end
   end
-  wipe(GUI.trackedClassFrames)
+  wipe(GUI.trackedSpecFrames or {})
+  GUI.trackedSpecFrames = {}
 
   -- Get tracked spells
   local groupedData = self:GetGroupedTrackedSpells()
   local hasTrackedSpells = false
 
   -- Check if we have any tracked spells
-  for className, classSpells in pairs(groupedData) do
-    if next(classSpells) then
-      hasTrackedSpells = true
-      break
+  for className, specTable in pairs(groupedData) do
+    for specName, specSpells in pairs(specTable) do
+      if next(specSpells) then
+        hasTrackedSpells = true
+        break
+      end
     end
+    if hasTrackedSpells then break end
   end
 
   -- Handle friendly message
@@ -395,150 +413,264 @@ function GUI:RefreshTrackedSpellTabList()
   -- Set scroll child height to ensure visibility
   scrollChild:SetHeight(400)
 
-  local classCount, spellCount = 0, 0
-  for className, classData in pairs(groupedData) do
-    classCount = classCount + 1
-    for _ in pairs(classData) do
-      spellCount = spellCount + 1
-    end
-  end
-  DM:DatabaseDebug(string.format("Tracked spells structure: %d classes, %d spells", classCount, spellCount))
-
-  if spellCount == 0 then
-    -- Create a "no spells found" message
-    local noSpellsText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    noSpellsText:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
-    noSpellsText:SetText("No tracked spells found. Use 'Find My Dots' in the Database tab to add spells.")
-    noSpellsText:SetTextColor(1, 0.82, 0)
-    scrollChild:SetHeight(200) -- Ensure there's space for the message
-    scrollChild:Show()
-    return
-  end
-
-  local yOffset = 2 -- Reduced from 5 to 2 for tighter spacing
+  local yOffset = 2           -- Reduced from 5 to 2 for tighter spacing
   local entryHeight = 40
-  local headerHeight = 40
+  local specHeaderHeight = 40 -- Same height as old class headers
   local spacing = 3
   -- Use full scrollChild width for rows now
   local effectiveWidth = scrollChild:GetWidth() -- 430px
 
   -- Get player class token
-  local _, playerClassToken = UnitClass("player")
+  local currentClass = select(2, UnitClass("player"))
 
-  -- Sort Classes (Player class first, then UNKNOWN last, then alphabetically)
-  local sortedClasses = {}
-  for className in pairs(groupedData) do table.insert(sortedClasses, className) end
-  table.sort(sortedClasses, function(a, b)
-    if a == playerClassToken and b ~= playerClassToken then return true end
-    if b == playerClassToken and a ~= playerClassToken then return false end
-    if a == "UNKNOWN" then return false end
-    if b == "UNKNOWN" then return true end
-    return a < b
+  -- Get all specs from all classes and flatten them into a single list
+  local allSpecs = {}
+
+  for className, specTable in pairs(groupedData) do
+    for specName, specSpells in pairs(specTable) do
+      -- Only add if it has spells
+      if next(specSpells) then
+        table.insert(allSpecs, {
+          className = className,
+          specName = specName,
+          spells = specSpells
+        })
+      end
+    end
+  end
+
+  -- Sort specs alphabetically
+  table.sort(allSpecs, function(a, b)
+    if a.className == b.className then
+      return a.specName < b.specName
+    end
+    return a.className < b.className
   end)
 
-  -- Create expand/collapse indicators
-  local function CreateIndicator(parent, expanded)
-    local indicator = parent:CreateTexture(nil, "OVERLAY")
-    indicator:SetSize(16, 16)
-    indicator:SetPoint("RIGHT", parent, "RIGHT", -10, 0)
-    indicator:SetTexture(expanded and "Interface\\Buttons\\UI-MinusButton-Up" or "Interface\\Buttons\\UI-PlusButton-Up")
-    return indicator
-  end
+  -- Process each spec
+  for _, specInfo in ipairs(allSpecs) do
+    local className = specInfo.className
+    local specName = specInfo.specName
+    local specSpells = specInfo.spells
 
-  -- Highlight on mouseover
-  local function AddMouseoverHighlight(frame)
-    frame:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-    local highlight = frame:GetHighlightTexture()
-    highlight:SetAlpha(0.7)
-  end
+    -- Create a spec header
+    local specFrame = CreateFrame("Button", nil, scrollChild)
+    specFrame:SetSize(effectiveWidth, specHeaderHeight)
+    specFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset) -- No indentation
 
-  for _, className in ipairs(sortedClasses) do
-    local classData = groupedData[className]
-    local classFrame = CreateFrame("Button", nil, scrollChild)
-    classFrame:SetSize(effectiveWidth, headerHeight)
-    -- Position at scrollChild's top-left corner (0 offset)
-    classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
-    classFrame.isExpanded = (className == playerClassToken)
-    classFrame.spellFrames = {}
-    classFrame:Show()
-    GUI.trackedClassFrames[className] = classFrame
+    -- Store in tracking tables
+    GUI.trackedSpecFrames[className .. "_" .. specName] = specFrame
+    specFrame.specName = specName
+    specFrame.className = className
+    specFrame.spellFrames = {}
+    specFrame.isExpanded = true -- Default to expanded
 
-    AddMouseoverHighlight(classFrame)
+    -- Background and border
+    local specBg = specFrame:CreateTexture(nil, "BACKGROUND")
+    specBg:SetAllPoints()
 
-    -- Background remains the same
-    local bg = classFrame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    -- bg:SetColorTexture(0, 0, 0, 0.8) -- Original Black Fallback
-    if DM.classColors[className] then
-      local color = DM.classColors[className]
-      bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8) -- Dimmed class color
-    else
-      bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)                               -- Neutral Dark Grey Fallback
-    end
+    -- Use class colors for spec header background
+    local classColor = DM.classColors and DM.classColors[className] or { r = 0.2, g = 0.2, b = 0.2 }
+    specBg:SetColorTexture(classColor.r, classColor.g, classColor.b, 0.3)
 
-    -- Define layout constants (updated for swatch size)
-    local padding = GUI.layout.padding or 5 -- Access layout via GUI table
-    local checkboxWidth = 20
-    local iconSize = 25
-    local colorSwatchSize = 24 -- Swatch size from gui_colorpicker.lua
-    local arrowSize = 20
-    local untrackWidth = 70    -- Match layout width
-    local untrackHeight = 25
+    -- Create spec icon
+    local icon = specFrame:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(32, 32)
+    icon:SetPoint("LEFT", specFrame, "LEFT", 8, 0)
 
-    -- 1. Collapse/Expand Indicator (Aligned with Checkbox)
-    local indicator = classFrame:CreateTexture(nil, "OVERLAY")
-    indicator:SetSize(16, 16)
-    -- Align left edge like the checkbox (padding from frame start)
-    indicator:SetPoint("LEFT", classFrame, "LEFT", padding, 0)
-    indicator:SetTexture(classFrame.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
-      "Interface\\Buttons\\UI-PlusButton-Up")
-    classFrame.indicator = indicator -- Store reference
+    -- Try to get the spec icon
+    local iconPath = "Interface\\Icons\\INV_Misc_QuestionMark" -- Default icon
+    local originalSpecNameFromDB = specName                    -- Preserve the original specName from the database
+    local specID = tonumber(specName)                          -- Try direct conversion first
 
-    -- 3. Tracked Spell Count (Centered with Untrack Button)
-    local spellCountText = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    spellCountText:SetPoint("CENTER", classFrame, "RIGHT", -(padding + untrackWidth / 2), 0) -- Center with untrack button
-    spellCountText:SetJustifyH("CENTER")
-    local spellCount = 0
-    for _ in pairs(classData or {}) do spellCount = spellCount + 1 end
-    spellCountText:SetText(string.format("(%d Spells)", spellCount))
-
-    -- 2. Class Name (Between Indicator and Count Text, adjusted for proper spacing)
-    local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    text:SetPoint("LEFT", classFrame, "LEFT", padding + checkboxWidth + padding, 0)
-    text:SetPoint("RIGHT", spellCountText, "LEFT", -padding, 0)
-    local displayName = DM:GetClassDisplayName(className) or className
-    text:SetText(displayName)
-    text:SetJustifyH("LEFT")
-    if DM.classColors[className] then
-      local color = DM.classColors[className]
-      text:SetTextColor(color.r, color.g, color.b)
-    end
-
-    yOffset = yOffset + headerHeight + spacing
-
-    -- Priority reassignment logic (Fixing the debug message syntax error)
-    local spellsInClassByPriority = {}
-    for id, spellData in pairs(classData) do
-      if not spellData.priority then
-        DM.dmspellsdb[id].priority = 999
-        DM:DatabaseDebug(string.format("Assigned default priority 999 to spell %d", id))
+    -- If direct conversion failed (e.g., specName was "Shadow" instead of "258")
+    -- try to map it using common spec names for the current class.
+    if not specID then
+      local classSpecificNameMappings = {
+        DEATHKNIGHT = { Blood = 250, Frost = 251, Unholy = 252 },
+        DEMONHUNTER = { Havoc = 577, Vengeance = 581 },
+        DRUID = { Balance = 102, Feral = 103, Guardian = 104, Restoration = 105 },
+        EVOKER = { Devastation = 1467, Preservation = 1468, Augmentation = 1473 },
+        HUNTER = { ["Beast Mastery"] = 253, Marksmanship = 254, Survival = 255, BM = 253, MM = 254 },
+        MAGE = { Arcane = 62, Fire = 63, Frost = 64 },
+        MONK = { Brewmaster = 268, Windwalker = 269, Mistweaver = 270 },
+        PALADIN = { Holy = 65, Protection = 66, Retribution = 70 },
+        PRIEST = { Discipline = 256, Holy = 257, Shadow = 258 },
+        ROGUE = { Assassination = 259, Outlaw = 260, Subtlety = 261 },
+        SHAMAN = { Elemental = 262, Enhancement = 263, Restoration = 264 },
+        WARLOCK = { Affliction = 265, Demonology = 266, Destruction = 267 },
+        WARRIOR = { Arms = 71, Fury = 72, Protection = 73 }
+      }
+      if classSpecificNameMappings[className] and classSpecificNameMappings[className][originalSpecNameFromDB] then
+        specID = classSpecificNameMappings[className][originalSpecNameFromDB]
+        -- DM:DebugMsg(string.format("Mapped %s spec '%s' to ID %d for icon lookup.", className, originalSpecNameFromDB, specID))
       end
-      table.insert(spellsInClassByPriority, { id = id, priority = spellData.priority })
     end
-    table.sort(spellsInClassByPriority, function(a, b)
-      if a.priority == b.priority then return a.id < b.id end
+
+    -- Hardcoded mapping from SpecID to TGA file path
+    local specIconPaths = {
+      -- Death Knight
+      [250] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_blood.tga",                                     -- Blood
+      [251] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_frost.tga",                                     -- Frost
+      [252] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_unholy.tga",                                    -- Unholy
+      -- Demon Hunter
+      [577] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_havoc.tga",                                     -- Havoc
+      [581] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_vengeance.tga",                                 -- Vengeance
+      -- Druid
+      [102] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\balance__2025_05_14_06_35_06_UTC_.tga",     -- Balance
+      [103] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\feral__2025_05_14_06_35_06_UTC_.tga",       -- Feral
+      [104] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\guardian__2025_05_14_06_35_06_UTC_.tga",    -- Guardian
+      [105] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\restoration__2025_05_14_06_35_06_UTC_.tga", -- Restoration
+      -- Evoker
+      [1467] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_devestation.tga",                          -- Devastation
+      [1468] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_preservation.tga",                         -- Preservation
+      [1473] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_augmentation.tga",                         -- Augmentation
+      -- Hunter
+      [253] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_bm.tga",                                    -- Beast Mastery
+      [254] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_mm.tga",                                    -- Marksmanship
+      [255] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_survival.tga",                              -- Survival
+      -- Mage
+      [62] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_arcane.tga",                                   -- Arcane
+      [63] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_fire.tga",                                     -- Fire
+      [64] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_frost.tga",                                    -- Frost
+      -- Monk
+      [268] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_brewmaster.tga",                              -- Brewmaster
+      [269] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_ww.tga",                                      -- Windwalker
+      [270] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_mistweaver.tga",                              -- Mistweaver
+      -- Paladin
+      [65] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_holy.tga",                                  -- Holy
+      [66] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_protection.tga",                            -- Protection
+      [70] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_ret.tga",                                   -- Retribution
+      -- Priest
+      [256] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_disc.tga",                                  -- Discipline
+      [257] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_holy.tga",                                  -- Holy
+      [258] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_shadow.tga",                                -- Shadow
+      -- Rogue
+      [259] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_assa.tga",                                   -- Assassination
+      [260] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_outlaw.tga",                                 -- Outlaw
+      [261] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_sub.tga",                                    -- Subtlety
+      -- Shaman
+      [262] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_elem.tga",                                  -- Elemental
+      [263] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_enhancement.tga",                           -- Enhancement
+      [264] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_resto.tga",                                 -- Restoration
+      -- Warlock
+      [265] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_affli.tga",                                -- Affliction
+      [266] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_demono.tga",                               -- Demonology
+      [267] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_destru.tga",                               -- Destruction
+      -- Warrior
+      [71] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_arms.tga",                                  -- Arms
+      [72] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_fury.tga",                                  -- Fury
+      [73] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_prot.tga",                                  -- Protection
+    }
+
+    if specID and specIconPaths[specID] then
+      iconPath = specIconPaths[specID]
+    elseif originalSpecNameFromDB == "General" then   -- Ensure to check originalSpecNameFromDB for "General"
+      iconPath = "Interface\\Icons\\INV_Misc_Book_09" -- Book icon for general stuff
+    end
+
+    icon:SetTexture(iconPath)
+    -- Reset any texture coordinates, TGA files usually don't need cropping like default spell icons
+    icon:SetTexCoord(0, 1, 0, 1)
+
+    -- Spec name text
+    local displayName = specName
+    if specID and specID > 0 then
+      local _, specNameLocalized = GetSpecializationInfoByID(specID)
+      if specNameLocalized then
+        displayName = specNameLocalized
+      end
+    end
+
+    -- Format spec text without class name
+    local textLabel = displayName
+
+    local text = specFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge") -- Use larger font
+    text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+    text:SetText(textLabel)
+    text:SetJustifyH("LEFT")
+
+    -- Apply class color to text
+    if classColor then
+      text:SetTextColor(classColor.r, classColor.g, classColor.b)
+    end
+
+    -- Expand/collapse button
+    local expandBtn = CreateFrame("Button", nil, specFrame)
+    expandBtn:SetSize(16, 16)
+    expandBtn:SetPoint("RIGHT", specFrame, "RIGHT", -5, 0)
+    expandBtn:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-UP")
+    expandBtn:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-DOWN")
+    expandBtn:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight")
+
+    -- Set the toggle functionality for both the expand button and the header itself
+    local function ToggleHeaderExpansion()
+      specFrame.isExpanded = not specFrame.isExpanded
+
+      -- Update button texture
+      if specFrame.isExpanded then
+        expandBtn:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-UP")
+        expandBtn:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-DOWN")
+
+        -- Show all spell rows
+        for _, spellFrame in ipairs(specFrame.spellFrames) do
+          spellFrame:Show()
+        end
+      else
+        expandBtn:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-UP")
+        expandBtn:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-DOWN")
+
+        -- Hide all spell rows
+        for _, spellFrame in ipairs(specFrame.spellFrames) do
+          spellFrame:Hide()
+        end
+      end
+
+      -- Update layout without full refresh
+      GUI:UpdateTrackedSpellsLayout()
+    end
+
+    -- Assign toggle function to both the button and the spec frame
+    expandBtn:SetScript("OnClick", ToggleHeaderExpansion)
+    specFrame:SetScript("OnClick", ToggleHeaderExpansion)
+
+    -- Make it look clickable with mouseover highlight
+    specFrame:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    local highlight = specFrame:GetHighlightTexture()
+    highlight:SetAlpha(0.7)
+
+    yOffset = yOffset + specHeaderHeight + spacing
+
+    -- Collect spells for this spec
+    local spellsInSpecByPriority = {}
+    local uniquePriorityCounter = 1
+    local prioritiesChanged = false
+
+    for id, spellData in pairs(specSpells) do
+      table.insert(spellsInSpecByPriority, {
+        id = id,
+        data = spellData,
+        priority = tonumber(spellData.priority) or 999
+      })
+    end
+
+    -- Sort by priority then by name
+    table.sort(spellsInSpecByPriority, function(a, b)
+      if a.priority == b.priority then
+        return (a.data.spellname or "") < (b.data.spellname or "")
+      end
       return a.priority < b.priority
     end)
-    local prioritiesChanged = false
-    local uniquePriorityCounter = 1
-    for _, entry in ipairs(spellsInClassByPriority) do
+
+    -- Ensure continuous priority numbers
+    for _, entry in ipairs(spellsInSpecByPriority) do
       -- Check if priority needs reassignment
       if not DM.dmspellsdb[entry.id] or DM.dmspellsdb[entry.id].priority ~= uniquePriorityCounter then
         -- Ensure spell entry exists before modification (safety check)
         if DM.dmspellsdb[entry.id] then
           DM.dmspellsdb[entry.id].priority = uniquePriorityCounter
-          DM:DatabaseDebug(string.format("Reassigned priority %d to spell %d for class %s", uniquePriorityCounter,
-            entry.id, className))
+          DM:DatabaseDebug(string.format("Reassigned priority %d to spell %d for class %s spec %s",
+            uniquePriorityCounter, entry.id, className, specName))
           prioritiesChanged = true
         else
           DM:DatabaseDebug(string.format("WARNING: Tried to reassign priority for non-existent spell %d in dmspellsdb",
@@ -547,285 +679,45 @@ function GUI:RefreshTrackedSpellTabList()
       end
       uniquePriorityCounter = uniquePriorityCounter + 1
     end
+
     if prioritiesChanged then DM:SaveDMSpellsDB() end
 
-    -- Re-sort spells for display based on potentially updated priorities
-    local sortedSpells = {}
-    for id in pairs(classData) do table.insert(sortedSpells, id) end
-    table.sort(sortedSpells, function(a, b)
-      local spellA = classData[a]
-      local spellB = classData[b]
-      if spellA.priority and spellB.priority then
-        if spellA.priority == spellB.priority then return (spellA.spellname or "") < (spellB.spellname or "") end
-        return spellA.priority < spellB.priority
-      elseif spellA.priority then
-        return true
-      elseif spellB.priority then
-        return false
-      else
-        return (spellA.spellname or "") < (spellB.spellname or "")
-      end
-    end)
+    -- Create spell row frames
+    if specFrame.isExpanded then
+      local visibleSpellCount = 0
 
-    local visibleSpellCount = 0
+      for _, entry in ipairs(spellsInSpecByPriority) do
+        local id = entry.id
+        local spellData = entry.data
 
-    for spellIndex, spellID in ipairs(sortedSpells) do
-      local spellData = classData[spellID]
-      visibleSpellCount = visibleSpellCount + 1
-      local spellFrame = CreateFrame("Frame", nil, scrollChild)
-      spellFrame:SetSize(effectiveWidth, entryHeight)
-      -- Position at scrollChild's top-left corner (0 offset)
-      spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
-      if not classFrame.isExpanded then spellFrame:Hide() else spellFrame:Show() end
+        -- Add spell rows
+        local spellRow = GUI:CreateTrackedSpellRow(scrollChild, id, spellData, effectiveWidth)
+        table.insert(specFrame.spellFrames, spellRow)
 
-      local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
-      rowBg:SetAllPoints()
-      if (visibleSpellCount % 2 == 0) then rowBg:SetColorTexture(0, 0, 0, 0.4) else rowBg:SetColorTexture(0, 0, 0, 0.2) end
-
-      table.insert(classFrame.spellFrames, spellFrame)
-
-      -- --- Layout using Anchors from Both Ends ---
-
-      -- Left-Anchored Elements
-      local currentLeftAnchor = spellFrame
-      local currentLeftOffset = padding
-
-      -- 1. Enabled Checkbox
-      local enabledCheckbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
-      enabledCheckbox:SetSize(checkboxWidth, checkboxWidth)
-      enabledCheckbox:SetPoint("LEFT", currentLeftAnchor, "LEFT", currentLeftOffset, 0)
-      if spellData.enabled == nil then DM.dmspellsdb[spellID].enabled = 1 end
-      enabledCheckbox:SetChecked(DM.dmspellsdb[spellID].enabled == 1)
-      enabledCheckbox:SetScript("OnClick", function(self)
-        DM.dmspellsdb[spellID].enabled = self:GetChecked() and 1 or 0
-        DM:SaveDMSpellsDB()
-        DM:DatabaseDebug(string.format("Spell %d enabled status set to %d", spellID, DM.dmspellsdb[spellID].enabled))
-      end)
-      currentLeftAnchor = enabledCheckbox
-      currentLeftOffset = padding
-
-      -- 2. Spell Icon
-      local icon = spellFrame:CreateTexture(nil, "ARTWORK")
-      icon:SetSize(iconSize, iconSize)
-      icon:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
-      local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
-      icon:SetTexture(iconPath)
-      icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-      currentLeftAnchor = icon
-      currentLeftOffset = padding + 3
-
-      -- Right-Anchored Elements (Reverse Order: Untrack -> Up -> Down -> Swatch)
-      local currentRightAnchor = spellFrame
-      local currentRightOffset = -padding -- Standard right padding
-
-      -- 7. Untrack Button
-      local untrackButton = CreateFrame("Button", nil, spellFrame, "UIPanelButtonTemplate")
-      untrackButton:SetSize(untrackWidth, untrackHeight)
-      untrackButton:SetPoint("RIGHT", currentRightAnchor, "RIGHT", currentRightOffset, 0)
-      untrackButton:SetText("Untrack")
-      untrackButton:SetScript("OnClick", function()
-        DM.dmspellsdb[spellID].tracked = 0
-        DM:DatabaseDebug(string.format("Spell %d untracked", spellID))
-        DM:SaveDMSpellsDB()
-        GUI:RefreshTrackedSpellTabList()
-      end)
-      -- Next element anchors to the left of this one
-      currentRightAnchor = untrackButton
-      currentRightOffset = -5 -- Gap between Untrack and Up arrow
-
-      -- 6. Up Arrow Button
-      local upArrow = CreateFrame("Button", nil, spellFrame)
-      upArrow:SetSize(arrowSize, arrowSize)
-      upArrow:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
-      upArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
-      upArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
-      upArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-      if spellIndex == 1 then
-        upArrow:Disable()
-        upArrow:SetAlpha(0.5)
-      else
-        upArrow:Enable()
-        upArrow:SetAlpha(1.0)
-      end
-      upArrow:SetScript("OnClick", function()
-        if spellIndex > 1 then
-          local prevSpellID = sortedSpells[spellIndex - 1]
-          local currentPriority = DM.dmspellsdb[spellID].priority
-          local prevPriority = DM.dmspellsdb[prevSpellID].priority
-          DM.dmspellsdb[spellID].priority = prevPriority
-          DM.dmspellsdb[prevSpellID].priority = currentPriority
-          DM:DatabaseDebug(string.format("Swapped priority for %d (now %d) and %d (now %d)", spellID, prevPriority,
-            prevSpellID, currentPriority))
-          DM:SaveDMSpellsDB()
-          GUI:RefreshTrackedSpellTabList()
-        end
-      end)
-      -- Next element anchors to the left of this one
-      currentRightAnchor = upArrow
-      currentRightOffset = -2 -- Gap between Up and Down arrow
-
-      -- 5. Down Arrow Button
-      local downArrow = CreateFrame("Button", nil, spellFrame)
-      downArrow:SetSize(arrowSize, arrowSize)
-      downArrow:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
-      downArrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
-      downArrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
-      downArrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-      if spellIndex == #sortedSpells then
-        downArrow:Disable()
-        downArrow:SetAlpha(0.5)
-      else
-        downArrow:Enable()
-        downArrow:SetAlpha(1.0)
-      end
-      downArrow:SetScript("OnClick", function()
-        if spellIndex < #sortedSpells then
-          local nextSpellID = sortedSpells[spellIndex + 1]
-          local currentPriority = DM.dmspellsdb[spellID].priority
-          local nextPriority = DM.dmspellsdb[nextSpellID].priority
-          DM.dmspellsdb[spellID].priority = nextPriority
-          DM.dmspellsdb[nextSpellID].priority = currentPriority
-          DM:DatabaseDebug(string.format("Swapped priority for %d (now %d) and %d (now %d)", spellID, nextPriority,
-            nextSpellID, currentPriority))
-          DM:SaveDMSpellsDB()
-          GUI:RefreshTrackedSpellTabList()
-        end
-      end)
-      -- Next element anchors to the left of this one
-      currentRightAnchor = downArrow
-      currentRightOffset = -10 -- Gap between Down arrow and Swatch
-
-      -- 4. Color Swatch
-      -- Get the initial color or use default
-      local r, g, b = 1, 0, 0 -- Default red color
-      if spellData.color and type(spellData.color) == "table" then
-        if #spellData.color >= 3 then
-          r = tonumber(spellData.color[1]) or 1
-          g = tonumber(spellData.color[2]) or 0
-          b = tonumber(spellData.color[3]) or 0
-        end
-      end
-
-      -- Create a swatch button as fallback
-      local colorSwatch = CreateFrame("Button", nil, spellFrame)
-      colorSwatch:SetSize(24, 24)
-
-      -- Create border for better visibility
-      local border = colorSwatch:CreateTexture(nil, "BACKGROUND")
-      border:SetAllPoints()
-      border:SetColorTexture(0.1, 0.1, 0.1, 1)
-
-      -- Create a texture for the color with slight inner border
-      local texture = colorSwatch:CreateTexture(nil, "ARTWORK")
-      texture:SetPoint("TOPLEFT", 2, -2)
-      texture:SetPoint("BOTTOMRIGHT", -2, 2)
-      texture:SetColorTexture(r, g, b, 1)
-
-      -- Add hover effect
-      colorSwatch:SetScript("OnEnter", function(self)
-        border:SetColorTexture(0.3, 0.3, 0.3, 1)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Color Values")
-        GameTooltip:AddLine(
-          "R: " .. math.floor(r * 255) .. " G: " .. math.floor(g * 255) .. " B: " .. math.floor(b * 255), 1, 1, 1)
-        GameTooltip:AddLine("Click to change color", 0.7, 0.7, 0.7)
-        GameTooltip:Show()
-      end)
-
-      colorSwatch:SetScript("OnLeave", function()
-        border:SetColorTexture(0.1, 0.1, 0.1, 1)
-        GameTooltip:Hide()
-      end)
-
-      -- Color picker click handler
-      colorSwatch:SetScript("OnClick", function()
-        -- Use standard WoW color picker
-        local function colorFunc()
-          -- Get color values using the appropriate API for the client version
-          local newR, newG, newB
-          if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
-            newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
-          else
-            -- Fallback for other API versions
-            newR, newG, newB = r, g, b
-          end
-
-          -- Update texture
-          texture:SetColorTexture(newR, newG, newB, 1)
-          -- Update values
-          r, g, b = newR, newG, newB
-          -- Save to database
-          if DM.dmspellsdb[spellID] then
-            DM.dmspellsdb[spellID].color = { newR, newG, newB }
-            DM:SaveDMSpellsDB()
-          end
-        end
-
-        local function cancelFunc()
-          local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
-          texture:SetColorTexture(prevR, prevG, prevB, 1)
-        end
-
-        -- Use the modern or legacy API as appropriate
-        if ColorPickerFrame.SetupColorPickerAndShow then
-          local info = {}
-          info.swatchFunc = colorFunc
-          info.cancelFunc = cancelFunc
-          info.r = r
-          info.g = g
-          info.b = b
-          info.opacity = 1
-          info.hasOpacity = false
-          ColorPickerFrame:SetupColorPickerAndShow(info)
+        -- No indentation - align with left edge
+        spellRow:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
+        -- Show row if parent is expanded, hide if collapsed
+        if specFrame.isExpanded then
+          spellRow:Show()
         else
-          -- Legacy method
-          ColorPickerFrame.func = colorFunc
-          ColorPickerFrame.cancelFunc = cancelFunc
-          ColorPickerFrame.opacityFunc = nil
-          ColorPickerFrame.hasOpacity = false
-          ColorPickerFrame.previousValues = { r, g, b }
-
-          -- Set color via Content if available
-          if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-            ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
-          end
-
-          ColorPickerFrame:Show()
+          spellRow:Hide()
         end
-      end)
-
-      -- Position the swatch
-      colorSwatch:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
-      spellFrame.colorSwatch = colorSwatch
-      currentRightAnchor = colorSwatch
-      currentRightOffset = -padding
-
-      -- 3. Spell Name & ID (Anchored between Icon and Color Swatch)
-      local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-      nameText:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
-      nameText:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
-      nameText:SetHeight(entryHeight)
-      nameText:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
-      nameText:SetJustifyH("LEFT")
-      nameText:SetJustifyV("MIDDLE")
-
-      if classFrame.isExpanded then yOffset = yOffset + entryHeight + spacing end
-    end -- End Spell Loop
-
-    -- Class Header Click Handler
-    classFrame:SetScript("OnClick", function(self)
-      self.isExpanded = not self.isExpanded
-      self.indicator:SetTexture(self.isExpanded and "Interface\\Buttons\\UI-MinusButton-Up" or
-        "Interface\\Buttons\\UI-PlusButton-Up")
-      for _, frame in ipairs(self.spellFrames) do
-        if self.isExpanded then frame:Show() else frame:Hide() end
+        yOffset = yOffset + entryHeight + spacing
+        visibleSpellCount = visibleSpellCount + 1
       end
-      GUI:UpdateTrackedSpellsLayout()
-    end)
-  end -- End Class Loop
 
-  GUI:UpdateTrackedSpellsLayout()
-  scrollChild:Show()
+      -- If no spells in this spec, add empty message
+      if visibleSpellCount == 0 then
+        local emptyText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        emptyText:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 40, -yOffset) -- Keep the empty message indented
+        emptyText:SetText("No spells found for this specialization")
+        emptyText:SetTextColor(0.7, 0.7, 0.7)
+        yOffset = yOffset + 20 + spacing
+      end
+    end
+  end
+
+  scrollChild:SetHeight(math.max(yOffset + 10, 200))
 end
 
 -- Function to recalculate positions after expand/collapse
@@ -833,43 +725,50 @@ function GUI:UpdateTrackedSpellsLayout()
   local scrollChild = GUI.trackedScrollChild
   if not scrollChild then return end
 
-  local yOffset = 2       -- Reduced from 5 to 2 for tighter spacing
-  local entryHeight = 40  -- Set to 40
-  local headerHeight = 40 -- Set to 40
+  local yOffset = 2           -- Reduced from 5 to 2 for tighter spacing
+  local entryHeight = 40      -- Set to 40
+  local specHeaderHeight = 40 -- Header height for specs
   local spacing = 3
   -- Use full scrollChild width for rows now
   local effectiveWidth = scrollChild:GetWidth() -- 430px
 
-  local _, playerClassToken = UnitClass("player")
+  -- Sort specs
+  local sortedSpecs = {}
+  for specKey, specFrame in pairs(GUI.trackedSpecFrames or {}) do
+    table.insert(sortedSpecs, {
+      key = specKey,
+      frame = specFrame,
+      className = specFrame.className,
+      specName = specFrame.specName
+    })
+  end
 
-  local sortedClasses = {}
-  for className in pairs(GUI.trackedClassFrames or {}) do table.insert(sortedClasses, className) end
-  table.sort(sortedClasses, function(a, b)
-    if a == playerClassToken and b ~= playerClassToken then return true end
-    if b == playerClassToken and a ~= playerClassToken then return false end
-    if a == "UNKNOWN" then return false end
-    if b == "UNKNOWN" then return true end
-    return a < b
+  -- Sort specs (by class then by spec name)
+  table.sort(sortedSpecs, function(a, b)
+    if a.className == b.className then
+      return a.specName < b.specName
+    end
+    return a.className < b.className
   end)
 
-  for _, className in ipairs(sortedClasses) do
-    local classFrame = GUI.trackedClassFrames[className]
-    if classFrame then
-      classFrame:ClearAllPoints()
-      -- Position at scrollChild's top-left corner (0 offset)
-      classFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
-      classFrame:SetWidth(effectiveWidth)
-      yOffset = yOffset + headerHeight + spacing
+  -- Position all frames
+  for _, specInfo in ipairs(sortedSpecs) do
+    local specFrame = specInfo.frame
 
-      if classFrame.isExpanded then
-        for _, spellFrame in ipairs(classFrame.spellFrames or {}) do
-          spellFrame:ClearAllPoints()
-          -- Position at scrollChild's top-left corner (0 offset)
-          spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
-          spellFrame:SetWidth(effectiveWidth)
-          spellFrame:Show()
-          yOffset = yOffset + entryHeight + spacing
-        end
+    -- Position spec header
+    specFrame:ClearAllPoints()
+    specFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
+    specFrame:SetWidth(effectiveWidth)
+    yOffset = yOffset + specHeaderHeight + spacing
+
+    -- Position spell rows if expanded
+    if specFrame.isExpanded then
+      for _, spellFrame in ipairs(specFrame.spellFrames or {}) do
+        spellFrame:ClearAllPoints()
+        spellFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
+        spellFrame:SetWidth(effectiveWidth)
+        spellFrame:Show()
+        yOffset = yOffset + entryHeight + spacing
       end
     end
   end
@@ -880,4 +779,205 @@ end
 -- Function to update tracked spells UI
 function GUI:UpdateTrackedSpellsList()
   self:RefreshTrackedSpellTabList()
+end
+
+-- Helper function to create a tracked spell row
+function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width)
+  local entryHeight = 40
+  local padding = 5
+  local checkboxWidth = 20
+  local iconSize = 25
+  local colorSwatchSize = 24
+  local arrowSize = 20
+  local untrackWidth = 70
+
+  -- Create the frame
+  local spellFrame = CreateFrame("Frame", nil, parent)
+  spellFrame:SetSize(width, entryHeight)
+
+  -- Store the spell ID for reference
+  spellFrame.spellID = spellID
+
+  -- Row background
+  local rowBg = spellFrame:CreateTexture(nil, "BACKGROUND")
+  rowBg:SetAllPoints()
+  rowBg:SetColorTexture(0, 0, 0, 0.3)
+
+  -- Left side elements
+  local currentLeftAnchor = spellFrame
+  local currentLeftOffset = padding
+
+  -- 1. Enabled Checkbox
+  local enabledCheckbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
+  enabledCheckbox:SetSize(checkboxWidth, checkboxWidth)
+  enabledCheckbox:SetPoint("LEFT", currentLeftAnchor, "LEFT", currentLeftOffset, 0)
+  if spellData.enabled == nil then DM.dmspellsdb[spellID].enabled = 1 end
+  enabledCheckbox:SetChecked(DM.dmspellsdb[spellID].enabled == 1)
+  enabledCheckbox:SetScript("OnClick", function(self)
+    DM.dmspellsdb[spellID].enabled = self:GetChecked() and 1 or 0
+    DM:SaveDMSpellsDB()
+
+    -- Update Plater with the new settings
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      C_Timer.After(0.1, function()
+        DM.ClassSpec:PushConfigToPlater()
+      end)
+    end
+  end)
+  currentLeftAnchor = enabledCheckbox
+  currentLeftOffset = padding
+
+  -- 2. Spell Icon
+  local icon = spellFrame:CreateTexture(nil, "ARTWORK")
+  icon:SetSize(iconSize, iconSize)
+  icon:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
+  local iconPath = spellData.spellicon or "Interface\\Icons\\INV_Misc_QuestionMark"
+  icon:SetTexture(iconPath)
+  icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  currentLeftAnchor = icon
+  currentLeftOffset = padding + 3
+
+  -- Right-side elements
+  local currentRightAnchor = spellFrame
+  local currentRightOffset = -padding
+
+  -- 5. Untrack Button
+  local untrackButton = CreateFrame("Button", nil, spellFrame, "UIPanelButtonTemplate")
+  untrackButton:SetSize(untrackWidth, 25)
+  untrackButton:SetPoint("RIGHT", currentRightAnchor, "RIGHT", currentRightOffset, 0)
+  untrackButton:SetText("Untrack")
+  untrackButton:SetScript("OnClick", function()
+    DM.dmspellsdb[spellID].tracked = 0
+    DM:SaveDMSpellsDB()
+    GUI:RefreshTrackedSpellTabList()
+
+    -- Update Plater after untracking
+    if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+      C_Timer.After(0.1, function()
+        DM.ClassSpec:PushConfigToPlater()
+      end)
+    end
+  end)
+  currentRightAnchor = untrackButton
+  currentRightOffset = -10
+
+  -- 4. Color Swatch
+  -- Get the initial color or use default
+  local r, g, b = 1, 0, 0 -- Default red color
+  if spellData.color and type(spellData.color) == "table" then
+    if #spellData.color >= 3 then
+      r = tonumber(spellData.color[1]) or 1
+      g = tonumber(spellData.color[2]) or 0
+      b = tonumber(spellData.color[3]) or 0
+    end
+  end
+
+  -- Create the color swatch
+  local colorSwatch = CreateFrame("Button", nil, spellFrame)
+  colorSwatch:SetSize(colorSwatchSize, colorSwatchSize)
+  colorSwatch:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+
+  -- Create border for better visibility
+  local border = colorSwatch:CreateTexture(nil, "BACKGROUND")
+  border:SetAllPoints()
+  border:SetColorTexture(0.1, 0.1, 0.1, 1)
+
+  -- Create a texture for the color with slight inner border
+  local texture = colorSwatch:CreateTexture(nil, "ARTWORK")
+  texture:SetPoint("TOPLEFT", 2, -2)
+  texture:SetPoint("BOTTOMRIGHT", -2, 2)
+  texture:SetColorTexture(r, g, b, 1)
+
+  -- Color picker functionality
+  colorSwatch:SetScript("OnEnter", function(self)
+    border:SetColorTexture(0.3, 0.3, 0.3, 1)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Color Values")
+    GameTooltip:AddLine(
+      "R: " .. math.floor(r * 255) .. " G: " .. math.floor(g * 255) .. " B: " .. math.floor(b * 255), 1, 1, 1)
+    GameTooltip:AddLine("Click to change color", 0.7, 0.7, 0.7)
+    GameTooltip:Show()
+  end)
+
+  colorSwatch:SetScript("OnLeave", function()
+    border:SetColorTexture(0.1, 0.1, 0.1, 1)
+    GameTooltip:Hide()
+  end)
+
+  -- Color picker click handler
+  colorSwatch:SetScript("OnClick", function()
+    -- Use standard WoW color picker
+    local function colorFunc()
+      -- Get color values using the appropriate API for the client version
+      local newR, newG, newB
+      if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
+        newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
+      else
+        -- Fallback for other API versions
+        newR, newG, newB = ColorPickerFrame:GetColorRGB()
+      end
+
+      -- Update texture
+      texture:SetColorTexture(newR, newG, newB, 1)
+      -- Update values
+      r, g, b = newR, newG, newB
+      -- Save to database
+      if DM.dmspellsdb[spellID] then
+        DM.dmspellsdb[spellID].color = { newR, newG, newB }
+        DM:SaveDMSpellsDB()
+
+        -- Update Plater with the new color
+        if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+          C_Timer.After(0.1, function()
+            DM.ClassSpec:PushConfigToPlater()
+          end)
+        end
+      end
+    end
+
+    local function cancelFunc()
+      local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
+      texture:SetColorTexture(prevR, prevG, prevB, 1)
+    end
+
+    -- Use the modern or legacy API as appropriate
+    if ColorPickerFrame.SetupColorPickerAndShow then
+      local info = {}
+      info.swatchFunc = colorFunc
+      info.cancelFunc = cancelFunc
+      info.r = r
+      info.g = g
+      info.b = b
+      info.opacity = 1
+      info.hasOpacity = false
+      ColorPickerFrame:SetupColorPickerAndShow(info)
+    else
+      -- Legacy method
+      ColorPickerFrame.func = colorFunc
+      ColorPickerFrame.cancelFunc = cancelFunc
+      ColorPickerFrame.opacityFunc = nil
+      ColorPickerFrame.hasOpacity = false
+      ColorPickerFrame.previousValues = { r, g, b }
+
+      -- Set color via Content if available
+      if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
+        ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
+      end
+
+      ColorPickerFrame:Show()
+    end
+  end)
+  currentRightAnchor = colorSwatch
+  currentRightOffset = -padding
+
+  -- 3. Spell Name & ID (in the middle)
+  local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+  nameText:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)
+  nameText:SetPoint("RIGHT", currentRightAnchor, "LEFT", currentRightOffset, 0)
+  nameText:SetHeight(entryHeight)
+  nameText:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
+  nameText:SetJustifyH("LEFT")
+  nameText:SetJustifyV("MIDDLE")
+
+  return spellFrame
 end
