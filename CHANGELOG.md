@@ -1,5 +1,20 @@
 # DotMaster Changelog
 
+## [2.0.0] - 2023-11-22
+### Added
+- Major version release with complete feature set
+- Enhanced Plater integration with improved border handling
+- Comprehensive GUI for all addon settings
+- Full class and specialization support
+- Advanced DoT combination tracking
+- Customizable expiry flash functionality
+
+### Changed
+- Code architecture refactored for improved performance
+- Simplified user experience with better defaults
+- Improved settings management
+- Updated documentation
+
 ## [1.0.9] - YYYY-MM-DD
 ### Added
 - "Plater Integration" button in DotMaster GUI footer: Appears if the "DotMaster Integration" Plater mod is not detected, allowing users to inject it.

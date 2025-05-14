@@ -1,13 +1,13 @@
 ## Interface: 100206
 ## Title: DotMaster
 ## Notes: Colors nameplates for your DoTs and active debuffs.
-## Author: DM Dev Team
-## Version: 1.0.9
+## Author: Jervaise
+## Version: 2.0.0
 ## SavedVariables: DotMasterDB
 ## X-Curse-Project-ID: 123456
 ## X-Wago-ID: 123456
 ## X-WoWI-ID: 123456
-## X-DotMaster-Debug: true
+## X-DotMaster-Debug: false
 ## X-Category: Combat
 ## X-License: All Rights Reserved
 ## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga

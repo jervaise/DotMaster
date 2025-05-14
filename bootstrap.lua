@@ -15,14 +15,14 @@ function DM:PrintMessage(message)
   print("|cFFCC00FFDotMaster:|r " .. message)
 end
 
--- Stub for debug message handler (to be replaced with new debug system)
+-- Empty stub for debug message handler
 function DM:DebugMsg(message)
-  -- Debug functionality removed, will be replaced with new system
+  -- Debug messages disabled
 end
 
--- Stub for database debug messages (to be replaced with new debug system)
+-- Empty stub for database debug messages
 function DM:DatabaseDebug(message)
-  -- Debug functionality removed, will be replaced with new system
+  -- Debug messages disabled
 end
 
 -- Define minimal constants and defaults
@@ -31,9 +31,14 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = false,         -- Default to disabled so users must explicitly enable it
-  version = "1.0.8",
+  version = "2.0.0",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
+}
+
+-- Define CONFIG with test spell ID
+DM.CONFIG = {
+  TEST_SPELL_ID = 589 -- Shadow Word: Pain as a default test spell
 }
 
 -- Setup basic event handling for initialization sequence
@@ -61,11 +66,6 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
         DM.originalBorderThickness = tonumber(settings.borderThickness)
         DM.originalBorderOnly = settings.borderOnly and true or false
         DM.originalEnabled = settings.enabled and true or false -- Track the enabled state too
-
-        print("|cFFFF9900DotMaster-Debug: Initialized border settings tracking:")
-        print("|cFFFF9900DotMaster-Debug: - Thickness: " .. DM.originalBorderThickness)
-        print("|cFFFF9900DotMaster-Debug: - Border-only: " .. (DM.originalBorderOnly and "ENABLED" or "DISABLED") .. "|r")
-        print("|cFFFF9900DotMaster-Debug: - Enabled: " .. (DM.originalEnabled and "ENABLED" or "DISABLED") .. "|r")
       end
     end
 
@@ -75,7 +75,6 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DotMasterDB and DotMasterDB.shouldRestorePlaterThickness and DotMasterDB.originalPlaterBorderThickness then
       local Plater = _G["Plater"]
       if Plater and Plater.db and Plater.db.profile then
-        print("DotMaster: Restoring Plater's original border thickness: " .. DotMasterDB.originalPlaterBorderThickness)
         Plater.db.profile.border_thickness = DotMasterDB.originalPlaterBorderThickness
 
         -- Update all nameplates
@@ -85,6 +84,24 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
 
         -- Clear the flag so we don't do this again
         DotMasterDB.shouldRestorePlaterThickness = nil
+      end
+    end
+
+    -- Force check for PlaterDB and ensure mod state matches settings
+    if DotMasterDB and Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
+      -- Important startup task - make sure DotMaster Integration is in the right state
+      local modIndex
+      for i, mod in ipairs(Plater.db.profile.hook_data) do
+        if mod.Name == "DotMaster Integration" then
+          modIndex = i
+          break
+        end
+      end
+
+      if modIndex and DotMasterDB.enabled ~= nil then
+        if Plater.db.profile.hook_data[modIndex].Enabled ~= DotMasterDB.enabled then
+          Plater.db.profile.hook_data[modIndex].Enabled = DotMasterDB.enabled
+        end
       end
     end
   elseif event == "PLAYER_LOGIN" then
@@ -101,6 +118,12 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
+
+    -- Display welcome message
+    C_Timer.After(2.0, function()
+      DM:DisplayWelcomeMessage()
+      DM:CheckPlaterInstallation()
+    end)
 
     -- Create GUI if available
     if DM.CreateGUI then
@@ -125,29 +148,45 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     C_Timer.After(2.0, function()
       if DM.InstallPlaterMod then
         -- Make sure we don't override the saved enabled state
-        print("DotMaster: Ensuring Plater mod state matches saved settings (" ..
-          (DotMasterDB and DotMasterDB.enabled and "ENABLED" or "DISABLED") .. ")")
+        -- print("DotMaster: Ensuring Plater mod state matches saved settings (" ..
+        --   (DotMasterDB and DotMasterDB.enabled and "ENABLED" or "DISABLED") .. ")")
 
         -- For safety, manually verify that settings.enabled matches DotMasterDB.enabled
         if DM.API and DM.API.GetSettings then
           local settings = DM.API:GetSettings()
           if DotMasterDB and DotMasterDB.enabled ~= nil and settings.enabled ~= DotMasterDB.enabled then
-            print("DotMaster: CRITICAL - Settings enabled mismatch detected during startup! Fixing...")
+            -- print("DotMaster: CRITICAL - Settings enabled mismatch detected during startup! Fixing...")
             settings.enabled = DotMasterDB.enabled
             DM.enabled = DotMasterDB.enabled
           end
         end
 
         DM:InstallPlaterMod()
-        DM:PrintMessage("Reinstalled DotMaster Integration mod with latest code.")
+        -- DM:PrintMessage("Reinstalled DotMaster Integration mod with latest code.")
 
         -- Force push config with test spell
         C_Timer.After(0.5, function()
           if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
             DM.ClassSpec:PushConfigToPlater()
-            DM:PrintMessage("Force pushed configuration to DotMaster Integration.")
+            -- DM:PrintMessage("Force pushed configuration to DotMaster Integration.")
           end
         end)
+      end
+    end)
+
+    -- Force reload Plater UI after initialization
+    C_Timer.After(1.5, function()
+      -- Only force reinstall/push in these cases
+      if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+        -- Reinstall the mod explicitly after Plater initializes
+        DM.ClassSpec:PushConfigToPlater()
+      end
+    end)
+
+    -- More forceful push after 3 seconds (last resort)
+    C_Timer.After(3.0, function()
+      if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+        DM.ClassSpec:PushConfigToPlater(true) -- Force push
       end
     end)
   elseif event == "PLAYER_LOGOUT" then
@@ -177,4 +216,26 @@ SlashCmdList["DOTMASTER"] = function(msg)
   else
     DM:PrintMessage("Still initializing... please try again in a moment.")
   end
+end
+
+-- Function to display welcome message
+function DM:DisplayWelcomeMessage()
+  print("|cFFCC00FF==== DotMaster ====|r")
+  print("|cFFCC00FFWelcome to DotMaster!|r")
+  print("|cFFCC00FFAvailable commands:|r")
+  print("|cFF88FFFF/dm|r - Open configuration panel")
+  print("|cFF88FFFF/dm enable|r - Enable DotMaster")
+  print("|cFF88FFFF/dm disable|r - Disable DotMaster")
+  print("|cFF88FFFF/dm minimap|r - Toggle minimap icon visibility")
+  print("|cFFCC00FF===================|r")
+end
+
+-- Check for Plater installation
+function DM:CheckPlaterInstallation()
+  local Plater = _G["Plater"]
+  if not Plater then
+    DM:PrintMessage("Warning: Plater Nameplates not detected. DotMaster requires Plater Nameplates to function.")
+    return false
+  end
+  return true
 end

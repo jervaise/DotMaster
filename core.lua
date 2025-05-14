@@ -20,7 +20,7 @@ DM.defaults = DM.defaults or {
   borderThickness = 2,
   flashExpiring = false,
   flashThresholdSeconds = 3.0,
-  version = "1.0.9",
+  version = "2.0.0",
   trackSwapBuffs = true
 }
 
@@ -41,14 +41,17 @@ function DM:SlashCommand(msg)
     DM.GUI:Show();
   elseif (msg == "toggle") then
     DM.GUI:Toggle();
-  elseif (msg == "on") then
+  elseif (msg == "enable" or msg == "on") then
     DM.enabled = true
-    DM:PrintMessage("DotMaster enabled")
-  elseif (msg == "off") then
+    if DotMasterDB then DotMasterDB.enabled = true end
+    --DM:PrintMessage("DotMaster enabled")
+  elseif (msg == "disable" or msg == "off") then
     DM.enabled = false
-    DM:PrintMessage("DotMaster disabled")
+    if DotMasterDB then DotMasterDB.enabled = false end
+    --DM:PrintMessage("DotMaster disabled")
   else
-    DM:PrintMessage("Unknown command: " .. msg)
+    --DM:PrintMessage("Unknown command: " .. msg)
+    DM:GUI_Toggle() -- Toggle GUI for unknown commands for convenience
     HelpCommand(msg);
   end
 end
