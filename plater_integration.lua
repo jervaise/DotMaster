@@ -187,8 +187,8 @@ function(self, unitId, unitFrame, envTable, modTable)
   -- Store last build time for debugging
   envTable.lastBuildTime = %s
 
-  -- Only control border thickness when Border-only mode is enabled
-  if envTable.DM_BORDER_ONLY and Plater.db and Plater.db.profile then
+  -- Always set border thickness regardless of mode
+  if Plater.db and Plater.db.profile then
     -- Save previous border thickness in both envTable (for this session) and DotMasterDB (for persistence)
     envTable.previousBorderThickness = Plater.db.profile.border_thickness or 1
 
@@ -203,27 +203,6 @@ function(self, unitId, unitFrame, envTable, modTable)
     -- Update all nameplates to use the new border thickness
     if Plater.UpdateAllPlatesBorderThickness then
       Plater.UpdateAllPlatesBorderThickness()
-    end
-  else
-    -- When Border-only mode is disabled, restore Plater's original border thickness
-    local originalThickness = 1 -- Default fallback
-
-    -- Try to get the original thickness from envTable first
-    if envTable.previousBorderThickness then
-      originalThickness = envTable.previousBorderThickness
-    -- Then try DotMasterDB (which persists across reloads)
-    elseif DotMasterDB and DotMasterDB.originalPlaterBorderThickness then
-      originalThickness = DotMasterDB.originalPlaterBorderThickness
-    end
-
-    -- Actually restore Plater's border thickness to the original value
-    if Plater.db and Plater.db.profile then
-      Plater.db.profile.border_thickness = originalThickness
-
-      -- Update all nameplates to refresh border thickness
-      if Plater.UpdateAllPlatesBorderThickness then
-        Plater.UpdateAllPlatesBorderThickness()
-      end
     end
   end
 
@@ -373,20 +352,15 @@ function(self, unitId, unitFrame, envTable, modTable)
   end
   self.dm_has_been_custom_colored = false
 
-  -- Check for NPC specific colors and extend them to borders if enabled
-  if envTable.DM_EXTEND_PLATER_COLORS then
-    local npcID = unitFrame.namePlateNpcId
-    if npcID and Plater.db and Plater.db.profile and Plater.db.profile.npc_colors and Plater.db.profile.npc_colors[npcID] then
-      local colorData = Plater.db.profile.npc_colors[npcID]
-      if colorData and colorData[3] then -- If color is set and enabled
-        local colorID = colorData[3]
-        local color = Plater.db.profile.npc_cache[colorID]
-        if color and unitFrame.healthBar.border and not envTable.DM_BORDER_ONLY then
-          unitFrame.healthBar.border:SetVertexColor(color[1], color[2], color[3], 1)
-          unitFrame.customBorderColor = {color[1], color[2], color[3], 1}
-          unitFrame.healthBar.border:Show()
-        end
-      end
+  -- Simple implementation of Extend Plater Colors to Borders
+  if envTable.DM_EXTEND_PLATER_COLORS and unitFrame.healthBar.border then
+    -- Get the current color of the nameplate
+    local r, g, b, a = unitFrame.healthBar:GetStatusBarColor()
+    if r and g and b then
+      -- Apply the nameplate color to the border
+      unitFrame.healthBar.border:SetVertexColor(r, g, b, a or 1)
+      unitFrame.customBorderColor = {r, g, b, a or 1}
+      unitFrame.healthBar.border:Show()
     end
   end
 
