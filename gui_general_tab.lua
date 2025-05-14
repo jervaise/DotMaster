@@ -202,9 +202,119 @@ function DM:CreateGeneralTab(parent)
     end
   end)
 
+  -- Flash checkbox
+  local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
+    rightColumn, forceColorCheckbox, -3, "Expiry Flash")
+  flashingCheckbox:SetChecked(settings.flashExpiring)
+
+  -- Seconds control
+  local secondsContainer = CreateFrame("Frame", nil, rightColumn)
+  secondsContainer:SetSize(70, 26)
+  secondsContainer:SetPoint("LEFT", flashingCheckbox.labelText, "RIGHT", 10, 0)
+
+  -- Seconds value container
+  local secondsValueContainer = CreateFrame("Frame", nil, secondsContainer)
+  secondsValueContainer:SetSize(30, 26)
+  secondsValueContainer:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
+
+  -- Seconds value display
+  local secondsValue = secondsValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  secondsValue:SetPoint("RIGHT", secondsValueContainer, "RIGHT", 0, 0)
+  secondsValue:SetJustifyH("RIGHT")
+  secondsValue:SetText(settings.flashThresholdSeconds .. " s")
+
+  -- Second decrease button
+  local secondsDecreaseButton = CreateFrame("Button", nil, secondsContainer)
+  secondsDecreaseButton:SetSize(16, 16)
+  secondsDecreaseButton:SetPoint("LEFT", secondsValueContainer, "RIGHT", 2, 0)
+  secondsDecreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
+  secondsDecreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
+  secondsDecreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  secondsDecreaseButton:SetScript("OnClick", function()
+    if settings.flashThresholdSeconds > 1 then
+      settings.flashThresholdSeconds = settings.flashThresholdSeconds - 0.5
+      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.flashThresholdSeconds = settings
+            .flashThresholdSeconds
+      end
+      DM:AutoSave()
+    end
+  end)
+
+  -- Seconds increase button
+  local secondsIncreaseButton = CreateFrame("Button", nil, secondsContainer)
+  secondsIncreaseButton:SetSize(16, 16)
+  secondsIncreaseButton:SetPoint("LEFT", secondsDecreaseButton, "RIGHT", 2, 0)
+  secondsIncreaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
+  secondsIncreaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
+  secondsIncreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+  secondsIncreaseButton:SetScript("OnClick", function()
+    if settings.flashThresholdSeconds < 8 then
+      settings.flashThresholdSeconds = settings.flashThresholdSeconds + 0.5
+      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.flashThresholdSeconds = settings
+            .flashThresholdSeconds
+      end
+      DM:AutoSave()
+    end
+  end)
+
+  -- Initially hide/show based on state
+  if settings.flashExpiring then
+    secondsContainer:Show()
+  else
+    secondsContainer:Hide()
+  end
+
+  -- Flash checkbox handler
+  flashingCheckbox:SetScript("OnClick", function(self)
+    local flashExpiring = self:GetChecked()
+
+    -- Update local settings
+    settings.flashExpiring = flashExpiring
+
+    -- Force-save directly to DotMasterDB
+    if DotMasterDB ~= nil then
+      if not DotMasterDB.settings then DotMasterDB.settings = {} end
+      DotMasterDB.settings.flashExpiring = flashExpiring
+    end
+
+    -- Show/hide seconds container
+    if secondsContainer then
+      if flashExpiring then
+        secondsContainer:Show()
+      else
+        secondsContainer:Hide()
+      end
+    end
+
+    -- AutoSave for serialization
+    DM:AutoSave()
+  end)
+
+  -- Add Border Logic header/separator
+  local borderHeaderContainer = CreateFrame("Frame", nil, rightColumn)
+  borderHeaderContainer:SetSize(240, 24)
+  borderHeaderContainer:SetPoint("TOPLEFT", flashingCheckbox, "BOTTOMLEFT", 0, -8)
+
+  -- Create border header text
+  local borderHeaderText = borderHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  borderHeaderText:SetPoint("LEFT", borderHeaderContainer, "LEFT", 2, 0)
+  borderHeaderText:SetText("Border Logic")
+  borderHeaderText:SetTextColor(0.7, 0.7, 0.7)
+
+  -- Add separator line
+  local borderSeparator = borderHeaderContainer:CreateTexture(nil, "ARTWORK")
+  borderSeparator:SetHeight(1)
+  borderSeparator:SetPoint("LEFT", borderHeaderText, "RIGHT", 5, 0)
+  borderSeparator:SetPoint("RIGHT", borderHeaderContainer, "RIGHT", -5, 0)
+  borderSeparator:SetColorTexture(0.4, 0.4, 0.4, 0.6)
+
   -- Create a checkbox for extending Plater colors to borders
   local extendColorsCheckbox = CreateStyledCheckbox("DotMasterExtendColorsCheckbox",
-    rightColumn, forceColorCheckbox, -3, "Extend Plater Colors to Borders")
+    rightColumn, borderHeaderContainer, -3, "Extend Plater Colors to Borders")
   extendColorsCheckbox:SetChecked(settings.extendPlaterColors)
   extendColorsCheckbox:SetScript("OnClick", function(self)
     local extendColors = self:GetChecked()
@@ -357,98 +467,6 @@ function DM:CreateGeneralTab(parent)
   else
     thicknessContainer:Hide()
   end
-
-  -- Flash checkbox
-  local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
-    rightColumn, borderOnlyCheckbox, -3, "Expiry Flash")
-  flashingCheckbox:SetChecked(settings.flashExpiring)
-
-  -- Seconds control
-  local secondsContainer = CreateFrame("Frame", nil, rightColumn)
-  secondsContainer:SetSize(70, 26)
-  secondsContainer:SetPoint("LEFT", flashingCheckbox.labelText, "RIGHT", 10, 0)
-
-  -- Seconds value container
-  local secondsValueContainer = CreateFrame("Frame", nil, secondsContainer)
-  secondsValueContainer:SetSize(30, 26)
-  secondsValueContainer:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
-
-  -- Seconds value display
-  local secondsValue = secondsValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  secondsValue:SetPoint("RIGHT", secondsValueContainer, "RIGHT", 0, 0)
-  secondsValue:SetJustifyH("RIGHT")
-  secondsValue:SetText(settings.flashThresholdSeconds .. " s")
-
-  -- Second decrease button
-  local secondsDecreaseButton = CreateFrame("Button", nil, secondsContainer)
-  secondsDecreaseButton:SetSize(16, 16)
-  secondsDecreaseButton:SetPoint("LEFT", secondsValueContainer, "RIGHT", 2, 0)
-  secondsDecreaseButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
-  secondsDecreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
-  secondsDecreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
-  secondsDecreaseButton:SetScript("OnClick", function()
-    if settings.flashThresholdSeconds > 1 then
-      settings.flashThresholdSeconds = settings.flashThresholdSeconds - 0.5
-      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
-      if DotMasterDB and DotMasterDB.settings then
-        DotMasterDB.settings.flashThresholdSeconds = settings
-            .flashThresholdSeconds
-      end
-      DM:AutoSave()
-    end
-  end)
-
-  -- Seconds increase button
-  local secondsIncreaseButton = CreateFrame("Button", nil, secondsContainer)
-  secondsIncreaseButton:SetSize(16, 16)
-  secondsIncreaseButton:SetPoint("LEFT", secondsDecreaseButton, "RIGHT", 2, 0)
-  secondsIncreaseButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
-  secondsIncreaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
-  secondsIncreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
-  secondsIncreaseButton:SetScript("OnClick", function()
-    if settings.flashThresholdSeconds < 8 then
-      settings.flashThresholdSeconds = settings.flashThresholdSeconds + 0.5
-      secondsValue:SetText(settings.flashThresholdSeconds .. " s")
-      if DotMasterDB and DotMasterDB.settings then
-        DotMasterDB.settings.flashThresholdSeconds = settings
-            .flashThresholdSeconds
-      end
-      DM:AutoSave()
-    end
-  end)
-
-  -- Initially hide/show based on state
-  if settings.flashExpiring then
-    secondsContainer:Show()
-  else
-    secondsContainer:Hide()
-  end
-
-  -- Flash checkbox handler
-  flashingCheckbox:SetScript("OnClick", function(self)
-    local flashExpiring = self:GetChecked()
-
-    -- Update local settings
-    settings.flashExpiring = flashExpiring
-
-    -- Force-save directly to DotMasterDB
-    if DotMasterDB ~= nil then
-      if not DotMasterDB.settings then DotMasterDB.settings = {} end
-      DotMasterDB.settings.flashExpiring = flashExpiring
-    end
-
-    -- Show/hide seconds container
-    if secondsContainer then
-      if flashExpiring then
-        secondsContainer:Show()
-      else
-        secondsContainer:Hide()
-      end
-    end
-
-    -- AutoSave for serialization
-    DM:AutoSave()
-  end)
 
   -- Register event to fix checkbox text
   local eventFrame = CreateFrame("Frame")
