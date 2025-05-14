@@ -44,7 +44,7 @@ function DM:LoadSettings()
 
   -- Explicitly make sure enabled is a boolean to prevent type errors
   if DotMasterDB.enabled == nil then
-    DotMasterDB.enabled = false
+    DotMasterDB.enabled = true -- Default to enabled on first load/new profile
   elseif type(DotMasterDB.enabled) ~= "boolean" then
     DotMasterDB.enabled = (DotMasterDB.enabled == true)
   end

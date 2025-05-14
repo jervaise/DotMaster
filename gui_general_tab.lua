@@ -194,6 +194,9 @@ function DM:CreateGeneralTab(parent)
 
   -- Get settings from API
   local settings = DM.API:GetSettings()
+  if settings.flashThresholdSeconds == nil then
+    settings.flashThresholdSeconds = 3 -- Default to 3 seconds if not set
+  end
 
   -- Helper function to create styled checkboxes
   local function CreateStyledCheckbox(name, parent, anchorFrame, offsetY, label)

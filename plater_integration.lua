@@ -235,7 +235,7 @@ end]],
     settings.forceColor and "true" or "false",
     settings.borderOnly and "true" or "false",
     settings.extendPlaterColors and "true" or "false",
-    settings.borderThickness,
+    settings.borderThickness or 2,
     settings.flashExpiring and "true" or "false",
     settings.flashThresholdSeconds or 3.0,
     GetTime())
