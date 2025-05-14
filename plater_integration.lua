@@ -372,6 +372,24 @@ function(self, unitId, unitFrame, envTable, modTable)
       if envTable.DM_FLASH_EXPIRING then self.dm_colFlash_IsLighterPhase = false end
   end
   self.dm_has_been_custom_colored = false
+
+  -- Check for NPC specific colors and extend them to borders if enabled
+  if envTable.DM_EXTEND_PLATER_COLORS and not self.dm_has_been_custom_colored then
+    local npcID = unitFrame.namePlateNpcId
+    if npcID and Plater.db and Plater.db.profile and Plater.db.profile.npc_colors and Plater.db.profile.npc_colors[npcID] then
+      local colorData = Plater.db.profile.npc_colors[npcID]
+      if colorData and colorData[3] then -- If color is set and enabled
+        local colorID = colorData[3]
+        local color = Plater.db.profile.npc_cache[colorID]
+        if color and unitFrame.healthBar.border and not envTable.DM_BORDER_ONLY then
+          unitFrame.healthBar.border:SetVertexColor(color[1], color[2], color[3], 1)
+          unitFrame.customBorderColor = {color[1], color[2], color[3], 1}
+          unitFrame.healthBar.border:Show()
+        end
+      end
+    end
+  end
+
   if envTable.DM_BORDER_ONLY then
     if unitFrame.healthBar.border then unitFrame.customBorderColor = nil; Plater.RefreshNameplateColor(unitFrame) end
   else
