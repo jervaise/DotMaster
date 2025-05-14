@@ -1,0 +1,76 @@
+
+Mod Name: bokmaster
+Author: DotMaster
+Description: Colors nameplates based on DoTs tracked by DotMaster
+Priority: 99
+Enabled: true
+Icon: Interface\ICONS\Spell_Shadow_ShadowWordPain
+Revision: 7
+Last Hook Edited: Constructor
+
+Hooks:
+
+Constructor:
+--------------
+function(self, unitId, unitFrame, envTable, modTable)
+  self.ThrottleUpdate = 0.016
+  modTable.config = {
+    spells = DotMaster.API:GetTrackedSpells(),
+    combos = DotMaster.API:GetCombinations(),
+    defaults = DotMaster.API:GetSettings(),
+  }
+end
+
+Nameplate Updated:
+-------------------
+function(self, unitId, unitFrame, envTable, modTable)
+  local cfg = modTable.config
+  if not cfg then return end
+
+  local function getColorComponents(colorTable)
+    if not colorTable then return 1, 1, 1, 1 end
+    local r, g, b, a = colorTable.r, colorTable.g, colorTable.b, colorTable.a
+    if r == nil and type(colorTable) == 'table' and #colorTable >= 3 then
+      r, g, b, a = colorTable[1], colorTable[2], colorTable[3], colorTable[4]
+    end
+    return r or 1, g or 1, b or 1, a or 1
+  end
+
+  local appliedColor = false
+
+  table.sort(cfg.spells or {}, function(a,b) return (a.priority or 999) < (b.priority or 999) end)
+  table.sort(cfg.combos or {}, function(a,b) return (a.priority or 999) < (b.priority or 999) end)
+
+  for _, combo in ipairs(cfg.combos or {}) do
+    if combo.enabled then
+      local all = true
+      for _, sid in ipairs(combo.spellList) do
+        if not Plater.NameplateHasAura(unitFrame, sid) then
+          all = false
+          break
+        end
+      end
+      if all then
+        local r, g, b, a = getColorComponents(combo.color)
+        Plater.SetNameplateColor(unitFrame, r, g, b, a)
+        appliedColor = true
+        break
+      end
+    end
+  end
+
+  if not appliedColor then
+    for _, s in ipairs(cfg.spells or {}) do
+      if s.enabled and Plater.NameplateHasAura(unitFrame, s.spellID) then
+        local r, g, b, a = getColorComponents(s.color)
+        Plater.SetNameplateColor(unitFrame, r, g, b, a)
+        appliedColor = true
+        break
+      end
+    end
+  end
+
+  if not appliedColor then
+    Plater.RefreshNameplateColor(unitFrame)
+  end
+end

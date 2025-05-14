@@ -50,6 +50,39 @@ end
 -- Store the info area creation function in the Components namespace
 DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 
+-- Function to update Plater Integration status in the footer
+function DM:UpdatePlaterStatusFooter()
+  if not DM.GUI.statusMessage then return end -- Safety check
+
+  local Plater = _G["Plater"]
+  local statusText = "Plater Integration: "
+  local r, g, b = 1, 0, 0 -- Default to red (error color)
+
+  if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
+    local bokmasterFound = false
+    for i, mod in ipairs(Plater.db.profile.hook_data) do
+      if mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
+        -- A simple check: if the hook code contains a known DotMaster variable like "DM_SPELLS"
+        if type(mod.Hooks["Nameplate Updated"]) == "string" and string.find(mod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
+          bokmasterFound = true
+          break
+        end
+      end
+    end
+    if bokmasterFound then
+      statusText = statusText .. "Active"
+      r, g, b = 1, 1, 1 -- White for active
+    else
+      statusText = statusText .. "Error (DotMaster Integration mod not found or misconfigured)"
+    end
+  else
+    statusText = statusText .. "Error (Plater AddOn not detected or profile inaccessible)"
+  end
+
+  DM.GUI.statusMessage:SetText(statusText)
+  DM.GUI.statusMessage:SetTextColor(r, g, b)
+end
+
 -- Create the main GUI
 function DM:CreateGUI()
   -- Get the player's class color
@@ -107,6 +140,8 @@ function DM:CreateGUI()
     if DM.InstallPlaterMod then
       DM:PrintMessage("Force pushing settings to bokmaster before closing...")
       DM:InstallPlaterMod()
+      -- Update footer after attempting to install
+      if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end
     end
   end)
 
@@ -125,44 +160,33 @@ function DM:CreateGUI()
     -- Force push to bokmaster with current settings when window is closed by any means
     if DM.InstallPlaterMod then
       DM:InstallPlaterMod()
+      -- Update footer after attempting to install, before GUI fully hides
+      if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end
     end
 
-    -- Direct check for border thickness change to ensure popup appears
-    if DM.originalBorderThickness and settings.borderThickness and
-        DM.originalBorderThickness ~= settings.borderThickness then
-      print("|cFFFF9900DotMaster-Debug: Border thickness changed from " ..
-        DM.originalBorderThickness .. " to " .. settings.borderThickness .. " - showing popup|r")
+    -- Make sure original settings are initialized (safety check)
+    if not DM.originalBorderThickness then
+      DM.originalBorderThickness = settings.borderThickness
+      print("|cFFFF9900DotMaster-Debug: No original thickness - initializing to " .. settings.borderThickness .. "|r")
+    end
 
-      -- Create popup directly
-      StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] = {
-        text = "Border thickness has changed from " .. DM.originalBorderThickness ..
-            " to " .. settings.borderThickness ..
-            ".\n\nReload UI to fully apply this change?",
-        button1 = "Reload Now",
-        button2 = "Later",
-        OnAccept = function()
-          ReloadUI()
-        end,
-        OnCancel = function()
-          DM:PrintMessage("Remember to reload your UI to fully apply border thickness changes.")
-          -- Update the stored original value to prevent repeated prompts
-          DM.originalBorderThickness = settings.borderThickness
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-      }
-      StaticPopup_Show("DOTMASTER_RELOAD_CONFIRM")
+    if not DM.originalBorderOnly then
+      DM.originalBorderOnly = settings.borderOnly and true or false
+      print("|cFFFF9900DotMaster-Debug: No original border-only - initializing to " ..
+        (settings.borderOnly and "ENABLED" or "DISABLED") .. "|r")
+    end
+
+    if not DM.originalEnabled then
+      DM.originalEnabled = settings.enabled and true or false
+      print("|cFFFF9900DotMaster-Debug: No original enabled - initializing to " ..
+        (settings.enabled and "ENABLED" or "DISABLED") .. "|r")
+    end
+
+    -- Use the standard function with improved checks to show popup if needed
+    if DM.ShowReloadUIPopupForBorderThickness then
+      DM:ShowReloadUIPopupForBorderThickness()
     else
-      print("|cFFFF9900DotMaster-Debug: Final thickness check - Original: " ..
-        (DM.originalBorderThickness or "nil") .. " Current: " ..
-        (settings.borderThickness or "nil") .. "|r")
-
-      -- Use the standard function as a fallback
-      if DM.ShowReloadUIPopupForBorderThickness then
-        DM:ShowReloadUIPopupForBorderThickness()
-      end
+      print("|cFFFF9900DotMaster-Debug: ShowReloadUIPopupForBorderThickness function not available|r")
     end
   end)
 
@@ -198,9 +222,10 @@ function DM:CreateGUI()
   -- Add a status message text in place of the save button
   local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
-  statusMessage:SetText("Auto-saving: Enabled")
-  statusMessage:SetTextColor(0.7, 0.7, 0.7)
-  DM.GUI.statusMessage = statusMessage -- Store reference for later updates
+  -- Initial text will be set by UpdatePlaterStatusFooter
+  statusMessage:SetText("Plater Integration: Initializing...")
+  statusMessage:SetTextColor(0.7, 0.7, 0.7) -- Neutral color initially
+  DM.GUI.statusMessage = statusMessage      -- Store reference for later updates
 
   -- Add a subtle class-colored glow to the save button
   if classColor then
@@ -345,6 +370,11 @@ function DM:CreateGUI()
 
   -- Initialize GUI frame
   DM.GUI.frame = frame
+
+  -- Call initial status update after GUI elements are created
+  if DM.UpdatePlaterStatusFooter then
+    DM:UpdatePlaterStatusFooter()
+  end
 
   return frame
 end

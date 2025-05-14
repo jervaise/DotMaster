@@ -31,11 +31,29 @@ function DM.ClassSpec:InitializeClassSpecProfiles()
 
   -- Create spec entry if it doesn't exist
   if not DotMasterDB.classProfiles[currentClass][currentSpecID] then
-    -- Initialize with current settings as default
+    -- Get current settings for initialization, but filter out global ones
+    local settings = DM.API:GetSettings()
+    local classSpecSettings = {}
+
+    -- Only copy settings that should be class-specific
+    for k, v in pairs(settings) do
+      -- Skip these settings as they are stored globally
+      if k ~= "minimapIcon" and
+          k ~= "enabled" and -- Explicitly exclude enabled - it's global only
+          k ~= "forceColor" and
+          k ~= "borderOnly" and
+          k ~= "borderThickness" and
+          k ~= "flashExpiring" and
+          k ~= "flashThresholdSeconds" then
+        classSpecSettings[k] = v
+      end
+    end
+
+    -- Initialize with filtered settings
     DotMasterDB.classProfiles[currentClass][currentSpecID] = {
       spells = DM.API:GetTrackedSpells(),
       combos = DM.API:GetCombinations(),
-      settings = DM.API:GetSettings()
+      settings = classSpecSettings
     }
 
     -- If no spells are configured yet, add appropriate test spells based on class
@@ -187,6 +205,15 @@ end
 
 -- Function to push current class/spec configuration to bokmaster
 function DM.ClassSpec:PushConfigToPlater()
+  -- Debugging origin of settings
+  print("DotMaster-DEBUG: PushConfigToPlater called (start of function)")
+  if DotMasterDB then
+    print("DotMaster-DEBUG: DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
+  else
+    print("DotMaster-DEBUG: DotMasterDB is nil!")
+  end
+  print("DotMaster-DEBUG: DM.enabled = " .. (DM.enabled and "true" or "false"))
+
   -- Throttle updates to prevent spamming when many settings change at once
   local now = GetTime()
   if self.lastPushTime and now - self.lastPushTime < 0.5 then
@@ -303,19 +330,32 @@ function DM.ClassSpec:PushConfigToPlater()
   Plater.db.profile.hook_data[bokMasterIndex].config = configToPush
 
   -- Enable or disable the mod based on DotMaster's enabled setting
-  -- Check for explicit bokmaster enabled flag first, fall back to DotMaster's enabled state
-  local isEnabled
-  if DM.bokmasterEnabled ~= nil then
-    isEnabled = DM.bokmasterEnabled
-    DM:PrintMessage("Using explicit bokmaster enabled setting: " .. (isEnabled and "ENABLED" or "DISABLED"))
-  else
-    isEnabled = DotMasterDB.enabled
-    DM:PrintMessage("Using DotMaster enabled state for bokmaster: " .. (isEnabled and "ENABLED" or "DISABLED"))
-  end
-
+  local isEnabled = DotMasterDB.enabled
   if isEnabled ~= nil then
+    -- Log the current state before making changes
+    print("DotMaster-Debug: PushConfigToPlater - Current bokmaster state: " ..
+      (Plater.db.profile.hook_data[bokMasterIndex].Enabled and "ENABLED" or "DISABLED") ..
+      ", Setting to: " .. (isEnabled and "ENABLED" or "DISABLED"))
+
+    -- Always use the setting directly from DotMasterDB
     Plater.db.profile.hook_data[bokMasterIndex].Enabled = isEnabled
     DM:PrintMessage((isEnabled and "Enabled" or "Disabled") .. " bokmaster Plater mod")
+
+    -- Double check after a short delay to ensure the setting was applied
+    C_Timer.After(0.2, function()
+      if Plater.db.profile.hook_data[bokMasterIndex] then
+        local currentState = Plater.db.profile.hook_data[bokMasterIndex].Enabled
+        if currentState ~= isEnabled then
+          print("DotMaster-Warning: Enabled state mismatch detected! Forcing value again...")
+          Plater.db.profile.hook_data[bokMasterIndex].Enabled = isEnabled
+
+          -- Force a recompile to ensure changes take effect
+          if Plater.WipeAndRecompileAllScripts then
+            Plater.WipeAndRecompileAllScripts("hook")
+          end
+        end
+      end
+    end)
   end
 
   -- Debug message about what's happening
@@ -350,6 +390,7 @@ function DM.ClassSpec:SaveCurrentSettings()
   for k, v in pairs(currentSettings) do
     -- Skip these settings as they are stored globally
     if k ~= "minimapIcon" and
+        k ~= "enabled" and
         k ~= "forceColor" and
         k ~= "borderOnly" and
         k ~= "borderThickness" and

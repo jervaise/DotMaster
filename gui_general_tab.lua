@@ -400,15 +400,10 @@ function DM:CreateGeneralTab(parent)
     if settings.flashThresholdSeconds > 1 then
       settings.flashThresholdSeconds = settings.flashThresholdSeconds - 0.5
       secondsValue:SetText(settings.flashThresholdSeconds .. " s")
-
-      -- Force-save directly to DotMasterDB
-      if DotMasterDB ~= nil then
-        if not DotMasterDB.settings then DotMasterDB.settings = {} end
-        DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
-        print("DotMaster: Force-saved Flash Threshold to DotMasterDB: " ..
-          settings.flashThresholdSeconds .. " seconds")
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.flashThresholdSeconds = settings
+            .flashThresholdSeconds
       end
-
       DM:AutoSave()
     end
   end)
@@ -424,15 +419,10 @@ function DM:CreateGeneralTab(parent)
     if settings.flashThresholdSeconds < 8 then
       settings.flashThresholdSeconds = settings.flashThresholdSeconds + 0.5
       secondsValue:SetText(settings.flashThresholdSeconds .. " s")
-
-      -- Force-save directly to DotMasterDB
-      if DotMasterDB ~= nil then
-        if not DotMasterDB.settings then DotMasterDB.settings = {} end
-        DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
-        print("DotMaster: Force-saved Flash Threshold to DotMasterDB: " ..
-          settings.flashThresholdSeconds .. " seconds")
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.flashThresholdSeconds = settings
+            .flashThresholdSeconds
       end
-
       DM:AutoSave()
     end
   end)

@@ -22,7 +22,7 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "1.0.7"
+  return "1.0.8"
 end
 
 -- Debug function to print out DotMasterDB contents
@@ -441,9 +441,8 @@ function DM.API:GetSettings()
     print("DotMaster: API.GetSettings - No DotMasterDB.enabled, using default: DISABLED")
   end
 
-  -- Initialize global settings and minimap settings
+  -- Use the right settings source to avoid nil errors
   local globalSettings = DotMasterDB and DotMasterDB.settings or {}
-  local minimapSettings = DotMasterDB and DotMasterDB.minimap or { hide = false }
 
   return {
     enabled = defaultEnabledValue,

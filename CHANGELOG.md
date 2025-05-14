@@ -1,7 +1,16 @@
 # DotMaster Changelog
 
-## Version 1.0.7
-Released: July 2023
+## 1.0.8 (2023-06-18)
+
+### Fixes
+- Fixed issue with settings not persisting correctly between UI reloads
+- Added proper tracking for enabled/disabled state in the border settings reload popup
+- Fixed border thickness control when Border-only mode is disabled - now properly reverts to Plater's settings
+- Improved change detection to prevent unnecessary reload UI popups
+- Enhanced debug logging for easier troubleshooting
+- Fixed false positive change detection that was causing reload UI popups to appear unnecessarily
+
+## 1.0.7 (Previous version)
 
 ### New Features:
 - **Auto-Save Functionality**: Settings now automatically save when changed without requiring the Save button

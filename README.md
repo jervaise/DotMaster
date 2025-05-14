@@ -1,28 +1,44 @@
 # DotMaster
 
-DotMaster is a World of Warcraft addon that enhances the tracking of damage-over-time spells on enemy nameplates.
+## Version 1.0.8
+
+DotMaster is a World of Warcraft addon that works with Plater Nameplates to enhance DoT (Damage over Time) tracking.
 
 ## Features
 
-- **DoT Tracking**: Visual indicators on enemy nameplates showing your active DoTs
-- **Nameplate Coloring**: Optional coloring of enemy nameplates based on active DoTs
-- **Customizable Appearance**: Adjust size, position, and appearance of DoT indicators
-- **Spell Management**: Configure which spells to track through an intuitive interface
-- **Minimap Button**: Quick access to addon functions
+- Customize border colors for different DoTs on enemy nameplates
+- Border-only mode to show only colored borders without affecting nameplate colors
+- Expiry flash functionality to alert you when DoTs are about to expire
+- Create combinations of multiple DoTs with unique colors
+- Class and specialization specific profiles
+- Full Plater integration
 
 ## Installation
 
-1. Download the latest release from [GitHub](https://github.com/YourUsername/DotMaster/releases)
-2. Extract the folder to your `World of Warcraft\_retail_\Interface\AddOns` directory
-3. Ensure the folder is named exactly `DotMaster`
-4. Restart World of Warcraft if it's running
+1. Download the latest release from [GitHub](https://github.com/yourusername/DotMaster/releases)
+2. Extract the DotMaster folder to your World of Warcraft `_retail_/Interface/AddOns` directory
+3. Ensure Plater Nameplates addon is installed and enabled
+4. Enable DotMaster in your addon list
+5. Use `/dm` to open the configuration panel
 
-## Usage
+## Commands
 
-- `/dm` - Toggle the main GUI
+- `/dm` - Toggle the configuration panel
 - `/dm on` - Enable the addon
 - `/dm off` - Disable the addon
-- `/dm config` - Open configuration window
+- `/dm show` - Show the configuration panel
+- `/dm push` - Force push settings to Plater
+- `/dm reset` - Reset to default settings
+- `/dm reload` - Reload UI
+
+## Recent Changes
+
+See the [CHANGELOG.md](CHANGELOG.md) file for detailed information about recent changes.
+
+## Requirements
+
+- World of Warcraft: Retail
+- Plater Nameplates addon
 
 ## Architecture
 
@@ -50,15 +66,6 @@ DotMaster/
 ├── Libs/              # External libraries
 └── Media/             # Icons and textures
 ```
-
-## Requirements
-
-- World of Warcraft Retail (10.2.0+)
-- Dependencies (included):
-  - LibStub
-  - CallbackHandler-1.0
-  - LibDataBroker-1.1
-  - LibDBIcon-1.0
 
 ## For Developers
 

@@ -30,8 +30,8 @@ DM.addonName = "DotMaster"
 DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
-  enabled = true,
-  version = "1.0.7",
+  enabled = false,         -- Default to disabled so users must explicitly enable it
+  version = "1.0.8",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -55,27 +55,38 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DM.LoadSettings then
       DM:LoadSettings()
 
-      -- Initialize border thickness tracking
+      -- Initialize border thickness tracking with proper type checking
       if DM.API and DM.API.GetSettings then
         local settings = DM.API:GetSettings()
-        DM.originalBorderThickness = settings.borderThickness
-        print("|cFFFF9900DotMaster-Debug: Initialized border thickness tracking on load: " ..
-          (DM.originalBorderThickness or "nil") .. "|r")
+        DM.originalBorderThickness = tonumber(settings.borderThickness)
+        DM.originalBorderOnly = settings.borderOnly and true or false
+        DM.originalEnabled = settings.enabled and true or false -- Track the enabled state too
 
-        -- Initialize bokmaster enabled state
-        if DotMasterDB.bokmasterEnabled ~= nil then
-          DM.bokmasterEnabled = DotMasterDB.bokmasterEnabled
-          print("|cFFFF9900DotMaster-Debug: Loaded bokmaster enabled state: " .. tostring(DM.bokmasterEnabled) .. "|r")
-        else
-          DM.bokmasterEnabled = settings.enabled
-          DotMasterDB.bokmasterEnabled = settings.enabled
-          print("|cFFFF9900DotMaster-Debug: Initialized bokmaster enabled state to: " ..
-          tostring(DM.bokmasterEnabled) .. "|r")
-        end
+        print("|cFFFF9900DotMaster-Debug: Initialized border settings tracking:")
+        print("|cFFFF9900DotMaster-Debug: - Thickness: " .. DM.originalBorderThickness)
+        print("|cFFFF9900DotMaster-Debug: - Border-only: " .. (DM.originalBorderOnly and "ENABLED" or "DISABLED") .. "|r")
+        print("|cFFFF9900DotMaster-Debug: - Enabled: " .. (DM.originalEnabled and "ENABLED" or "DISABLED") .. "|r")
       end
     end
 
     DM.pendingInitialization = false
+
+    -- Check if we need to restore Plater's original border thickness (if border-only mode was just disabled)
+    if DotMasterDB and DotMasterDB.shouldRestorePlaterThickness and DotMasterDB.originalPlaterBorderThickness then
+      local Plater = _G["Plater"]
+      if Plater and Plater.db and Plater.db.profile then
+        print("DotMaster: Restoring Plater's original border thickness: " .. DotMasterDB.originalPlaterBorderThickness)
+        Plater.db.profile.border_thickness = DotMasterDB.originalPlaterBorderThickness
+
+        -- Update all nameplates
+        if Plater.UpdateAllPlatesBorderThickness then
+          Plater.UpdateAllPlatesBorderThickness()
+        end
+
+        -- Clear the flag so we don't do this again
+        DotMasterDB.shouldRestorePlaterThickness = nil
+      end
+    end
   elseif event == "PLAYER_LOGIN" then
     DM.initState = "player_login"
 
@@ -113,6 +124,20 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     -- Make sure bokmaster mod is up to date with our latest code
     C_Timer.After(2.0, function()
       if DM.InstallPlaterMod then
+        -- Make sure we don't override the saved enabled state
+        print("DotMaster: Ensuring Plater mod state matches saved settings (" ..
+          (DotMasterDB and DotMasterDB.enabled and "ENABLED" or "DISABLED") .. ")")
+
+        -- For safety, manually verify that settings.enabled matches DotMasterDB.enabled
+        if DM.API and DM.API.GetSettings then
+          local settings = DM.API:GetSettings()
+          if DotMasterDB and DotMasterDB.enabled ~= nil and settings.enabled ~= DotMasterDB.enabled then
+            print("DotMaster: CRITICAL - Settings enabled mismatch detected during startup! Fixing...")
+            settings.enabled = DotMasterDB.enabled
+            DM.enabled = DotMasterDB.enabled
+          end
+        end
+
         DM:InstallPlaterMod()
         DM:PrintMessage("Reinstalled bokmaster mod with latest code.")
 

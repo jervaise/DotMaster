@@ -366,8 +366,95 @@ end
 function DM:InitializeMainSlashCommands()
   SLASH_DOTMASTER1 = "/dm"
   SlashCmdList["DOTMASTER"] = function(msg)
-    -- Use the new HandleSlashCommand function
-    DM:HandleSlashCommand(msg)
+    local command, arg = strsplit(" ", msg, 2)
+    command = strtrim(command:lower())
+
+    if command == "on" or command == "enable" then
+      local settings = DM.API:GetSettings()
+      settings.enabled = true
+      DM.enabled = true
+      DM:AutoSave()
+      DM:PrintMessage("Enabled")
+    elseif command == "off" or command == "disable" then
+      local settings = DM.API:GetSettings()
+      settings.enabled = false
+      DM.enabled = false
+      DM:AutoSave()
+      DM:PrintMessage("Disabled")
+    elseif command == "show" and DM.GUI and DM.GUI.frame then
+      DM.GUI.frame:Show()
+    elseif command == "reload" then
+      ReloadUI()
+    elseif command == "push" or command == "bokmaster" then
+      -- Force push to bokmaster
+      DM:ForcePushToBokmaster()
+    elseif command == "reset" then
+      -- Create confirmation dialog
+      if StaticPopupDialogs and StaticPopup_Show then
+        StaticPopupDialogs["DOTMASTER_RESET_CONFIRM"] = {
+          text =
+          "Are you sure you want to reset all DotMaster settings? This will delete all your saved spells and configurations.",
+          button1 = "Yes",
+          button2 = "No",
+          OnAccept = function()
+            -- Explicitly clear each component of DotMasterDB
+            if DotMasterDB then
+              DotMasterDB.spellConfig = nil
+              DotMasterDB.dmspellsdb = nil
+              DotMasterDB.spellDatabase = nil
+            end
+            DotMasterDB = nil
+
+            -- Reset settings to defaults
+            local defaultSettings = {
+              enabled = true,
+              forceColor = false,
+              borderOnly = false,
+              borderThickness = 2,
+              flashExpiring = false,
+              flashThresholdSeconds = 3.0,
+              minimapIcon = { hide = false }
+            }
+
+            DM.enabled = defaultSettings.enabled
+            DM:AutoSave()
+            DM:PrintMessage("Settings reset to defaults")
+          end,
+          timeout = 0,
+          whileDead = true,
+          hideOnEscape = true,
+          preferredIndex = 3,
+        }
+        StaticPopup_Show("DOTMASTER_RESET_CONFIRM")
+      else
+        DM:PrintMessage("Cannot show reset confirmation dialog.")
+      end
+    elseif command == "save" then
+      DM:SaveSettings()
+      DM:PrintMessage("Settings saved")
+    else
+      -- Try to toggle main GUI if available, otherwise print help
+      if DM.GUI and DM.GUI.frame then
+        if DM.GUI.frame:IsShown() then
+          DM.GUI.frame:Hide()
+        else
+          DM.GUI.frame:Show()
+        end
+      elseif command == "show" and DM.GUI and DM.GUI.frame then
+        DM.GUI.frame:Show()
+      elseif command == "reload" then
+        ReloadUI()
+      else
+        DM:PrintMessage("Available commands:")
+        DM:PrintMessage("  /dm on - Enable addon")
+        DM:PrintMessage("  /dm off - Disable addon")
+        DM:PrintMessage("  /dm show - Show GUI (if loaded)")
+        DM:PrintMessage("  /dm push - Force push settings to bokmaster")
+        DM:PrintMessage("  /dm reset - Reset to default settings")
+        DM:PrintMessage("  /dm save - Force save settings")
+        DM:PrintMessage("  /dm reload - Reload UI")
+      end
+    end
   end
 end
 
@@ -425,148 +512,4 @@ function DM:AutoSave()
       end)
     end
   end)
-end
-
--- Handle slash commands
-function DM:HandleSlashCommand(message)
-  local command, args = strsplit(" ", message, 2)
-  command = command and strlower(command) or ""
-
-  -- Make sure to handle both old and new command formats
-  if command == "toggle" then
-    -- Toggle DotMaster enabled/disabled
-    DM.enabled = not DM.enabled
-
-    DM:PrintMessage("DotMaster " .. (DM.enabled and "Enabled" or "Disabled"))
-
-    -- Update saved variables
-    DotMasterDB.enabled = DM.enabled
-
-    -- Update API settings
-    local settings = DM.API:GetSettings()
-    settings.enabled = DM.enabled
-    DM.API:SaveSettings(settings)
-
-    -- Force push to bokmaster
-    DM:ForcePushToBokmaster()
-  elseif command == "on" or command == "enable" then
-    -- Enable DotMaster
-    local settings = DM.API:GetSettings()
-    settings.enabled = true
-    DM.enabled = true
-    DM:AutoSave()
-    DM:PrintMessage("Enabled")
-  elseif command == "off" or command == "disable" then
-    -- Disable DotMaster
-    local settings = DM.API:GetSettings()
-    settings.enabled = false
-    DM.enabled = false
-    DM:AutoSave()
-    DM:PrintMessage("Disabled")
-  elseif command == "show" and DM.GUI and DM.GUI.frame then
-    -- Show the GUI if it exists
-    DM.GUI.frame:Show()
-  elseif command == "push" or command == "bokmaster" then
-    -- Force push to bokmaster
-    DM:ForcePushToBokmaster()
-  elseif command == "reload" then
-    -- Reload UI
-    DM:PrintMessage("Reloading UI...")
-    C_Timer.After(0.5, function() ReloadUI() end)
-  elseif command == "reset" then
-    -- Create confirmation dialog
-    if StaticPopupDialogs and StaticPopup_Show then
-      StaticPopupDialogs["DOTMASTER_RESET_CONFIRM"] = {
-        text =
-        "Are you sure you want to reset all DotMaster settings? This will delete all your saved spells and configurations.",
-        button1 = "Yes",
-        button2 = "No",
-        OnAccept = function()
-          -- Explicitly clear each component of DotMasterDB
-          if DotMasterDB then
-            DotMasterDB.spellConfig = nil
-            DotMasterDB.dmspellsdb = nil
-            DotMasterDB.spellDatabase = nil
-          end
-          DotMasterDB = nil
-
-          -- Reset settings to defaults
-          local defaultSettings = {
-            enabled = true,
-            forceColor = false,
-            borderOnly = false,
-            borderThickness = 2,
-            flashExpiring = false,
-            flashThresholdSeconds = 3.0,
-            minimapIcon = { hide = false }
-          }
-
-          DM.enabled = defaultSettings.enabled
-          DM:AutoSave()
-          DM:PrintMessage("Settings reset to defaults")
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-      }
-      StaticPopup_Show("DOTMASTER_RESET_CONFIRM")
-    else
-      DM:PrintMessage("Cannot show reset confirmation dialog.")
-    end
-  elseif command == "save" then
-    -- Force save settings
-    DM:SaveSettings()
-    DM:PrintMessage("Settings saved")
-  elseif command == "debug" then
-    -- Debug commands
-    if args and strlower(args) == "flash" then
-      -- Debug expiry flash
-      if DM.DebugFlashExpiry then
-        DM:DebugFlashExpiry(true, 5.0)
-        DM:PrintMessage("Flash expiry debug mode activated - 5.0 seconds threshold")
-      else
-        DM:PrintMessage("Debug flash function not available")
-      end
-    else
-      -- Toggle debug mode
-      DM.debugMode = not DM.debugMode
-      DM:PrintMessage("Debug mode " .. (DM.debugMode and "Enabled" or "Disabled"))
-    end
-  elseif command == "testflash" then
-    -- Test flash expiry functionality with optional threshold parameter
-    local threshold = tonumber(args)
-    if DM.DebugFlashExpiry then
-      DM:DebugFlashExpiry(true, threshold or 3.0)
-      DM:PrintMessage("Flash expiry test activated with threshold " .. (threshold or 3.0) .. " seconds")
-    else
-      DM:PrintMessage("Flash expiry test function not available")
-    end
-  elseif command == "gui" or command == "" or command == "config" or command == "options" then
-    -- Try to toggle main GUI if available
-    if DM.GUI and DM.GUI.frame then
-      if DM.GUI.frame:IsShown() then
-        DM.GUI.frame:Hide()
-      else
-        DM.GUI.frame:Show()
-      end
-    else
-      DM:OpenGUI()
-    end
-  else
-    -- Show help
-    DM:PrintMessage("DotMaster commands:")
-    DM:PrintMessage("  /dm - Open/close configuration")
-    DM:PrintMessage("  /dm toggle - Toggle DotMaster on/off")
-    DM:PrintMessage("  /dm on, /dm enable - Enable DotMaster")
-    DM:PrintMessage("  /dm off, /dm disable - Disable DotMaster")
-    DM:PrintMessage("  /dm show - Show GUI (if loaded)")
-    DM:PrintMessage("  /dm push - Force push settings to bokmaster")
-    DM:PrintMessage("  /dm reset - Reset to default settings")
-    DM:PrintMessage("  /dm save - Force save settings")
-    DM:PrintMessage("  /dm reload - Reload UI")
-    DM:PrintMessage("  /dm debug - Toggle debug mode")
-    DM:PrintMessage("  /dm debug flash - Test flash expiry with 5s threshold")
-    DM:PrintMessage("  /dm testflash [seconds] - Test flash expiry with custom threshold")
-  end
 end
