@@ -173,12 +173,11 @@ function DM:CreateGUI()
 
   -- Add force push on close
   closeButton:HookScript("OnClick", function()
-    -- Force push to DotMaster Integration with current settings
-    if DM.InstallPlaterMod then
-      DM:PrintMessage("Force pushing settings to DotMaster Integration before closing...")
-      DM:InstallPlaterMod()
-      -- Update footer after attempting to install
-      if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end
+    -- Force push settings to DotMaster Integration when closing
+    if not DM.disablePush then
+      if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+        DM.ClassSpec:PushConfigToPlater()
+      end
     end
   end)
 
@@ -190,8 +189,6 @@ function DM:CreateGUI()
     -- Force refresh settings from DotMasterDB to ensure we have the latest values
     if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
       settings.borderThickness = DotMasterDB.settings.borderThickness
-      print("|cFFFF9900DotMaster-Debug: Refreshed border thickness from DotMasterDB: " ..
-        settings.borderThickness .. "|r")
     end
 
     -- Force push to DotMaster Integration with current settings when window is closed by any means
@@ -204,26 +201,11 @@ function DM:CreateGUI()
     -- Make sure original settings are initialized (safety check)
     if not DM.originalBorderThickness then
       DM.originalBorderThickness = settings.borderThickness
-      print("|cFFFF9900DotMaster-Debug: No original thickness - initializing to " .. settings.borderThickness .. "|r")
-    end
-
-    if not DM.originalBorderOnly then
-      DM.originalBorderOnly = settings.borderOnly and true or false
-      print("|cFFFF9900DotMaster-Debug: No original border-only - initializing to " ..
-        (settings.borderOnly and "ENABLED" or "DISABLED") .. "|r")
-    end
-
-    if not DM.originalEnabled then
-      DM.originalEnabled = settings.enabled and true or false
-      print("|cFFFF9900DotMaster-Debug: No original enabled - initializing to " ..
-        (settings.enabled and "ENABLED" or "DISABLED") .. "|r")
     end
 
     -- Use the standard function with improved checks to show popup if needed
     if DM.ShowReloadUIPopupForBorderThickness then
       DM:ShowReloadUIPopupForBorderThickness()
-    else
-      print("|cFFFF9900DotMaster-Debug: ShowReloadUIPopupForBorderThickness function not available|r")
     end
   end)
 

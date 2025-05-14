@@ -155,13 +155,11 @@ function DM:LoadSettings()
   return settings
 end
 
--- Tracks if border settings have been changed during this session
+-- Tracks if border thickness has been changed during this session
 function DM:TrackBorderThicknessChange()
   -- Get current settings
   local settings = DM.API:GetSettings()
   local currentThickness = settings.borderThickness
-  local currentBorderOnly = settings.borderOnly and true or false -- Force to boolean
-  local currentEnabled = settings.enabled and true or false       -- Track enabled state
 
   -- Initialize original values if not set
   if not DM.originalBorderThickness then
@@ -172,51 +170,33 @@ function DM:TrackBorderThicknessChange()
       DM.originalBorderThickness = currentThickness
     end
 
-    -- Also initialize original border-only state
-    if DotMasterDB and DotMasterDB.settings then
-      DM.originalBorderOnly = DotMasterDB.settings.borderOnly and true or false -- Force to boolean
-    else
-      DM.originalBorderOnly = currentBorderOnly
-    end
-
-    -- Initialize original enabled state
-    if DotMasterDB then
-      DM.originalEnabled = DotMasterDB.enabled and true or false -- Force to boolean
-    else
-      DM.originalEnabled = currentEnabled
-    end
-
     return false
   end
 
-  -- Check all states (thickness, border-only, and enabled)
-  -- Convert everything to same type (number for thickness, boolean for others)
+  -- Check only border thickness
+  -- Convert to number to ensure proper comparison
   local thicknessChanged = tonumber(DM.originalBorderThickness) ~= tonumber(currentThickness)
-  local borderOnlyChanged = (DM.originalBorderOnly and true or false) ~= (currentBorderOnly and true or false)
-  local enabledChanged = (DM.originalEnabled and true or false) ~= (currentEnabled and true or false)
 
-  -- Return true if any setting has changed
-  return thicknessChanged or borderOnlyChanged or enabledChanged
+  -- Return true only if thickness has changed
+  return thicknessChanged
 end
 
--- Shows reload UI popup for border settings changes
+-- Shows reload UI popup for border thickness changes
 function DM:ShowReloadUIPopupForBorderThickness()
   -- Force creation of popup dialog template
   if not StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] then
     StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] = {
-      text = "Border settings have changed.\n\nReload UI to fully apply these changes?",
+      text = "Border thickness has changed.\n\nReload UI to fully apply this change?",
       button1 = "Reload Now",
       button2 = "Later",
       OnAccept = function()
         ReloadUI()
       end,
       OnCancel = function()
-        DM:PrintMessage("Remember to reload your UI to fully apply border setting changes.")
-        -- Update the stored original values to prevent repeated prompts
+        DM:PrintMessage("Remember to reload your UI to fully apply border thickness changes.")
+        -- Update the stored original value to prevent repeated prompts
         local settings = DM.API:GetSettings()
         DM.originalBorderThickness = settings.borderThickness
-        DM.originalBorderOnly = settings.borderOnly
-        DM.originalEnabled = settings.enabled -- Update enabled state too
       end,
       timeout = 0,
       whileDead = true,
@@ -228,45 +208,25 @@ function DM:ShowReloadUIPopupForBorderThickness()
   local settings = DM.API:GetSettings()
 
   -- Do one more explicit check to avoid false positives
-  if not DM.originalBorderThickness or not DM.originalBorderOnly or not DM.originalEnabled then
+  if not DM.originalBorderThickness then
     return false
   end
 
   -- Double-check for actual changes using strict typing
   local currentThickness = tonumber(settings.borderThickness)
   local originalThickness = tonumber(DM.originalBorderThickness)
-  local currentBorderOnly = settings.borderOnly and true or false
-  local originalBorderOnly = DM.originalBorderOnly and true or false
-  local currentEnabled = settings.enabled and true or false
-  local originalEnabled = DM.originalEnabled and true or false
 
   local thicknessChanged = currentThickness ~= originalThickness
-  local borderOnlyChanged = currentBorderOnly ~= originalBorderOnly
-  local enabledChanged = currentEnabled ~= originalEnabled
 
-  -- Only proceed if there are actual changes
-  if not (thicknessChanged or borderOnlyChanged or enabledChanged) then
+  -- Only proceed if thickness actually changed
+  if not thicknessChanged then
     return false
   end
 
-  -- If we made it here, there are real changes
-  -- Simplify the popup message to be more generic
-  local changedSettings = {}
-
-  -- Identify which settings changed (for debugging purposes)
-  if thicknessChanged then
-    table.insert(changedSettings, "thickness")
-  end
-  if borderOnlyChanged then
-    table.insert(changedSettings, "border-only mode")
-  end
-  if enabledChanged then
-    table.insert(changedSettings, "enabled state")
-  end
-
-  -- Use a simple generic message instead of detailed changes
+  -- Update popup text to be specific about border thickness
   StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"].text =
-  "Border settings have changed.\n\nReload UI to fully apply these changes?";
+      "Border thickness has changed from " ..
+      originalThickness .. " to " .. currentThickness .. ".\n\nReload UI to fully apply this change?";
 
   -- Show the popup
   StaticPopup_Show("DOTMASTER_RELOAD_CONFIRM")
