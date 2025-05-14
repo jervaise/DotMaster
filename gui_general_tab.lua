@@ -52,7 +52,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create main content container with lower height to avoid footer overlap
   local contentPanel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-  contentPanel:SetSize(450, 320) -- Increased height from 270 to 320px to provide more space
+  contentPanel:SetSize(450, 430) -- Increased height from 320 to 430px
   contentPanel:SetPoint("TOP", infoArea, "BOTTOM", 0, -15)
 
   -- Apply a subtle backdrop
@@ -81,7 +81,7 @@ function DM:CreateGeneralTab(parent)
   -- Left column for image
   local leftColumn = CreateFrame("Frame", nil, contentPanel)
   leftColumn:SetSize(140, 140)
-  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 10, -50)
+  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 25, -50) -- Added 15px left margin (from 10 to 25)
 
   -- Right column for settings
   local rightColumn = CreateFrame("Frame", nil, contentPanel)
