@@ -30,7 +30,7 @@ local function RestoreCheckboxTexts()
         elseif checkboxName == "DotMasterExtendColorsCheckbox" then
           checkbox.labelText:SetText("Extend Plater Colors to Borders")
         elseif checkboxName == "DotMasterBorderOnlyCheckbox" then
-          checkbox.labelText:SetText("Use borders for dot tracking")
+          checkbox.labelText:SetText("Use Borders for DoT Tracking")
         end
       end
     end
@@ -359,7 +359,7 @@ function DM:CreateGeneralTab(parent)
 
   -- Create a checkbox for border-only mode
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    rightColumn, extendColorsCheckbox, -3, "Use borders for dot tracking")
+    rightColumn, extendColorsCheckbox, -3, "Use Borders for DoT Tracking")
   borderOnlyCheckbox:SetChecked(settings.borderOnly)
 
   -- Border thickness control
@@ -409,11 +409,6 @@ function DM:CreateGeneralTab(parent)
 
       -- Use AutoSave instead of direct SaveSettings
       DM:AutoSave()
-
-      -- Update nameplates if enabled
-      if settings.enabled then
-        DM:UpdateAllNameplates()
-      end
     end
   end)
 
@@ -441,11 +436,6 @@ function DM:CreateGeneralTab(parent)
 
       -- Use AutoSave instead of direct SaveSettings
       DM:AutoSave()
-
-      -- Update nameplates if enabled
-      if settings.enabled then
-        DM:UpdateAllNameplates()
-      end
     end
   end)
 
@@ -490,9 +480,6 @@ function DM:CreateGeneralTab(parent)
     -- NOTE: Do NOT show reload popup immediately
     -- Let the popup appear only when the GUI is closed
     -- This matches the behavior of the border thickness changes
-
-    -- Update nameplates if enabled
-    if settings.enabled then DM:UpdateAllNameplates() end
   end)
 
   -- Apply mutual exclusivity on initial load
