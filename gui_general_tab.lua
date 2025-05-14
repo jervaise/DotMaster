@@ -86,7 +86,7 @@ function DM:CreateGeneralTab(parent)
   -- Right column for settings
   local rightColumn = CreateFrame("Frame", nil, contentPanel)
   rightColumn:SetSize(240, 200)
-  rightColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 180, -70)
+  rightColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 180, -50)
 
   -- Add panda image with a subtle border
   local imageBorder = CreateFrame("Frame", nil, leftColumn, "BackdropTemplate")
