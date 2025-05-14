@@ -374,7 +374,7 @@ function(self, unitId, unitFrame, envTable, modTable)
   self.dm_has_been_custom_colored = false
 
   -- Check for NPC specific colors and extend them to borders if enabled
-  if envTable.DM_EXTEND_PLATER_COLORS and not self.dm_has_been_custom_colored then
+  if envTable.DM_EXTEND_PLATER_COLORS then
     local npcID = unitFrame.namePlateNpcId
     if npcID and Plater.db and Plater.db.profile and Plater.db.profile.npc_colors and Plater.db.profile.npc_colors[npcID] then
       local colorData = Plater.db.profile.npc_colors[npcID]
