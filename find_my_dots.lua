@@ -12,6 +12,11 @@ function DM:StartFindMyDots()
   -- If already active, exit
   if self.recordingDots then return end
 
+  -- Hide main GUI
+  if DM.GUI and DM.GUI.frame and DM.GUI.frame:IsShown() then
+    DM.GUI.frame:Hide()
+  end
+
   -- Reset shown notifications
   self.shownNotifications = {}
   self.totalDotsFound = 0
@@ -78,6 +83,13 @@ function DM:StopFindMyDots(automatic, finished)
       DM:DebugMsg("Recording completed. No dots detected.")
     else
       DM:DebugMsg("Dot recording mode canceled. No dots detected.")
+    end
+    -- Show main GUI and select Database tab if no dots found or cancelled early
+    if DM.GUI and DM.GUI.frame then
+      DM.GUI.frame:Show()
+      if DM.GUI.SelectTab then
+        DM.GUI:SelectTab(4) -- Database tab is ID 4
+      end
     end
   end
 end
@@ -550,24 +562,39 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- Hide frame
     closeButton:SetScript("OnClick", function()
       self.dotsConfirmFrame:Hide()
+      -- Show main GUI and select Database tab when closing confirmation
+      if DM.GUI and DM.GUI.frame then
+        DM.GUI.frame:Show()
+        if DM.GUI.SelectTab then
+          DM.GUI:SelectTab(4) -- Database tab is ID 4
+        end
+      end
     end)
 
     -- Add selected dots or just close the window
     addButton:SetScript("OnClick", function()
       -- Check if there are any new dots to add
       local hasNewDots = false
-      for id, _ in pairs(self.dotCheckboxes or {}) do
-        local dotInfo = self.detectedDots[tonumber(id)]
-        if dotInfo and not self:SpellExists(id) then
-          hasNewDots = true
-          break
+      for id, checkbox in pairs(self.dotCheckboxes or {}) do -- Ensure self.dotCheckboxes exists
+        if checkbox:GetChecked() then                        -- Ensure checkbox itself is valid before GetChecked
+          local dotInfo = self.detectedDots[tonumber(id)]
+          if dotInfo and not self:SpellExists(id) then
+            hasNewDots = true
+            break
+          end
         end
       end
 
-      -- If no new dots, just close the window
+      -- If no new dots, just close the window and show main GUI
       if not hasNewDots then
         DM:DebugMsg("No new dots to add - closing window")
         self.dotsConfirmFrame:Hide()
+        if DM.GUI and DM.GUI.frame then
+          DM.GUI.frame:Show()
+          if DM.GUI.SelectTab then
+            DM.GUI:SelectTab(4) -- Database tab is ID 4
+          end
+        end
         return
       end
 
@@ -622,6 +649,14 @@ function DM:ShowDotsConfirmationDialog(dots)
       end)
 
       self.dotsConfirmFrame:Hide()
+
+      -- Show main GUI and select Database tab
+      if DM.GUI and DM.GUI.frame then
+        DM.GUI.frame:Show()
+        if DM.GUI.SelectTab then
+          DM.GUI:SelectTab(4) -- Database tab is ID 4
+        end
+      end
     end)
 
     -- Make the window movable

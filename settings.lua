@@ -155,48 +155,96 @@ function DM:LoadSettings()
   return settings
 end
 
--- Tracks if border thickness has been changed during this session
-function DM:TrackBorderThicknessChange()
-  -- Get current settings
+-- Initialize original critical settings tracker
+DM.originalCriticalSettings = {
+  borderThickness = nil,
+  extendPlaterColors = nil,
+  borderOnly = nil
+}
+
+-- Tracks if critical Plater settings have changed during this session
+function DM:TrackCriticalSettingsChange()
   local settings = DM.API:GetSettings()
-  local currentThickness = settings.borderThickness
 
-  -- Initialize original values if not set
-  if not DM.originalBorderThickness then
-    -- Use DotMasterDB directly if available
-    if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
-      DM.originalBorderThickness = DotMasterDB.settings.borderThickness
-    else
-      DM.originalBorderThickness = currentThickness
-    end
+  -- Initialize original values if not set for this session
+  local initialSetup = false
+  if DM.originalCriticalSettings.borderThickness == nil then
+    DM.originalCriticalSettings.borderThickness = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness) or
+        settings.borderThickness
+    initialSetup = true
+  end
+  if DM.originalCriticalSettings.extendPlaterColors == nil then
+    DM.originalCriticalSettings.extendPlaterColors = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.extendPlaterColors ~= nil) and
+        DotMasterDB.settings.extendPlaterColors or settings.extendPlaterColors
+    initialSetup = true
+  end
+  if DM.originalCriticalSettings.borderOnly == nil then
+    DM.originalCriticalSettings.borderOnly = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly ~= nil) and
+        DotMasterDB.settings.borderOnly or settings.borderOnly
+    initialSetup = true
+  end
 
+  if initialSetup then
+    -- If we just initialized, no change has occurred yet relative to the start of this tracking
     return false
   end
 
-  -- Check only border thickness
-  -- Convert to number to ensure proper comparison
-  local thicknessChanged = tonumber(DM.originalBorderThickness) ~= tonumber(currentThickness)
+  -- Check for changes
+  local thicknessChanged = tonumber(DM.originalCriticalSettings.borderThickness) ~= tonumber(settings.borderThickness)
+  local extendColorsChanged = DM.originalCriticalSettings.extendPlaterColors ~= settings.extendPlaterColors
+  local borderOnlyChanged = DM.originalCriticalSettings.borderOnly ~= settings.borderOnly
 
-  -- Return true only if thickness has changed
-  return thicknessChanged
+  return thicknessChanged or extendColorsChanged or borderOnlyChanged
 end
 
--- Shows reload UI popup for border thickness changes
-function DM:ShowReloadUIPopupForBorderThickness()
-  -- Force creation of popup dialog template
-  if not StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] then
-    StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"] = {
-      text = "Border thickness has changed.\n\nReload UI to fully apply this change?",
+-- Shows reload UI popup for critical Plater settings changes
+function DM:ShowReloadUIPopupForCriticalChanges()
+  local settings = DM.API:GetSettings()
+
+  -- Ensure original settings have been initialized for comparison
+  if DM.originalCriticalSettings.borderThickness == nil or DM.originalCriticalSettings.extendPlaterColors == nil or DM.originalCriticalSettings.borderOnly == nil then
+    -- This typically means TrackCriticalSettingsChange hasn't run or initialized properly
+    -- Initialize them now to prevent errors, though a prompt might be missed if this is the first check.
+    DM.originalCriticalSettings.borderThickness = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness) or
+        settings.borderThickness
+    DM.originalCriticalSettings.extendPlaterColors = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.extendPlaterColors ~= nil) and
+        DotMasterDB.settings.extendPlaterColors or settings.extendPlaterColors
+    DM.originalCriticalSettings.borderOnly = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly ~= nil) and
+        DotMasterDB.settings.borderOnly or settings.borderOnly
+    -- No changes to report yet if we just initialized here
+    return false
+  end
+
+  local currentBorderThickness = tonumber(settings.borderThickness)
+  local originalBorderThickness = tonumber(DM.originalCriticalSettings.borderThickness)
+  local currentExtendColors = settings.extendPlaterColors
+  local originalExtendColors = DM.originalCriticalSettings.extendPlaterColors
+  local currentBorderOnly = settings.borderOnly
+  local originalBorderOnly = DM.originalCriticalSettings.borderOnly
+
+  local thicknessChanged = originalBorderThickness ~= currentBorderThickness
+  local extendColorsChanged = originalExtendColors ~= currentExtendColors
+  local borderOnlyChanged = originalBorderOnly ~= currentBorderOnly
+
+  if not (thicknessChanged or extendColorsChanged or borderOnlyChanged) then
+    return false -- No actual changes detected
+  end
+
+  if not StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"] then
+    StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"] = {
+      text = "You have to reload UI to apply these changes.",
       button1 = "Reload Now",
       button2 = "Later",
       OnAccept = function()
         ReloadUI()
       end,
       OnCancel = function()
-        DM:PrintMessage("Remember to reload your UI to fully apply border thickness changes.")
-        -- Update the stored original value to prevent repeated prompts
-        local settings = DM.API:GetSettings()
-        DM.originalBorderThickness = settings.borderThickness
+        DM:PrintMessage("Remember to reload your UI to fully apply critical Plater settings changes.")
+        -- Update stored original values to current values to prevent repeated prompts for this set of changes
+        local currentSettings = DM.API:GetSettings()
+        DM.originalCriticalSettings.borderThickness = currentSettings.borderThickness
+        DM.originalCriticalSettings.extendPlaterColors = currentSettings.extendPlaterColors
+        DM.originalCriticalSettings.borderOnly = currentSettings.borderOnly
       end,
       timeout = 0,
       whileDead = true,
@@ -205,31 +253,15 @@ function DM:ShowReloadUIPopupForBorderThickness()
     }
   end
 
-  local settings = DM.API:GetSettings()
+  -- Construct a more dynamic message if desired, or keep it generic
+  -- Example for a more dynamic message (optional):
+  -- local changedItems = {}
+  -- if thicknessChanged then table.insert(changedItems, string.format("Border Thickness (%s -> %s)", originalBorderThickness, currentBorderThickness)) end
+  -- if extendColorsChanged then table.insert(changedItems, "Extend Plater Colors") end
+  -- if borderOnlyChanged then table.insert(changedItems, "Use Borders for DoT Tracking") end
+  -- StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"].text = "The following Plater appearance settings have changed:\\n - " .. table.concat(changedItems, "\\n - ") .. "\\n\\nReload UI to fully apply these changes?"
 
-  -- Do one more explicit check to avoid false positives
-  if not DM.originalBorderThickness then
-    return false
-  end
-
-  -- Double-check for actual changes using strict typing
-  local currentThickness = tonumber(settings.borderThickness)
-  local originalThickness = tonumber(DM.originalBorderThickness)
-
-  local thicknessChanged = currentThickness ~= originalThickness
-
-  -- Only proceed if thickness actually changed
-  if not thicknessChanged then
-    return false
-  end
-
-  -- Update popup text to be specific about border thickness
-  StaticPopupDialogs["DOTMASTER_RELOAD_CONFIRM"].text =
-      "Border thickness has changed from " ..
-      originalThickness .. " to " .. currentThickness .. ".\n\nReload UI to fully apply this change?";
-
-  -- Show the popup
-  StaticPopup_Show("DOTMASTER_RELOAD_CONFIRM")
+  StaticPopup_Show("DOTMASTER_CRITICAL_RELOAD_CONFIRM")
   return true
 end
 

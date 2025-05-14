@@ -77,42 +77,57 @@ function DM:CreateGeneralTab(parent)
   configTitle:SetText("Configuration - " .. currentClass .. " (" .. specName .. ")")
   configTitle:SetTextColor(classColor.r, classColor.g, classColor.b)
 
-  -- Create the two-column layout
-  -- Left column for image
+  -- Define layout constants
+  local V_PADDING_BELOW_CONFIG_TITLE = 30
+  local LEFT_MARGIN_PANEL = 20
+  local RIGHT_MARGIN_PANEL = 20
+  local INTER_COLUMN_SPACING = 15
+  local LEFT_COLUMN_WIDTH = 140
+  local COLUMN_CONTENT_HEIGHT = 280 -- Estimated height for column content area
+
+  -- Calculate starting Y offset for columns, below configTitle
+  -- Note: configTitle:GetHeight() can be small before text is set, so use a fixed estimate or ensure text is set first.
+  -- For simplicity here, assuming configTitle height + padding is roughly 30-35px.
+  -- A more robust way would be to get height after text set, or use fixed offsets known from design.
+  local columnTopY = -((configTitle:GetStringHeight() or 16) + V_PADDING_BELOW_CONFIG_TITLE)
+
+  -- Left column
   local leftColumn = CreateFrame("Frame", nil, contentPanel)
-  leftColumn:SetSize(140, 140)
-  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 25, -50) -- Added 15px left margin (from 10 to 25)
+  leftColumn:SetSize(LEFT_COLUMN_WIDTH, COLUMN_CONTENT_HEIGHT)
+  leftColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", LEFT_MARGIN_PANEL, columnTopY)
 
-  -- Right column for settings
+  -- Right column
+  local availableWidthForRightColumn = contentPanel:GetWidth() - LEFT_MARGIN_PANEL - LEFT_COLUMN_WIDTH -
+      INTER_COLUMN_SPACING - RIGHT_MARGIN_PANEL
   local rightColumn = CreateFrame("Frame", nil, contentPanel)
-  rightColumn:SetSize(240, 200)
-  rightColumn:SetPoint("TOPLEFT", contentPanel, "TOPLEFT", 180, -50)
+  rightColumn:SetSize(availableWidthForRightColumn, COLUMN_CONTENT_HEIGHT)
+  rightColumn:SetPoint("TOPLEFT", leftColumn, "TOPRIGHT", INTER_COLUMN_SPACING, 0) -- Vertically align with leftColumn's top
 
-  -- Add panda image with a subtle border
-  local imageBorder = CreateFrame("Frame", nil, leftColumn, "BackdropTemplate")
-  imageBorder:SetSize(140, 140)
-  imageBorder:SetPoint("CENTER", leftColumn, "CENTER")
-  imageBorder:SetBackdrop({
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 16,
-    insets = { left = 5, right = 5, top = 5, bottom = 5 },
-  })
-  imageBorder:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 0.6)
-
-  local pandaImage = imageBorder:CreateTexture(nil, "ARTWORK")
-  pandaImage:SetSize(120, 120)
-  pandaImage:SetPoint("CENTER")
+  -- Panda image (Content for leftColumn)
+  local pandaImage = leftColumn:CreateTexture(nil, "ARTWORK")
+  pandaImage:SetSize(128, 128)
+  pandaImage:SetPoint("TOP", leftColumn, "TOP", 0, -5) -- 5px padding from top of leftColumn
   pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
-  -- Add "Get Jervaise Plater Profile" button below the bear image
-  local profileButton = CreateFrame("Button", "DotMasterPlaterProfileButton", leftColumn, "UIPanelButtonTemplate")
-  profileButton:SetSize(130, 22)
-  profileButton:SetPoint("TOP", imageBorder, "BOTTOM", 0, -10)
-  profileButton:SetText("Jervaise Plater Profile")
+  -- Descriptive text for Jervaise Plater Profile button
+  local profileDescription = leftColumn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  profileDescription:SetText(
+    "For the best experience, install the Jervaise Plater Profile. It includes predefined M+ nameplate colors for casters & important mobs.")
+  profileDescription:SetTextColor(0.8, 0.8, 0.8, 0.9) -- Light grey, slightly transparent
+  profileDescription:SetJustifyH("CENTER")
+  profileDescription:SetJustifyV("TOP")
+  profileDescription:SetWidth(130)                                         -- Match the width of the image/button area
+  profileDescription:SetPoint("TOPLEFT", pandaImage, "BOTTOMLEFT", 0, -10) -- Position below panda image
+
+  -- "Get Jervaise Plater Profile" button below the description text
+  local platerProfileButton = CreateFrame("Button", "DotMasterPlaterProfileButton", leftColumn, "UIPanelButtonTemplate")
+  platerProfileButton:SetSize(130, 22)
+  platerProfileButton:SetPoint("TOPLEFT", profileDescription, "BOTTOMLEFT", 0, -8) -- Position below description
+  platerProfileButton:SetText("Jervaise Plater Profile")
 
   -- Add class color to the button
   if classColor then
-    local normalTexture = profileButton:GetNormalTexture()
+    local normalTexture = platerProfileButton:GetNormalTexture()
     if normalTexture then
       normalTexture:SetVertexColor(
         classColor.r * 0.7 + 0.3,
@@ -190,7 +205,7 @@ function DM:CreateGeneralTab(parent)
   end
 
   -- Set the button's click handler
-  profileButton:SetScript("OnClick", ShowProfileURLPopup)
+  platerProfileButton:SetScript("OnClick", ShowProfileURLPopup)
 
   -- Get settings from API
   local settings = DM.API:GetSettings()
@@ -227,8 +242,8 @@ function DM:CreateGeneralTab(parent)
 
   -- Add General Settings header/separator
   local generalHeaderContainer = CreateFrame("Frame", nil, rightColumn)
-  generalHeaderContainer:SetSize(240, 24)
-  generalHeaderContainer:SetPoint("TOPLEFT", rightColumn, "TOPLEFT", 0, 0)
+  generalHeaderContainer:SetSize(rightColumn:GetWidth() - 10, 24)           -- Use rightColumn's calculated width
+  generalHeaderContainer:SetPoint("TOPLEFT", rightColumn, "TOPLEFT", 5, -5) -- 5px padding within rightColumn
 
   -- Create general header text
   local generalHeaderText = generalHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -459,6 +474,7 @@ function DM:CreateGeneralTab(parent)
 
     -- AutoSave for serialization
     DM:AutoSave()
+    DM:TrackCriticalSettingsChange()
 
     -- Reinstall Plater mod to ensure changes take effect
     if settings.enabled and Plater and DM.PlaterIntegration then
@@ -492,6 +508,7 @@ function DM:CreateGeneralTab(parent)
 
     -- AutoSave for serialization
     DM:AutoSave()
+    DM:TrackCriticalSettingsChange()
 
     -- Reinstall Plater mod to ensure changes take effect
     if settings.enabled and Plater and DM.PlaterIntegration then
@@ -549,7 +566,7 @@ function DM:CreateGeneralTab(parent)
       DM:AutoSave()
 
       -- Ensure the change is tracked for reload popup when GUI closes
-      DM:TrackBorderThicknessChange()
+      DM:TrackCriticalSettingsChange()
     end
   end)
 
@@ -579,7 +596,7 @@ function DM:CreateGeneralTab(parent)
       DM:AutoSave()
 
       -- Ensure the change is tracked for reload popup when GUI closes
-      DM:TrackBorderThicknessChange()
+      DM:TrackCriticalSettingsChange()
     end
   end)
 

@@ -56,68 +56,52 @@ function DM:UpdatePlaterStatusFooter()
 
   local Plater = _G["Plater"]
   local statusText = "Plater Integration: "
-  local r, g, b = 1, 0, 0 -- Default to red (error color)
-  local showButton = false
+  local r, g, b = 1, 1, 1 -- Default to white
 
-  if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
-    local dotMasterIntegrationFound = false
-    -- Iterate through Plater hook_data, which can be an array or a table
+  local isPlaterAvailable = (Plater ~= nil)
+  local isIntegrated = false -- Renamed from dotMasterIntegrationFound for clarity
+
+  if isPlaterAvailable and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
     local hookData = Plater.db.profile.hook_data
     if type(hookData) == "table" then
       for modName, modData in pairs(hookData) do
-        -- Check if the mod name is "DotMaster Integration" or if the modData itself has a Name field (for array-like tables)
         if modName == "DotMaster Integration" or (type(modData) == "table" and modData.Name == "DotMaster Integration") then
-          local actualMod = type(modData) == "table" and modData or hookData -- Get the actual mod table
+          local actualMod = type(modData) == "table" and modData or hookData
           if actualMod.Hooks and actualMod.Hooks["Nameplate Updated"] then
             if type(actualMod.Hooks["Nameplate Updated"]) == "string" and string.find(actualMod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
-              dotMasterIntegrationFound = true
+              isIntegrated = true
               break
             end
           end
         end
       end
-      -- Fallback for array-like structure if not found as direct keys
-      if not dotMasterIntegrationFound then
+      if not isIntegrated then
         for i, mod in ipairs(hookData) do
-          if mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
+          if type(mod) == "table" and mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
             if type(mod.Hooks["Nameplate Updated"]) == "string" and string.find(mod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
-              dotMasterIntegrationFound = true
+              isIntegrated = true
               break
             end
           end
         end
       end
     end
+  end
 
-    if dotMasterIntegrationFound then
-      statusText = statusText .. "Active"
-      r, g, b = 1, 1, 1 -- White for active
-      showButton = false
-    else
-      statusText = statusText .. "Error (DotMaster Integration mod not found or misconfigured)"
-      --showButton = true -- Original behavior was error text, now we show button
-      r, g, b = 1, 0, 0 -- Error color for the text (though it might be hidden)
-      showButton = true
-    end
-  else
-    statusText = statusText .. "Error (Plater AddOn not detected or profile inaccessible)"
-    showButton = false
+  if not isPlaterAvailable then
+    statusText = statusText .. "Error (Plater AddOn not detected)"
+    r, g, b = 1, 0, 0                           -- Red
+  elseif not isIntegrated then
+    statusText = statusText .. "Not Integrated" -- Overlay will prompt for action
+    r, g, b = 1, 0.5, 0                         -- Orange
+  else                                          -- Plater is available and integrated
+    statusText = statusText .. "Active"
+    r, g, b = 0, 1, 0                           -- Green
   end
 
   DM.GUI.statusMessage:SetText(statusText)
   DM.GUI.statusMessage:SetTextColor(r, g, b)
-
-  if showButton then
-    DM.GUI.statusMessage:Hide()
-    if DM.GUI.platerIntegrationButton then
-      DM.GUI.platerIntegrationButton:Show()
-    end
-  else
-    DM.GUI.statusMessage:Show()
-    if DM.GUI.platerIntegrationButton then
-      DM.GUI.platerIntegrationButton:Hide()
-    end
-  end
+  DM.GUI.statusMessage:Show()
 end
 
 -- Create the main GUI
@@ -125,6 +109,24 @@ function DM:CreateGUI()
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
+
+  -- Initialize original critical settings if not already done (e.g., by settings.lua loading earlier)
+  -- This ensures they are captured at least once when the GUI is created for the session.
+  if DM.originalCriticalSettings then -- Check if the table exists
+    local settings = DM.API:GetSettings()
+    if DM.originalCriticalSettings.borderThickness == nil then
+      DM.originalCriticalSettings.borderThickness = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness) or
+          settings.borderThickness
+    end
+    if DM.originalCriticalSettings.extendPlaterColors == nil then
+      DM.originalCriticalSettings.extendPlaterColors = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.extendPlaterColors ~= nil) and
+          DotMasterDB.settings.extendPlaterColors or settings.extendPlaterColors
+    end
+    if DM.originalCriticalSettings.borderOnly == nil then
+      DM.originalCriticalSettings.borderOnly = (DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly ~= nil) and
+          DotMasterDB.settings.borderOnly or settings.borderOnly
+    end
+  end
 
   -- Track border thickness changes
   if not DM.originalBorderThickness then
@@ -175,6 +177,12 @@ function DM:CreateGUI()
   local helpButton = CreateFrame("Button", nil, frame)
   helpButton:SetSize(20, 20)
   helpButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", -2, 0)
+
+  -- Informative text for the help button
+  local helpButtonText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  helpButtonText:SetText("How to use")
+  helpButtonText:SetTextColor(0.7, 0.7, 0.7, 0.9)             -- Light grey, slightly transparent
+  helpButtonText:SetPoint("RIGHT", helpButton, "LEFT", -3, 0) -- Position to the left of the icon, with small spacing
 
   -- Create the texture for the question mark icon
   local helpIcon = helpButton:CreateTexture(nil, "ARTWORK")
@@ -285,17 +293,17 @@ function DM:CreateGUI()
     -- Introduction
     yOffset = yOffset - CreateSection("What is DotMaster?", yOffset)
     yOffset = yOffset -
-    CreateText(
-    "DotMaster is an addon that colors enemy nameplates based on the damage-over-time (DoT) effects you apply to them. It works with any class and specialization, making it easier to track which targets have your DoTs applied and which ones need attention.",
-      yOffset)
+        CreateText(
+          "DotMaster is an addon that colors enemy nameplates based on the damage-over-time (DoT) effects you apply to them. It works with any class and specialization, making it easier to track which targets have your DoTs applied and which ones need attention.",
+          yOffset)
 
     -- Overview Section
     yOffset = yOffset - 20 -- Extra space
     yOffset = yOffset - CreateSection("How DotMaster Works", yOffset)
     yOffset = yOffset -
-    CreateText(
-    "DotMaster integrates with Plater Nameplates to provide dynamic visual tracking of DoTs through nameplate colors, borders, or both. When you apply a DoT spell to a target, its nameplate or border will change color based on your configuration.",
-      yOffset)
+        CreateText(
+          "DotMaster integrates with Plater Nameplates to provide dynamic visual tracking of DoTs through nameplate colors, borders, or both. When you apply a DoT spell to a target, its nameplate or border will change color based on your configuration.",
+          yOffset)
 
     -- Features Section
     yOffset = yOffset - 20 -- Extra space
@@ -303,72 +311,108 @@ function DM:CreateGUI()
 
     -- Feature list with explanations
     yOffset = yOffset -
-    CreateFeature("DoT Tracking",
-      "Colors enemy nameplates based on the DoTs you've applied to them. Track individual DoTs or combinations for more complex rotations.",
-      yOffset)
+        CreateFeature("DoT Tracking",
+          "Colors enemy nameplates based on the DoTs you've applied to them. Track individual DoTs or combinations for more complex rotations.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Expiry Flash",
-      "Nameplates can flash when your DoTs are about to expire, helping you time re-applications perfectly.", yOffset)
+        CreateFeature("Expiry Flash",
+          "Nameplates can flash when your DoTs are about to expire, helping you time re-applications perfectly.", yOffset)
     yOffset = yOffset -
-    CreateFeature("Border Only Mode",
-      "Instead of coloring the entire nameplate, you can opt to only color the border, preserving other nameplate information.",
-      yOffset)
+        CreateFeature("Border Only Mode",
+          "Instead of coloring the entire nameplate, you can opt to only color the border, preserving other nameplate information.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Extend Plater Colors", "Apply Plater's custom NPC colors to nameplate borders for better visibility.",
-      yOffset)
+        CreateFeature("Extend Plater Colors",
+          "Apply Plater's custom NPC colors to nameplate borders for better visibility.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Force Threat Color", "Prioritize threat coloring over DoT coloring for better tanking awareness.",
-      yOffset)
+        CreateFeature("Force Threat Color", "Prioritize threat coloring over DoT coloring for better tanking awareness.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Border Thickness", "Customize the nameplate border thickness to your preference.", yOffset)
+        CreateFeature("Border Thickness", "Customize the nameplate border thickness to your preference.", yOffset)
 
     -- Settings Section
     yOffset = yOffset - 20 -- Extra space
     yOffset = yOffset - CreateSection("Settings Explained", yOffset)
 
     yOffset = yOffset -
-    CreateFeature("General Settings",
-      "Control basic addon functionality, including enabling/disabling the addon, showing the minimap icon, and determining how threat and DoT colors interact.",
-      yOffset)
+        CreateFeature("General Settings",
+          "Control basic addon functionality, including enabling/disabling the addon, showing the minimap icon, and determining how threat and DoT colors interact.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Tracked Spells",
-      "Add specific spells to track. Each spell can have its own custom color. You can add spells directly from your spellbook or by spell ID.",
-      yOffset)
+        CreateFeature("Tracked Spells",
+          "Add specific spells to track. Each spell can have its own custom color. You can add spells directly from your spellbook or by spell ID.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Combinations",
-      "Create color rules for specific combinations of DoTs. When all DoTs in a combination are active on a target, it will use the combination color instead of individual DoT colors.",
-      yOffset)
+        CreateFeature("Combinations",
+          "Create color rules for specific combinations of DoTs. When all DoTs in a combination are active on a target, it will use the combination color instead of individual DoT colors.",
+          yOffset)
     yOffset = yOffset -
-    CreateFeature("Border Logic",
-      "Control whether DoT colors affect the entire nameplate or just the border. You can also customize the border thickness and extend Plater's NPC colors to borders.",
-      yOffset)
+        CreateFeature("Border Logic",
+          "Control whether DoT colors affect the entire nameplate or just the border. You can also customize the border thickness and extend Plater's NPC colors to borders.",
+          yOffset)
 
     -- Usage Tips
     yOffset = yOffset - 20 -- Extra space
     yOffset = yOffset - CreateSection("Usage Tips", yOffset)
 
     yOffset = yOffset -
-    CreateText("• Border-only mode is useful when you want to preserve health bar colors but still track DoTs", yOffset)
+        CreateText("• Border-only mode is useful when you want to preserve health bar colors but still track DoTs",
+          yOffset)
     yOffset = yOffset -
-    CreateText(
-    "• For multi-DoT specializations, create combinations for your core DoT sets to easily track targets with all DoTs applied",
-      yOffset)
+        CreateText(
+          "• For multi-DoT specializations, create combinations for your core DoT sets to easily track targets with all DoTs applied",
+          yOffset)
     yOffset = yOffset -
-    CreateText("• Extend Plater Colors works only for NPCs with custom colors set in Plater's NPC Colors & Names tab",
-      yOffset)
+        CreateText(
+          "• Extend Plater Colors works only for NPCs with custom colors set in Plater's NPC Colors & Names tab",
+          yOffset)
     yOffset = yOffset -
-    CreateText("• When adjusting border thickness, you'll need to reload your UI for the changes to apply fully", yOffset)
+        CreateText("• When adjusting border thickness, you'll need to reload your UI for the changes to apply fully",
+          yOffset)
     yOffset = yOffset -
-    CreateText(
-    "• If DotMaster Integration is not found in Plater, use the integration button at the bottom of the window", yOffset)
+        CreateText(
+          "• If DotMaster Integration is not found in Plater, use the integration button at the bottom of the window",
+          yOffset)
 
     -- Additional Resources
     yOffset = yOffset - 20 -- Extra space
     yOffset = yOffset - CreateSection("Additional Resources", yOffset)
     yOffset = yOffset -
-    CreateText(
-    "For additional tips, configurations, and Plater profiles optimized for use with DotMaster, check the recommended Plater profile accessible through the 'Get Jervaise Plater Profile' button in the General tab.",
-      yOffset)
+        CreateText(
+          "For additional tips, configurations, and Plater profiles optimized for use with DotMaster, check the recommended Plater profile accessible through the 'Get Jervaise Plater Profile' button in the General tab.",
+          yOffset)
+
+    -- GUI Tabs Overview
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("GUI Tabs Overview", yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100Key Features:|r\n" ..
+          "- Automatic DoT Detection: Finds your DoTs as you play.\n" ..
+          "- Customizable Tracking: Choose which spells to track, their colors, and priorities.\n" ..
+          "- Plater Integration: Seamlessly colors Plater nameplates based on your DoTs.\n" ..
+          "- Spell Combinations: Group multiple DoTs into a single, prioritized visual.\n" ..
+          "- Class and Spec Awareness: Works with any class and specialization.",
+          yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100GUI Tabs Overview:|r\n" ..
+          "- |cFFADD8E6General Tab:|r Configure core DotMaster settings, Plater integration, minimap icon, and appearance options like border logic.\n" ..
+          "- |cFFADD8E6Tracked Spells Tab:|r Manage individual spells. Enable/disable tracking, set custom colors, and assign priorities for display.\n" ..
+          "- |cFFADD8E6Combinations Tab:|r Create and manage spell combinations. Define sets of spells that should be treated as a single, powerful effect with its own color and priority.\n" ..
+          "- |cFFADD8E6Database Tab:|r View all spells DotMaster has detected. Use the \"Find My Dots\" feature to discover new spells cast by your character.",
+          yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100Getting Started:|r\n" ..
+          "1. Open DotMaster settings with /dm.\n" ..
+          "2. Configure your preferences and settings.\n" ..
+          "3. Enjoy seamless integration with Plater Nameplates!",
+          yOffset)
 
     return helpFrame
   end
@@ -410,9 +454,8 @@ function DM:CreateGUI()
     -- Force push to DotMaster Integration with current settings when window is closed by any means
     if DM.InstallPlaterMod then
       DM:InstallPlaterMod()
-      -- Update footer after attempting to install, before GUI fully hides
-      if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end
     end
+    if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end -- Restore call
 
     -- Make sure original settings are initialized (safety check)
     if not DM.originalBorderThickness then
@@ -420,8 +463,8 @@ function DM:CreateGUI()
     end
 
     -- Use the standard function with improved checks to show popup if needed
-    if DM.ShowReloadUIPopupForBorderThickness then
-      DM:ShowReloadUIPopupForBorderThickness()
+    if DM.ShowReloadUIPopupForCriticalChanges then -- Changed function name
+      DM:ShowReloadUIPopupForCriticalChanges()
     end
   end)
 
@@ -440,6 +483,15 @@ function DM:CreateGUI()
   footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 25) -- Increased y-offset from 20 to 25
   footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 25)
 
+  -- Add a status message text in the footer
+  local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
+  statusMessage:SetText("Plater Integration: Initializing...")
+  statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
+  DM.GUI.statusMessage = statusMessage                                  -- Store reference
+
+  if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end -- Initial update for the message
+
   -- Add a subtle separator line at the top of the footer
   local separator = footerFrame:CreateTexture(nil, "ARTWORK")
   separator:SetHeight(1)
@@ -453,90 +505,6 @@ function DM:CreateGUI()
   saveButton:SetPoint("CENTER", footerFrame, "CENTER", 0, 0) -- Centered vertically in the footer
   saveButton:SetText("Save Settings")
   saveButton:Hide()                                          -- Hide the save button since we're auto-saving
-
-  -- Add a status message text in place of the save button
-  local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
-  -- Initial text will be set by UpdatePlaterStatusFooter
-  statusMessage:SetText("Plater Integration: Initializing...")
-  statusMessage:SetTextColor(0.7, 0.7, 0.7) -- Neutral color initially
-  DM.GUI.statusMessage = statusMessage      -- Store reference for later updates
-
-  -- Create Plater Integration button (initially hidden)
-  local platerIntegrationButton = CreateFrame("Button", "DotMasterPlaterIntegrationButton", footerFrame,
-    "UIPanelButtonTemplate")
-  platerIntegrationButton:SetSize(160, 24) -- Adjusted size to be more prominent
-  platerIntegrationButton:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
-  platerIntegrationButton:SetText("Plater Integration")
-  platerIntegrationButton:SetScript("OnClick", function()
-    local modString =
-    "!PLATER:2!PY/BasJAFEUr+BN11UW3lhitibsOnSixhNqF0EWgPGZe4pA4b5gZg3U139OF39ikSJeXey6ce2WzPSdfgPNoH3LtsbbgFWnuvw3yA1HD5i8s/pwPna1AYMmkfNeu/J+VBUoFpSR//MtTJUg/+RrY8+TwOLZssdui7UDJBqdvcLlAw5IRW47ZKrD0Z+2hRe1DVls6mZCJFpwLmyOYLyVd4JZaDLnpzI3jzqAIGVSVOocCtaDToHaDe8Hwus/5R3RepvEiWsziZJVGSZpuPYkOrevPTe5G1/sMpCS93rXQrzdkhtcu/AI="
-
-    if _G["Plater"] then
-      if type(_G["Plater"].ImportScriptString) == "function" then
-        DM:PrintMessage("Attempting to import DotMaster Integration mod into Plater using Plater.ImportScriptString...")
-        -- Calling Plater.ImportScriptString(text, ignoreRevision, overrideTriggers, showDebug, keepExisting)
-        local success, importedObject, wasEnabled = _G["Plater"].ImportScriptString(modString, true, false, true, false)
-
-        if success and importedObject then
-          DM:PrintMessage("DotMaster Integration mod import reported success by Plater. Imported object name: " ..
-            (importedObject.Name or "Unknown Name"))
-
-          -- Ensure the mod is enabled
-          if not importedObject.Enabled then
-            if type(_G["Plater"].EnableHook) == "function" then
-              _G["Plater"].EnableHook(importedObject) -- Try to enable it
-              DM:PrintMessage("Attempted to enable the imported Plater mod as it was not enabled.")
-              -- Plater might require a recompile after enabling a hook
-              if type(_G["Plater"].CompileHook) == "function" then
-                _G["Plater"].CompileHook(importedObject)
-                DM:PrintMessage("Attempted to recompile the Plater mod.")
-              elseif type(_G["Plater"].CompileAllHooksAndScripts) == "function" then
-                _G["Plater"].CompileAllHooksAndScripts()
-                DM:PrintMessage("Attempted to recompile all Plater hooks and scripts.")
-              end
-            else
-              DM:PrintMessage("Imported mod is not enabled, and Plater.EnableHook function not found.")
-            end
-          else
-            DM:PrintMessage("Imported Plater mod is already enabled.")
-          end
-
-          -- Refresh the footer status immediately after successful import and enabling attempt
-          if DM.UpdatePlaterStatusFooter then
-            DM:UpdatePlaterStatusFooter()
-          end
-
-          -- After a short delay, call InstallPlaterMod to push current settings to the newly imported/updated Plater mod
-          C_Timer.After(0.5, function()
-            if DM.InstallPlaterMod then
-              DM:PrintMessage(
-                "DotMaster: Delay finished. Running InstallPlaterMod to sync settings with the Plater mod.")
-              DM:InstallPlaterMod()
-              -- After InstallPlaterMod, refresh the footer again to ensure it reflects the latest state.
-              if DM.UpdatePlaterStatusFooter then
-                DM:PrintMessage("DotMaster: Refreshing footer status after InstallPlaterMod.")
-                DM:UpdatePlaterStatusFooter()
-              end
-            else
-              DM:PrintMessage("DotMaster: DM.InstallPlaterMod function not found. Cannot sync settings after delay.")
-            end
-          end)
-        else
-          DM:PrintMessage(
-            "Plater.ImportScriptString executed, but it did not return success or a valid imported object. Plater's internal debug messages (if any) might provide more details.")
-        end
-      else
-        DM:PrintMessage(
-          "Plater addon IS LOADED, but its ImportScriptString function was not found or is not a function. This is the primary function needed for import.")
-      end
-    else
-      DM:PrintMessage(
-        "Plater addon IS NOT LOADED (or _G[\"Plater\"] is nil). Cannot import DotMaster Integration mod. Please ensure Plater is enabled.")
-    end
-  end)
-  platerIntegrationButton:Hide()
-  DM.GUI.platerIntegrationButton = platerIntegrationButton
 
   -- Add a subtle class-colored glow to the save button
   if classColor then
@@ -681,11 +649,298 @@ function DM:CreateGUI()
 
   -- Initialize GUI frame
   DM.GUI.frame = frame
+  DM.GUI.tabs = {}
 
-  -- Call initial status update after GUI elements are created
-  if DM.UpdatePlaterStatusFooter then
-    DM:UpdatePlaterStatusFooter()
+  -- Create Plater Status Overlay (Initially Hidden)
+  local overlay = CreateFrame("Frame", "DotMasterPlaterOverlay", frame, "BackdropTemplate")
+  overlay:SetAllPoints(frame)
+  overlay:SetFrameStrata("DIALOG")                                   -- Ensure it's above tabs but below pop-ups
+  overlay:SetFrameLevel(frame:GetFrameLevel() + 100)                 -- High frame level to cover content
+  overlay:SetBackdrop({
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", -- Standard WoW dark background
+    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tile = true,
+    tileSize = 32,
+    edgeSize = 32,
+    insets = { left = 8, right = 8, top = 8, bottom = 8 }
+  })
+  overlay:SetBackdropColor(0, 0, 0, 0.85) -- Semi-transparent black
+  overlay:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+  overlay:EnableMouse(true)               -- Intercept mouse clicks
+  overlay:Hide()
+  DM.GUI.PlaterOverlay = overlay
+
+  local overlayMessage = overlay:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+  overlayMessage:SetPoint("CENTER", overlay, "CENTER", 0, 30)
+  overlayMessage:SetTextColor(1, 0.82, 0) -- Gold color
+  overlayMessage:SetJustifyH("CENTER")
+  overlayMessage:SetWidth(frame:GetWidth() - 100)
+  DM.GUI.PlaterOverlayMessage = overlayMessage
+
+  local overlayButton = CreateFrame("Button", "DotMasterPlaterOverlayButton", overlay, "UIPanelButtonTemplate")
+  overlayButton:SetSize(200, 30)
+  overlayButton:SetPoint("TOP", overlayMessage, "BOTTOM", 0, -20)
+  DM.GUI.PlaterOverlayButton = overlayButton
+
+  -- Function to check Plater status and update the overlay
+  function DM.GUI:UpdatePlaterOverlayStatus()
+    local isPlaterAvailable = (_G["Plater"] ~= nil)
+    local isIntegrated = false
+
+    if isPlaterAvailable and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
+      local hookData = Plater.db.profile.hook_data
+      if type(hookData) == "table" then
+        for modName, modData in pairs(hookData) do
+          if modName == "DotMaster Integration" or (type(modData) == "table" and modData.Name == "DotMaster Integration") then
+            local actualMod = type(modData) == "table" and modData or hookData
+            if actualMod.Hooks and actualMod.Hooks["Nameplate Updated"] then
+              if type(actualMod.Hooks["Nameplate Updated"]) == "string" and string.find(actualMod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
+                isIntegrated = true
+                break
+              end
+            end
+          end
+        end
+        if not isIntegrated then -- Fallback for array-like structure
+          for i, mod in ipairs(hookData) do
+            if type(mod) == "table" and mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
+              if type(mod.Hooks["Nameplate Updated"]) == "string" and string.find(mod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
+                isIntegrated = true
+                break
+              end
+            end
+          end
+        end
+      end
+    end
+
+    if not isPlaterAvailable then
+      DM.GUI.PlaterOverlayMessage:SetText(
+        "DotMaster requires Plater Nameplates to be installed and enabled.\nPlease ensure Plater is installed and active.")
+      DM.GUI.PlaterOverlayButton:Hide()
+      DM.GUI.PlaterOverlay:Show()
+    elseif not isIntegrated then
+      DM.GUI.PlaterOverlayMessage:SetText(
+        "DotMaster needs to integrate with Plater Nameplates.\nClick the button below to install the required Plater script.")
+      DM.GUI.PlaterOverlayButton:SetText("Install Plater Integration")
+      DM.GUI.PlaterOverlayButton:SetScript("OnClick", function()
+        local modString =
+        "!PLATER:2!PY/BasJAFEUr+BN11UW3lhitibsOnSixhNqF0EWgPGZe4pA4b5gZg3U139OF39ikSJeXey6ce2WzPSdfgPNoH3LtsbbgFWnuvw3yA1HD5i8s/pwPna1AYMmkfNeu/J+VBUoFpSR//MtTJUg/+RrY8+TwOLZssdui7UDJBqdvcLlAw5IRW47ZKrD0Z+2hRe1DVls6mZCJFpwLmyOYLyVd4JZaDLnpzI3jzqAIGVSVOocCtaDToHaDe8Hwus/5R3RepvEiWsziZJVGSZpuPYkOrevPTe5G1/sMpCS93rXQrzdkhtcu/AI="
+
+        if _G["Plater"] then
+          if type(_G["Plater"].ImportScriptString) == "function" then
+            DM:PrintMessage(
+              "Attempting to import DotMaster Integration mod into Plater using Plater.ImportScriptString...")
+            local success, importedObject, wasEnabled = _G["Plater"].ImportScriptString(modString, true, false, true,
+              false)
+
+            if success and importedObject then
+              DM:PrintMessage("DotMaster Integration mod import reported success by Plater. Imported object name: " ..
+                (importedObject.Name or "Unknown Name"))
+
+              if not importedObject.Enabled then
+                if type(_G["Plater"].EnableHook) == "function" then
+                  _G["Plater"].EnableHook(importedObject)
+                  DM:PrintMessage("Attempted to enable the imported Plater mod as it was not enabled.")
+                  if type(_G["Plater"].CompileHook) == "function" then
+                    _G["Plater"].CompileHook(importedObject)
+                    DM:PrintMessage("Attempted to recompile the Plater mod.")
+                  elseif type(_G["Plater"].CompileAllHooksAndScripts) == "function" then
+                    _G["Plater"].CompileAllHooksAndScripts()
+                    DM:PrintMessage("Attempted to recompile all Plater hooks and scripts.")
+                  end
+                else
+                  DM:PrintMessage("Imported mod is not enabled, and Plater.EnableHook function not found.")
+                end
+              else
+                DM:PrintMessage("Imported Plater mod is already enabled.")
+              end
+
+              DM.GUI:UpdatePlaterOverlayStatus() -- Update overlay status immediately
+
+              C_Timer.After(0.5, function()
+                if DM.InstallPlaterMod then
+                  DM:PrintMessage(
+                    "DotMaster: Delay finished. Running InstallPlaterMod to sync settings with the Plater mod.")
+                  DM:InstallPlaterMod()
+                  DM.GUI:UpdatePlaterOverlayStatus() -- Refresh overlay status again after InstallPlaterMod
+                else
+                  DM:PrintMessage("DotMaster: DM.InstallPlaterMod function not found. Cannot sync settings after delay.")
+                  DM.GUI:UpdatePlaterOverlayStatus() -- Still refresh overlay
+                end
+              end)
+            else
+              DM:PrintMessage(
+                "Plater.ImportScriptString executed, but it did not return success or a valid imported object. Plater's internal debug messages (if any) might provide more details.")
+              DM.GUI:UpdatePlaterOverlayStatus() -- Refresh overlay status
+            end
+          else
+            DM:PrintMessage(
+              "Plater addon IS LOADED, but its ImportScriptString function was not found or is not a function. This is the primary function needed for import.")
+            DM.GUI:UpdatePlaterOverlayStatus() -- Refresh overlay status
+          end
+        else
+          DM:PrintMessage(
+            "Plater addon IS NOT LOADED (or _G[\"Plater\"] is nil). Cannot import DotMaster Integration mod. Please ensure Plater is enabled.")
+          DM.GUI:UpdatePlaterOverlayStatus() -- Refresh overlay status
+        end
+      end)
+      DM.GUI.PlaterOverlayButton:Show()
+      DM.GUI.PlaterOverlay:Show()
+    else                                                                    -- Plater is available and integrated
+      DM.GUI.PlaterOverlay:Hide()
+      if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end -- Restore call
+    end
   end
 
+  -- Call initially and on show
+  frame:SetScript("OnShow", function(self)
+    -- Original OnShow logic if any (e.g., from LibAdvancedOptionsPanel-1.0)
+    if self.OnShow_Original then self:OnShow_Original() end
+    DM.GUI:UpdatePlaterOverlayStatus()
+  end)
+  -- DM.GUI:UpdatePlaterOverlayStatus() -- Initial check when GUI is created (if frame is already shown, OnShow will handle)
+
+  -- Initialize Tabs
+  local tabInfo = {
+    -- ... existing code ...
+  }
+
   return frame
+end
+
+-- Function to create the tab group and tabs
+function DM.GUI:CreateTabs(parent, tabInfo)
+  local tabGroup = CreateFrame("Frame", nil, parent)
+  tabGroup:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -40)
+  tabGroup:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -10, 10)
+  DM.GUI.frame.tabGroup = tabGroup -- Store reference to tabGroup
+
+  local currentY = 0
+  local tabWidth = 110
+  local tabHeight = 28
+
+  for i, info in ipairs(tabInfo) do
+    local tab = CreateFrame("Button", "DotMasterTab" .. i, tabGroup, "CharacterFrameTabButtonTemplate")
+    tab:SetSize(tabWidth, tabHeight)
+    tab:SetPoint("TOPLEFT", tabGroup, "TOPLEFT", (i - 1) * (tabWidth - 13), currentY)
+    tab:SetText(info.name)
+    tab.id = i
+
+    local content = CreateFrame("Frame", "DotMasterTabContent" .. i, tabGroup)
+    content:SetAllPoints(tabGroup)
+    content:Hide()
+    info.createFunc(content) -- Call the function to populate the tab content
+
+    tab.content = content
+    DM.GUI.tabs[i] = tab
+
+    tab:SetScript("OnClick", function(self)
+      DM.GUI:SelectTab(self.id)
+    end)
+  end
+
+  return tabGroup
+end
+
+-- Function to select a tab
+function DM.GUI:SelectTab(tabID)
+  PanelTemplates_SetTab(DM.GUI.frame, tabID)
+  for i, tab in ipairs(DM.GUI.tabs) do
+    if i == tabID then
+      tab.content:Show()
+      if tab.OnShow then tab.OnShow() end -- Call OnShow for the selected tab if it exists
+    else
+      tab.content:Hide()
+    end
+  end
+  PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+end
+
+-- Original CreateFooterMessage and UpdatePlaterStatusFooter can be removed later
+-- if the new overlay system fully replaces their functionality.
+
+function DM.GUI:ShowHelpPopup()
+  if not DM.GUI.HelpPopupFrame then
+    local helpFrame = CreateFrame("Frame", "DotMasterHelpPopupFrame", UIParent, "BackdropTemplate")
+    helpFrame:SetSize(550, 450)      -- Increased height for more content
+    helpFrame:SetPoint("CENTER")
+    helpFrame:SetFrameStrata("HIGH") -- Ensure it's above the main options
+    helpFrame:SetMovable(true)
+    helpFrame:EnableMouse(true)
+    helpFrame:RegisterForDrag("LeftButton")
+    helpFrame:SetScript("OnDragStart", helpFrame.StartMoving)
+    helpFrame:SetScript("OnDragStop", helpFrame.StopMovingOrSizing)
+    helpFrame:Hide()
+
+    helpFrame:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 16,
+      insets = { left = 4, right = 4, top = 4, bottom = 4 },
+    })
+    helpFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.95) -- Darker backdrop
+    helpFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.8)
+
+    local title = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -18)
+    title:SetText("DotMaster Guide")
+
+    local scrollFrame = CreateFrame("ScrollFrame", nil, helpFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 15, -45)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -35, 40)
+
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(scrollFrame:GetWidth(), 1000) -- Initial height, will adjust
+    scrollFrame:SetScrollChild(scrollChild)
+
+    local helpText = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    helpText:SetPoint("TOPLEFT", 5, -5)
+    helpText:SetPoint("TOPRIGHT", -5, -5)
+    helpText:SetJustifyH("LEFT")
+    helpText:SetJustifyV("TOP")
+    helpText:SetSpacing(4) -- Line spacing
+
+    local text = ""
+    text = text ..
+        "Welcome to DotMaster! This addon helps you track your Damage over Time effects (DoTs) and other important buffs/debuffs by coloring Plater nameplates."
+
+    text = text .. "\n\n" ..
+        "|cFFFFD100Key Features:|r\n" ..
+        "- Automatic DoT Detection: Finds your DoTs as you play.\n" ..
+        "- Customizable Tracking: Choose which spells to track, their colors, and priorities.\n" ..
+        "- Plater Integration: Seamlessly colors Plater nameplates based on your DoTs.\n" ..
+        "- Spell Combinations: Group multiple DoTs into a single, prioritized visual.\n" ..
+        "- Class and Spec Awareness: Works with any class and specialization."
+
+    text = text .. "\n\n" ..
+        "|cFFFFD100GUI Tabs Overview:|r\n" ..
+        "- |cFFADD8E6General Tab:|r Configure core DotMaster settings, Plater integration, minimap icon, and appearance options like border logic.\n" ..
+        "- |cFFADD8E6Tracked Spells Tab:|r Manage individual spells. Enable/disable tracking, set custom colors, and assign priorities for display.\n" ..
+        "- |cFFADD8E6Combinations Tab:|r Create and manage spell combinations. Define sets of spells that should be treated as a single, powerful effect with its own color and priority.\n" ..
+        "- |cFFADD8E6Database Tab:|r View all spells DotMaster has detected. Use the \"Find My Dots\" feature to discover new spells cast by your character."
+
+    text = text .. "\n\n" ..
+        "|cFFFFD100Getting Started:|r\n" ..
+        "1. Open DotMaster settings with /dm.\n" ..
+        "2. Go to the 'Database' tab and click 'Find My Dots'. Cast your spells on a target dummy for about 30 seconds.\n" ..
+        "3. Click 'Add Selected Dots' to add newly detected spells to your database.\n" ..
+        "4. Navigate to the 'Tracked Spells' tab. Here you can enable/disable spells, change their colors, and set priorities (lower numbers are higher priority).\n" ..
+        "5. (Optional) Go to the 'Combinations' tab to group multiple spells into a single visual effect with its own color and priority.\n" ..
+        "6. Ensure Plater Nameplates addon is enabled. DotMaster will automatically integrate."
+
+    text = text .. "\n\n" ..
+        "|cFFFFD100Tips for Best Use:|r\n" ..
+        "- If Plater integration isn't working, ensure Plater is updated and try clicking the 'Install Plater Integration' button in DotMaster's General tab if it appears.\n" ..
+        "- Some settings, like border thickness, may require a UI reload (/reload) to take full effect."
+
+    helpText:SetText(text)
+    scrollChild:SetHeight(helpText:GetHeight() + 10)
+
+    local closeButton = CreateFrame("Button", nil, helpFrame, "UIPanelCloseButton")
+    closeButton:SetPoint("TOPRIGHT", helpFrame, "TOPRIGHT", -4, -4)
+
+    DM.GUI.HelpPopupFrame = helpFrame
+  end
+  DM.GUI.HelpPopupFrame:Show()
 end
