@@ -438,6 +438,9 @@ function DM:CreateGeneralTab(parent)
 
       -- Use AutoSave instead of direct SaveSettings
       DM:AutoSave()
+
+      -- Ensure the change is tracked for reload popup when GUI closes
+      DM:TrackBorderThicknessChange()
     end
   end)
 
@@ -465,6 +468,9 @@ function DM:CreateGeneralTab(parent)
 
       -- Use AutoSave instead of direct SaveSettings
       DM:AutoSave()
+
+      -- Ensure the change is tracked for reload popup when GUI closes
+      DM:TrackBorderThicknessChange()
     end
   end)
 
