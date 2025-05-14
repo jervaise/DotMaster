@@ -1,9 +1,10 @@
-## Interface: 100206
+## Interface: 100207
 ## Title: DotMaster
-## Notes: Colors nameplates for your DoTs and active debuffs.
+## Notes: Tracks your DoTs and Auras and displays them on nameplates via Plater Integration. |cFFFFD100Discord:|r |cFF7289DAdiscord.gg/jpjJd8W|r
 ## Author: Jervaise
-## Version: 2.0.0
+## Version: 2.0.1
 ## SavedVariables: DotMasterDB
+## OptionalDeps: Plater
 ## X-Curse-Project-ID: 123456
 ## X-Wago-ID: 123456
 ## X-WoWI-ID: 123456
@@ -12,11 +13,22 @@
 ## X-License: All Rights Reserved
 ## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga
 
-# Libraries
+#@no-lib-strip@
 Libs\LibStub\LibStub.lua
-Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\AceAddon-3.0\AceAddon-3.0.xml
+Libs\AceEvent-3.0\AceEvent-3.0.xml
+Libs\AceDB-3.0\AceDB-3.0.xml
+Libs\AceGUI-3.0\AceGUI-3.0.xml
+Libs\AceConsole-3.0\AceConsole-3.0.xml
+Libs\AceConfig-3.0\AceConfig-3.0.xml
+Libs\LibSharedMedia-3.0\lib.xml
+Libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
+Libs\LibCompress\LibCompress.lua
+Libs\LibDeflate\LibDeflate.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+#@end-no-lib-strip@
 
 # Core files
 bootstrap.lua
