@@ -39,7 +39,7 @@ function DM:SaveSettings()
   -- DIRECTLY reinstall the Plater mod with these settings
   -- Note: This may be temporarily disabled by AutoSave to prevent double-pushing
   if self.InstallPlaterMod then
-    DM:PrintMessage("Embedding your current DotMaster configuration into bokmaster...")
+    DM:PrintMessage("Embedding your current DotMaster configuration into DotMaster Integration...")
     self:InstallPlaterMod()
   end
 end
@@ -350,15 +350,16 @@ function DM:ShowReloadUIPopupForBorderThickness()
   return true
 end
 
--- Force push settings to bokmaster
-function DM:ForcePushToBokmaster()
-  if DM.InstallPlaterMod then
-    DM:PrintMessage("Force pushing current settings to bokmaster...")
-    DM:InstallPlaterMod()
-    return true
+-- Force push settings to DotMaster Integration
+function DM:ForcePushToDotMasterIntegration()
+  -- Check if Plater and its integration are available
+  if Plater and Plater.InstallMod and DM.InstallPlaterMod then
+    DM:PrintMessage("Force pushing current settings to DotMaster Integration...")
+
+    -- Use the main InstallPlaterMod function to push current settings
+    DM:InstallPlaterMod(true) -- Pass true to indicate a force push
   else
-    DM:PrintMessage("Error: bokmaster installation function not found")
-    return false
+    DM:PrintMessage("Error: DotMaster Integration installation function not found")
   end
 end
 
@@ -385,9 +386,9 @@ function DM:InitializeMainSlashCommands()
       DM.GUI.frame:Show()
     elseif command == "reload" then
       ReloadUI()
-    elseif command == "push" or command == "bokmaster" then
-      -- Force push to bokmaster
-      DM:ForcePushToBokmaster()
+    elseif command == "push" or command == "dmintegration" then
+      -- Force push to DotMaster Integration
+      DM:ForcePushToDotMasterIntegration()
     elseif command == "reset" then
       -- Create confirmation dialog
       if StaticPopupDialogs and StaticPopup_Show then
@@ -432,6 +433,68 @@ function DM:InitializeMainSlashCommands()
     elseif command == "save" then
       DM:SaveSettings()
       DM:PrintMessage("Settings saved")
+    elseif command == "status" then
+      DM:PrintMessage("Current status and settings:")
+      DM:PrintMessage("  Enabled: " .. (DM.enabled and "Yes" or "No"))
+      DM:PrintMessage("  Force Color: " .. (DM.API:GetSettings().forceColor and "Enabled" or "Disabled"))
+      DM:PrintMessage("  Border Only: " .. (DM.API:GetSettings().borderOnly and "Enabled" or "Disabled"))
+      DM:PrintMessage("  Border Thickness: " .. DM.API:GetSettings().borderThickness)
+      DM:PrintMessage("  Flash Expiring: " .. (DM.API:GetSettings().flashExpiring and "Enabled" or "Disabled"))
+      DM:PrintMessage("  Flash Threshold: " .. DM.API:GetSettings().flashThresholdSeconds .. " seconds")
+      DM:PrintMessage("  Minimap Icon: " .. (DM.API:GetSettings().minimapIcon.hide and "Hidden" or "Shown"))
+    elseif command == "enable" then
+      DM.enabled = true
+      DM:AutoSave()
+      DM:PrintMessage("Enabled")
+    elseif command == "disable" then
+      DM.enabled = false
+      DM:AutoSave()
+      DM:PrintMessage("Disabled")
+    elseif command == "toggle" then
+      DM.enabled = not DM.enabled
+      DM:AutoSave()
+      DM:PrintMessage("Toggled to " .. (DM.enabled and "Enabled" or "Disabled"))
+    elseif command == "reinstall" then
+      -- Create confirmation dialog
+      if StaticPopupDialogs and StaticPopup_Show then
+        StaticPopupDialogs["DOTMASTER_REINSTALL_CONFIRM"] = {
+          text =
+          "Are you sure you want to reinstall the Plater mod? This will delete all your saved spells and configurations.",
+          button1 = "Yes",
+          button2 = "No",
+          OnAccept = function()
+            -- Explicitly clear each component of DotMasterDB
+            if DotMasterDB then
+              DotMasterDB.spellConfig = nil
+              DotMasterDB.dmspellsdb = nil
+              DotMasterDB.spellDatabase = nil
+            end
+            DotMasterDB = nil
+
+            -- Reset settings to defaults
+            local defaultSettings = {
+              enabled = true,
+              forceColor = false,
+              borderOnly = false,
+              borderThickness = 2,
+              flashExpiring = false,
+              flashThresholdSeconds = 3.0,
+              minimapIcon = { hide = false }
+            }
+
+            DM.enabled = defaultSettings.enabled
+            DM:AutoSave()
+            DM:PrintMessage("Settings reset to defaults")
+          end,
+          timeout = 0,
+          whileDead = true,
+          hideOnEscape = true,
+          preferredIndex = 3,
+        }
+        StaticPopup_Show("DOTMASTER_REINSTALL_CONFIRM")
+      else
+        DM:PrintMessage("Cannot show reinstall confirmation dialog.")
+      end
     else
       -- Try to toggle main GUI if available, otherwise print help
       if DM.GUI and DM.GUI.frame then
@@ -449,10 +512,17 @@ function DM:InitializeMainSlashCommands()
         DM:PrintMessage("  /dm on - Enable addon")
         DM:PrintMessage("  /dm off - Disable addon")
         DM:PrintMessage("  /dm show - Show GUI (if loaded)")
-        DM:PrintMessage("  /dm push - Force push settings to bokmaster")
-        DM:PrintMessage("  /dm reset - Reset to default settings")
+        DM:PrintMessage("  /dm push - Force push settings to DotMaster Integration")
+        DM:PrintMessage("  /dm reset - Reset all settings to default")
         DM:PrintMessage("  /dm save - Force save settings")
         DM:PrintMessage("  /dm reload - Reload UI")
+        DM:PrintMessage("  /dm status - Show current status and settings")
+        DM:PrintMessage("  /dm enable - Enable the addon")
+        DM:PrintMessage("  /dm disable - Disable the addon")
+        DM:PrintMessage("  /dm toggle - Toggle the addon on/off")
+        DM:PrintMessage("  /dm push - Force push settings to DotMaster Integration")
+        DM:PrintMessage("  /dm reinstall - Reinstall the Plater mod")
+        DM:PrintMessage("  /dm reset - Reset all settings to default")
       end
     end
   end
@@ -488,19 +558,31 @@ function DM:AutoSave()
     C_Timer.After(0.1, function()
       -- Push to Plater with more reliable call
       if DM.InstallPlaterMod then
-        DM:PrintMessage("Auto-save: Pushing settings to bokmaster...")
-        DM:InstallPlaterMod()
+        DM:PrintMessage("Auto-save: Pushing settings to DotMaster Integration...")
+        DM:InstallPlaterMod(true) -- Pass true to indicate this is an auto-save push
       end
 
       -- Update class/spec specific settings
       if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
         DM.ClassSpec:SaveCurrentSettings()
       end
+
+      -- Auto-push settings to Plater mod
+      if DM.InstallPlaterMod then
+        DM:PrintMessage("Auto-save: Pushing settings to DotMaster Integration...")
+        DM:InstallPlaterMod(true) -- Pass true to indicate this is an auto-save push
+      end
+
+      -- Update status message if it exists
+      if DM.GUI and DM.GUI.statusMessage then
+        DM.GUI.statusMessage:SetText("Auto-saved & Pushed to DotMaster Integration")
+        DM.GUI.statusMessage:SetTextColor(0.2, 1, 0.2) -- Green for success
+      end
     end)
 
     -- Update status message if it exists
     if DM.GUI and DM.GUI.statusMessage then
-      DM.GUI.statusMessage:SetText("Auto-saved & Pushed to Plater")
+      DM.GUI.statusMessage:SetText("Auto-saved & Pushed to DotMaster Integration")
       DM.GUI.statusMessage:SetTextColor(0.2, 1, 0.2) -- Green for success
 
       -- Reset back to default message after 2 seconds

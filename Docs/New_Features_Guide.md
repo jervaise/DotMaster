@@ -7,7 +7,7 @@ In version 1.0.7, DotMaster now automatically saves your settings as soon as you
 When a setting is changed:
 1. The status message at the bottom of the window will show "Auto-saving: Pending..."
 2. After saving, it will briefly display "Auto-saved & Pushed to Plater"
-3. Settings are automatically pushed to bokmaster without requiring additional steps
+3. Settings are automatically pushed to DotMaster Integration without requiring additional steps
 
 ## Border Thickness Changes
 
@@ -21,19 +21,19 @@ The border thickness setting now has additional safeguards:
 
 A new slash command has been added:
 
-- `/dm push` - Force push your current settings to bokmaster
-- (Can also be used as `/dm bokmaster`)
+- `/dm push` - Force push your current settings to DotMaster Integration
+- (Can also be used as `/dm dmintegration`)
 
 This command is useful if you want to make sure your latest settings are applied to the Plater mod without opening the DotMaster interface.
 
 ## Force Push on Close
 
-When you close the DotMaster window, your settings are now automatically pushed to bokmaster to ensure changes take effect immediately.
+When you close the DotMaster window, your settings are now automatically pushed to DotMaster Integration to ensure changes take effect immediately.
 
 ## Troubleshooting
 
 If you experience any issues with settings not being saved:
 
-1. Try using the `/dm push` command to force push settings to bokmaster
+1. Try using the `/dm push` command to force push settings to DotMaster Integration
 2. Check the chat window for any error messages (debugging information is printed there)
 3. If border thickness changes aren't applying, try reloading your UI with `/reload` 

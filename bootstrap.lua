@@ -121,7 +121,7 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       end
     end)
 
-    -- Make sure bokmaster mod is up to date with our latest code
+    -- Make sure DotMaster Integration mod is up to date with our latest code
     C_Timer.After(2.0, function()
       if DM.InstallPlaterMod then
         -- Make sure we don't override the saved enabled state
@@ -139,13 +139,13 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
         end
 
         DM:InstallPlaterMod()
-        DM:PrintMessage("Reinstalled bokmaster mod with latest code.")
+        DM:PrintMessage("Reinstalled DotMaster Integration mod with latest code.")
 
         -- Force push config with test spell
         C_Timer.After(0.5, function()
           if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
             DM.ClassSpec:PushConfigToPlater()
-            DM:PrintMessage("Force pushed configuration to bokmaster.")
+            DM:PrintMessage("Force pushed configuration to DotMaster Integration.")
           end
         end)
       end

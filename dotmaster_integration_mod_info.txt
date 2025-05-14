@@ -1,5 +1,4 @@
-
-Mod Name: bokmaster
+Mod Name: DotMaster Integration
 Author: DotMaster
 Description: Colors nameplates based on DoTs tracked by DotMaster
 Priority: 99
@@ -73,4 +72,4 @@ function(self, unitId, unitFrame, envTable, modTable)
   if not appliedColor then
     Plater.RefreshNameplateColor(unitFrame)
   end
-end
+end 

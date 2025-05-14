@@ -57,30 +57,67 @@ function DM:UpdatePlaterStatusFooter()
   local Plater = _G["Plater"]
   local statusText = "Plater Integration: "
   local r, g, b = 1, 0, 0 -- Default to red (error color)
+  local showButton = false
 
   if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
-    local bokmasterFound = false
-    for i, mod in ipairs(Plater.db.profile.hook_data) do
-      if mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
-        -- A simple check: if the hook code contains a known DotMaster variable like "DM_SPELLS"
-        if type(mod.Hooks["Nameplate Updated"]) == "string" and string.find(mod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
-          bokmasterFound = true
-          break
+    local dotMasterIntegrationFound = false
+    -- Iterate through Plater hook_data, which can be an array or a table
+    local hookData = Plater.db.profile.hook_data
+    if type(hookData) == "table" then
+      for modName, modData in pairs(hookData) do
+        -- Check if the mod name is "DotMaster Integration" or if the modData itself has a Name field (for array-like tables)
+        if modName == "DotMaster Integration" or (type(modData) == "table" and modData.Name == "DotMaster Integration") then
+          local actualMod = type(modData) == "table" and modData or hookData -- Get the actual mod table
+          if actualMod.Hooks and actualMod.Hooks["Nameplate Updated"] then
+            if type(actualMod.Hooks["Nameplate Updated"]) == "string" and string.find(actualMod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
+              dotMasterIntegrationFound = true
+              break
+            end
+          end
+        end
+      end
+      -- Fallback for array-like structure if not found as direct keys
+      if not dotMasterIntegrationFound then
+        for i, mod in ipairs(hookData) do
+          if mod.Name == "DotMaster Integration" and mod.Hooks and mod.Hooks["Nameplate Updated"] then
+            if type(mod.Hooks["Nameplate Updated"]) == "string" and string.find(mod.Hooks["Nameplate Updated"], "envTable.DM_SPELLS", 1, true) then
+              dotMasterIntegrationFound = true
+              break
+            end
+          end
         end
       end
     end
-    if bokmasterFound then
+
+    if dotMasterIntegrationFound then
       statusText = statusText .. "Active"
       r, g, b = 1, 1, 1 -- White for active
+      showButton = false
     else
       statusText = statusText .. "Error (DotMaster Integration mod not found or misconfigured)"
+      --showButton = true -- Original behavior was error text, now we show button
+      r, g, b = 1, 0, 0 -- Error color for the text (though it might be hidden)
+      showButton = true
     end
   else
     statusText = statusText .. "Error (Plater AddOn not detected or profile inaccessible)"
+    showButton = false
   end
 
   DM.GUI.statusMessage:SetText(statusText)
   DM.GUI.statusMessage:SetTextColor(r, g, b)
+
+  if showButton then
+    DM.GUI.statusMessage:Hide()
+    if DM.GUI.platerIntegrationButton then
+      DM.GUI.platerIntegrationButton:Show()
+    end
+  else
+    DM.GUI.statusMessage:Show()
+    if DM.GUI.platerIntegrationButton then
+      DM.GUI.platerIntegrationButton:Hide()
+    end
+  end
 end
 
 -- Create the main GUI
@@ -136,9 +173,9 @@ function DM:CreateGUI()
 
   -- Add force push on close
   closeButton:HookScript("OnClick", function()
-    -- Force push to bokmaster with current settings
+    -- Force push to DotMaster Integration with current settings
     if DM.InstallPlaterMod then
-      DM:PrintMessage("Force pushing settings to bokmaster before closing...")
+      DM:PrintMessage("Force pushing settings to DotMaster Integration before closing...")
       DM:InstallPlaterMod()
       -- Update footer after attempting to install
       if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end
@@ -157,7 +194,7 @@ function DM:CreateGUI()
         settings.borderThickness .. "|r")
     end
 
-    -- Force push to bokmaster with current settings when window is closed by any means
+    -- Force push to DotMaster Integration with current settings when window is closed by any means
     if DM.InstallPlaterMod then
       DM:InstallPlaterMod()
       -- Update footer after attempting to install, before GUI fully hides
@@ -226,6 +263,82 @@ function DM:CreateGUI()
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7) -- Neutral color initially
   DM.GUI.statusMessage = statusMessage      -- Store reference for later updates
+
+  -- Create Plater Integration button (initially hidden)
+  local platerIntegrationButton = CreateFrame("Button", "DotMasterPlaterIntegrationButton", footerFrame,
+    "UIPanelButtonTemplate")
+  platerIntegrationButton:SetSize(160, 24) -- Adjusted size to be more prominent
+  platerIntegrationButton:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
+  platerIntegrationButton:SetText("Plater Integration")
+  platerIntegrationButton:SetScript("OnClick", function()
+    local modString =
+    "!PLATER:2!PY/BasJAFEUr+BN11UW3lhitibsOnSixhNqF0EWgPGZe4pA4b5gZg3U139OF39ikSJeXey6ce2WzPSdfgPNoH3LtsbbgFWnuvw3yA1HD5i8s/pwPna1AYMmkfNeu/J+VBUoFpSR//MtTJUg/+RrY8+TwOLZssdui7UDJBqdvcLlAw5IRW47ZKrD0Z+2hRe1DVls6mZCJFpwLmyOYLyVd4JZaDLnpzI3jzqAIGVSVOocCtaDToHaDe8Hwus/5R3RepvEiWsziZJVGSZpuPYkOrevPTe5G1/sMpCS93rXQrzdkhtcu/AI="
+
+    if _G["Plater"] then
+      if type(_G["Plater"].ImportScriptString) == "function" then
+        DM:PrintMessage("Attempting to import DotMaster Integration mod into Plater using Plater.ImportScriptString...")
+        -- Calling Plater.ImportScriptString(text, ignoreRevision, overrideTriggers, showDebug, keepExisting)
+        local success, importedObject, wasEnabled = _G["Plater"].ImportScriptString(modString, true, false, true, false)
+
+        if success and importedObject then
+          DM:PrintMessage("DotMaster Integration mod import reported success by Plater. Imported object name: " ..
+            (importedObject.Name or "Unknown Name"))
+
+          -- Ensure the mod is enabled
+          if not importedObject.Enabled then
+            if type(_G["Plater"].EnableHook) == "function" then
+              _G["Plater"].EnableHook(importedObject) -- Try to enable it
+              DM:PrintMessage("Attempted to enable the imported Plater mod as it was not enabled.")
+              -- Plater might require a recompile after enabling a hook
+              if type(_G["Plater"].CompileHook) == "function" then
+                _G["Plater"].CompileHook(importedObject)
+                DM:PrintMessage("Attempted to recompile the Plater mod.")
+              elseif type(_G["Plater"].CompileAllHooksAndScripts) == "function" then
+                _G["Plater"].CompileAllHooksAndScripts()
+                DM:PrintMessage("Attempted to recompile all Plater hooks and scripts.")
+              end
+            else
+              DM:PrintMessage("Imported mod is not enabled, and Plater.EnableHook function not found.")
+            end
+          else
+            DM:PrintMessage("Imported Plater mod is already enabled.")
+          end
+
+          -- Refresh the footer status immediately after successful import and enabling attempt
+          if DM.UpdatePlaterStatusFooter then
+            DM:UpdatePlaterStatusFooter()
+          end
+
+          -- After a short delay, call InstallPlaterMod to push current settings to the newly imported/updated Plater mod
+          C_Timer.After(0.5, function()
+            if DM.InstallPlaterMod then
+              DM:PrintMessage(
+                "DotMaster: Delay finished. Running InstallPlaterMod to sync settings with the Plater mod.")
+              DM:InstallPlaterMod()
+              -- After InstallPlaterMod, refresh the footer again to ensure it reflects the latest state.
+              if DM.UpdatePlaterStatusFooter then
+                DM:PrintMessage("DotMaster: Refreshing footer status after InstallPlaterMod.")
+                DM:UpdatePlaterStatusFooter()
+              end
+            else
+              DM:PrintMessage("DotMaster: DM.InstallPlaterMod function not found. Cannot sync settings after delay.")
+            end
+          end)
+        else
+          DM:PrintMessage(
+            "Plater.ImportScriptString executed, but it did not return success or a valid imported object. Plater's internal debug messages (if any) might provide more details.")
+        end
+      else
+        DM:PrintMessage(
+          "Plater addon IS LOADED, but its ImportScriptString function was not found or is not a function. This is the primary function needed for import.")
+      end
+    else
+      DM:PrintMessage(
+        "Plater addon IS NOT LOADED (or _G[\"Plater\"] is nil). Cannot import DotMaster Integration mod. Please ensure Plater is enabled.")
+    end
+  end)
+  platerIntegrationButton:Hide()
+  DM.GUI.platerIntegrationButton = platerIntegrationButton
 
   -- Add a subtle class-colored glow to the save button
   if classColor then

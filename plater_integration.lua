@@ -20,7 +20,7 @@ function DM:InstallPlaterMod()
   -- Ensure hook_data table exists
   if not Plater.db.profile.hook_data then
     -- If hook_data doesn't exist, Plater isn't fully ready or has an issue.
-    DM:PrintMessage("Error: Plater hook data not found. Cannot update 'bokmaster' mod.")
+    DM:PrintMessage("Error: Plater hook data not found. Cannot update 'DotMaster Integration' mod.")
     return
   end
 
@@ -184,6 +184,7 @@ function DM:InstallPlaterMod()
   -- Define constructor code with embedded config
   local constructorCode = string.format([[
 function(self, unitId, unitFrame, envTable, modTable)
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping constructor.'); return end
   -- PRIORITY ORDER:
   -- 1. Force Threat Color (if enabled - overrides all other coloring)
   -- 2. DoT Combinations (if no combinations match)
@@ -288,6 +289,7 @@ end]],
 
   local updateCode = [[
 function(self, unitId, unitFrame, envTable, modTable)
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping update.'); return end
   -- IMPORTANT: This function runs for every nameplate, every frame
   -- So we need to keep it efficient and avoid excessive debug messages
 
@@ -414,6 +416,7 @@ end
   -- Add nameplate added hook to run CheckAggro when a nameplate is added
   local nameplatAddedCode = [[
 function(self, unitId, unitFrame, envTable, modTable)
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping nameplate added.'); return end
   -- When a nameplate is first added, check threat if enabled
   if envTable.DM_FORCE_THREAT_COLOR and unitFrame and unitId then
     -- Function to apply color based on border-only setting

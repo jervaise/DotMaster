@@ -184,15 +184,15 @@ function DM.ClassSpec:InitializeClassSpecProfiles()
   end
 end
 
--- Function to find the bokmaster mod index in Plater
-function DM.ClassSpec:GetBokMasterIndex()
+-- Function to find the DotMaster Integration mod index in Plater
+function DM.ClassSpec:GetDotMasterIntegrationIndex()
   local Plater = _G["Plater"]
   if not (Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data) then
     return nil
   end
 
   local data = Plater.db.profile.hook_data
-  local modName = "bokmaster"
+  local modName = "DotMaster Integration"
 
   for i, mod in ipairs(data) do
     if mod.Name == modName then
@@ -203,7 +203,7 @@ function DM.ClassSpec:GetBokMasterIndex()
   return nil
 end
 
--- Function to push current class/spec configuration to bokmaster
+-- Function to push current class/spec configuration to DotMaster Integration
 function DM.ClassSpec:PushConfigToPlater()
   -- Debugging origin of settings
   print("DotMaster-DEBUG: PushConfigToPlater called (start of function)")
@@ -263,10 +263,10 @@ function DM.ClassSpec:PushConfigToPlater()
     end
   end
 
-  -- Find the bokmaster mod index
-  local bokMasterIndex = self:GetBokMasterIndex()
-  if not bokMasterIndex then
-    DM:PrintMessage("Error: 'bokmaster' mod not found in Plater. Please ensure it's installed correctly.")
+  -- Find the DotMaster Integration mod index
+  local dotMasterIntegrationIndex = self:GetDotMasterIntegrationIndex()
+  if not dotMasterIntegrationIndex then
+    DM:PrintMessage("Error: 'DotMaster Integration' mod not found in Plater. Please ensure it's installed correctly.")
     return
   end
 
@@ -277,7 +277,7 @@ function DM.ClassSpec:PushConfigToPlater()
     return
   end
 
-  -- Push configuration to bokmaster
+  -- Push configuration to DotMaster Integration
   local configToPush = {
     spells = config.spells or {},
     combos = config.combos or {},
@@ -303,7 +303,7 @@ function DM.ClassSpec:PushConfigToPlater()
       name = "Test Spell",
       enabled = true
     })
-    DM:PrintMessage("Added emergency test spell to bokmaster config")
+    DM:PrintMessage("Added emergency test spell to DotMaster Integration config")
   end
 
   -- Convert all color formats to array format which we know works
@@ -326,42 +326,37 @@ function DM.ClassSpec:PushConfigToPlater()
     end
   end
 
-  -- Update bokmaster configuration
-  Plater.db.profile.hook_data[bokMasterIndex].config = configToPush
+  -- Update DotMaster Integration configuration
+  Plater.db.profile.hook_data[dotMasterIntegrationIndex].config = configToPush
 
-  -- Enable or disable the mod based on DotMaster's enabled setting
-  local isEnabled = DotMasterDB.enabled
-  if isEnabled ~= nil then
-    -- Log the current state before making changes
-    print("DotMaster-Debug: PushConfigToPlater - Current bokmaster state: " ..
-      (Plater.db.profile.hook_data[bokMasterIndex].Enabled and "ENABLED" or "DISABLED") ..
-      ", Setting to: " .. (isEnabled and "ENABLED" or "DISABLED"))
+  -- Get the enabled state from DM.enabled which is the master switch
+  local isEnabled = DM.enabled
 
-    -- Always use the setting directly from DotMasterDB
-    Plater.db.profile.hook_data[bokMasterIndex].Enabled = isEnabled
-    DM:PrintMessage((isEnabled and "Enabled" or "Disabled") .. " bokmaster Plater mod")
+  print("DotMaster-Debug: PushConfigToPlater - Current DotMaster Integration state: " ..
+    (Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled and "ENABLED" or "DISABLED") ..
+    ", Target state: " .. (isEnabled and "ENABLED" or "DISABLED"))
 
-    -- Double check after a short delay to ensure the setting was applied
-    C_Timer.After(0.2, function()
-      if Plater.db.profile.hook_data[bokMasterIndex] then
-        local currentState = Plater.db.profile.hook_data[bokMasterIndex].Enabled
-        if currentState ~= isEnabled then
-          print("DotMaster-Warning: Enabled state mismatch detected! Forcing value again...")
-          Plater.db.profile.hook_data[bokMasterIndex].Enabled = isEnabled
-
-          -- Force a recompile to ensure changes take effect
-          if Plater.WipeAndRecompileAllScripts then
-            Plater.WipeAndRecompileAllScripts("hook")
-          end
-        end
-      end
-    end)
+  -- Only update the mod's enabled state if it differs from the global addon state
+  if Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled ~= isEnabled then
+    Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled = isEnabled
+    DM:PrintMessage((isEnabled and "Enabled" or "Disabled") .. " DotMaster Integration Plater mod")
   end
+
+  -- Verify the state after a small delay to ensure it has applied
+  C_Timer.After(0.1, function()
+    if Plater.db.profile.hook_data[dotMasterIntegrationIndex] then
+      local currentState = Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled
+      if currentState ~= isEnabled then
+        print("DotMaster: WARNING! State mismatch for DotMaster Integration mod after push. Re-asserting...")
+        Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled = isEnabled
+      end
+    end
+  end)
 
   -- Debug message about what's happening
   if DM.DebugMsg then
     DM:DebugMsg("Pushed " .. #(config.spells or {}) .. " spells and " .. #(config.combos or {}) ..
-      " combinations to bokmaster for " .. currentClass .. " spec #" .. currentSpecID)
+      " combinations to DotMaster Integration for " .. currentClass .. " spec #" .. currentSpecID)
   end
 
   -- Refresh Plater
@@ -372,7 +367,8 @@ function DM.ClassSpec:PushConfigToPlater()
     Plater.FullRefreshAllPlates()
   end
 
-  DM:PrintMessage("Updated Plater configuration for " .. currentClass .. " specialization #" .. currentSpecID)
+  DM:PrintMessage("Saved " .. #(config.spells or {}) .. " spells and " .. #(config.combos or {}) ..
+    " combinations to DotMaster Integration for " .. currentClass .. " spec #" .. currentSpecID)
 end
 
 -- Save current settings to class/spec profile

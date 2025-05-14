@@ -564,13 +564,13 @@ function DM.API:EnableAddon(enabled)
       DM:InstallPlaterMod()
     end
 
-    -- Verify the bokmaster mod state after a delay
-    C_Timer.After(0.2, function()
+    -- Verify the DotMaster Integration mod state after a delay
+    C_Timer.After(0.5, function()
       local Plater = _G["Plater"]
       if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
         local modIndex
         for i, mod in ipairs(Plater.db.profile.hook_data) do
-          if mod.Name == "bokmaster" then
+          if mod.Name == "DotMaster Integration" then
             modIndex = i
             break
           end
@@ -578,13 +578,13 @@ function DM.API:EnableAddon(enabled)
 
         if modIndex then
           local currentModState = Plater.db.profile.hook_data[modIndex].Enabled
-          print("DotMaster: Verifying bokmaster state - Current: " ..
+          print("DotMaster: Verifying DotMaster Integration state - Current: " ..
             (currentModState and "ENABLED" or "DISABLED") ..
             ", Should be: " .. (enabled and "ENABLED" or "DISABLED"))
 
           -- If still not correct, force it
           if currentModState ~= enabled then
-            print("DotMaster: CRITICAL: State mismatch detected! Forcing bokmaster state...")
+            print("DotMaster: CRITICAL: State mismatch detected! Forcing DotMaster Integration state...")
             Plater.db.profile.hook_data[modIndex].Enabled = enabled
 
             -- Force Plater to refresh
@@ -599,29 +599,25 @@ function DM.API:EnableAddon(enabled)
       end
     end)
 
-    -- Double-verify with another timer to make absolutely sure
-    C_Timer.After(0.5, function()
-      -- Re-verify one more time after a longer delay
-      local Plater = _G["Plater"]
-      if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
-        local modIndex
-        for i, mod in ipairs(Plater.db.profile.hook_data) do
-          if mod.Name == "bokmaster" then
-            modIndex = i
-            break
+    -- Second verification attempt with more aggressive action
+    C_Timer.After(1.0, function()
+      if not Plater or not Plater.db or not Plater.db.profile or not Plater.db.profile.hook_data then
+        return
+      end
+
+      for _, mod in ipairs(Plater.db.profile.hook_data) do
+        if mod.Name == "DotMaster Integration" then
+          local expectedState = DotMasterDB and DotMasterDB.enabled
+          if expectedState == nil then
+            print("DotMaster: WARNING - DotMasterDB.enabled is nil, using default: DISABLED")
+            expectedState = false
           end
-        end
-
-        if modIndex then
-          local currentModState = Plater.db.profile.hook_data[modIndex].Enabled
-          print("DotMaster: FINAL verification - Plater mod state: " ..
-            (currentModState and "ENABLED" or "DISABLED") ..
-            ", Should be: " .. (enabled and "ENABLED" or "DISABLED"))
-
-          -- If still wrong, try one more time
-          if currentModState ~= enabled then
-            print("DotMaster: CRITICAL ERROR! Final attempt to force bokmaster state...")
-            Plater.db.profile.hook_data[modIndex].Enabled = enabled
+          if mod.Enabled ~= expectedState then
+            local currentStateStr = mod.Enabled and "ENABLED" or "DISABLED"
+            local expectedStateStr = expectedState and "ENABLED" or "DISABLED"
+            print("DotMaster: CRITICAL ERROR! Final attempt to force DotMaster Integration state...")
+            print("DotMaster: Current: " .. currentStateStr .. ", Expected: " .. expectedStateStr)
+            mod.Enabled = expectedState
 
             C_Timer.After(0.1, function()
               if Plater.WipeAndRecompileAllScripts then
