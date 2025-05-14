@@ -134,9 +134,27 @@ function DM:CreateGeneralTab(parent)
     return checkbox
   end
 
+  -- Add General Settings header/separator
+  local generalHeaderContainer = CreateFrame("Frame", nil, rightColumn)
+  generalHeaderContainer:SetSize(240, 24)
+  generalHeaderContainer:SetPoint("TOPLEFT", rightColumn, "TOPLEFT", 0, 0)
+
+  -- Create general header text
+  local generalHeaderText = generalHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  generalHeaderText:SetPoint("LEFT", generalHeaderContainer, "LEFT", 2, 0)
+  generalHeaderText:SetText("General Settings")
+  generalHeaderText:SetTextColor(0.7, 0.7, 0.7)
+
+  -- Add separator line
+  local generalSeparator = generalHeaderContainer:CreateTexture(nil, "ARTWORK")
+  generalSeparator:SetHeight(1)
+  generalSeparator:SetPoint("LEFT", generalHeaderText, "RIGHT", 5, 0)
+  generalSeparator:SetPoint("RIGHT", generalHeaderContainer, "RIGHT", -5, 0)
+  generalSeparator:SetColorTexture(0.4, 0.4, 0.4, 0.6)
+
   -- Create settings checkboxes in the right column
   local enableCheckbox = CreateStyledCheckbox("DotMasterEnableCheckbox",
-    rightColumn, nil, -3, "Enable DotMaster")
+    rightColumn, generalHeaderContainer, -3, "Enable DotMaster")
   enableCheckbox:SetChecked(settings.enabled)
   enableCheckbox:SetScript("OnClick", function(self)
     local enabled = self:GetChecked()
