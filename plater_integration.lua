@@ -32,10 +32,10 @@ function DM.PlaterIntegration:InstallPlaterMod(forcePush)
   DotMasterDB.settings = DotMasterDB.settings or {}
 
   -- Get the current list of tracked spells
-  local trackedSpells = DM.API:GetTrackedSpells()
+  local trackedSpells = DM.API:GetTrackedSpells() or {}
 
   -- Get the current list of spell combinations
-  local combinations = DM.API:GetCombinations()
+  local combinations = DM.API:GetCombinations() or {}
 
   -- Decide if the mod should be enabled or disabled
   local enabledState = (DM.enabled and true) or false
