@@ -12,7 +12,8 @@ local function RestoreCheckboxTexts()
     "DotMasterEnableCheckbox",
     "DotMasterMinimapCheckbox",
     "DotMasterForceColorCheckbox",
-    "DotMasterExtendColorsCheckbox"
+    "DotMasterExtendColorsCheckbox",
+    "DotMasterBorderOnlyCheckbox"
   }
 
   for _, checkboxName in ipairs(checkboxes) do
@@ -28,6 +29,8 @@ local function RestoreCheckboxTexts()
           checkbox.labelText:SetText("Force Threat Color")
         elseif checkboxName == "DotMasterExtendColorsCheckbox" then
           checkbox.labelText:SetText("Extend Plater Colors to Borders")
+        elseif checkboxName == "DotMasterBorderOnlyCheckbox" then
+          checkbox.labelText:SetText("Use borders for dot tracking")
         end
       end
     end
@@ -328,6 +331,22 @@ function DM:CreateGeneralTab(parent)
       DotMasterDB.settings.extendPlaterColors = extendColors
     end
 
+    -- If this option is enabled, disable the border-only option (they're mutually exclusive)
+    if extendColors and borderOnlyCheckbox then
+      borderOnlyCheckbox:SetChecked(false)
+      settings.borderOnly = false
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.borderOnly = false
+      end
+      -- Update UI state for the borderOnlyCheckbox
+      borderOnlyCheckbox:SetEnabled(not extendColors)
+    else
+      -- Re-enable the border-only checkbox
+      if borderOnlyCheckbox then
+        borderOnlyCheckbox:SetEnabled(true)
+      end
+    end
+
     -- AutoSave for serialization
     DM:AutoSave()
 
@@ -340,19 +359,25 @@ function DM:CreateGeneralTab(parent)
 
   -- Create a checkbox for border-only mode
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    rightColumn, extendColorsCheckbox, -3, "Border-only")
+    rightColumn, extendColorsCheckbox, -3, "Use borders for dot tracking")
   borderOnlyCheckbox:SetChecked(settings.borderOnly)
 
   -- Border thickness control
   if settings.borderThickness == nil then settings.borderThickness = 2 end
   local thicknessContainer = CreateFrame("Frame", nil, rightColumn)
-  thicknessContainer:SetSize(70, 26)
-  thicknessContainer:SetPoint("LEFT", borderOnlyCheckbox.labelText, "RIGHT", 10, 0)
+  thicknessContainer:SetSize(240, 26)
+  thicknessContainer:SetPoint("TOPLEFT", borderOnlyCheckbox, "BOTTOMLEFT", 0, -3)
+
+  -- Thickness label
+  local thicknessLabel = thicknessContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  thicknessLabel:SetPoint("LEFT", thicknessContainer, "LEFT", 26, 0)
+  thicknessLabel:SetText("Border Thickness:")
+  thicknessLabel:SetTextColor(0.8, 0.8, 0.8)
 
   -- Value container
   local thicknessValueContainer = CreateFrame("Frame", nil, thicknessContainer)
   thicknessValueContainer:SetSize(30, 26)
-  thicknessValueContainer:SetPoint("LEFT", thicknessContainer, "LEFT", 0, 0)
+  thicknessValueContainer:SetPoint("LEFT", thicknessLabel, "RIGHT", 5, 0)
 
   -- Thickness value display
   local thicknessValue = thicknessValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -437,11 +462,20 @@ function DM:CreateGeneralTab(parent)
       DotMasterDB.settings.borderOnly = borderOnly
     end
 
-    -- Show/hide thickness controls based on border-only state
-    if borderOnly then
-      thicknessContainer:Show()
+    -- If this option is enabled, disable the extend colors option (they're mutually exclusive)
+    if borderOnly and extendColorsCheckbox then
+      extendColorsCheckbox:SetChecked(false)
+      settings.extendPlaterColors = false
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.extendPlaterColors = false
+      end
+      -- Update UI state for the extendColorsCheckbox
+      extendColorsCheckbox:SetEnabled(not borderOnly)
     else
-      thicknessContainer:Hide()
+      -- Re-enable the extend colors checkbox
+      if extendColorsCheckbox then
+        extendColorsCheckbox:SetEnabled(true)
+      end
     end
 
     -- AutoSave for serialization
@@ -461,11 +495,12 @@ function DM:CreateGeneralTab(parent)
     if settings.enabled then DM:UpdateAllNameplates() end
   end)
 
-  -- Initially hide/show based on state
-  if settings.borderOnly then
-    thicknessContainer:Show()
-  else
-    thicknessContainer:Hide()
+  -- Apply mutual exclusivity on initial load
+  if settings.borderOnly and extendColorsCheckbox then
+    extendColorsCheckbox:SetEnabled(not settings.borderOnly)
+  end
+  if settings.extendPlaterColors and borderOnlyCheckbox then
+    borderOnlyCheckbox:SetEnabled(not settings.extendPlaterColors)
   end
 
   -- Register event to fix checkbox text
