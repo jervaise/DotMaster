@@ -356,8 +356,9 @@ function(self, unitId, unitFrame, envTable, modTable)
   if envTable.DM_EXTEND_PLATER_COLORS and unitFrame.healthBar.border then
     -- Get the current color of the nameplate
     local r, g, b, a = unitFrame.healthBar:GetStatusBarColor()
-    -- Only apply border color if this NPC has a custom color in Plater's NPC Colors & Names tab
-    if r and g and b and Plater.db and Plater.db.profile and Plater.db.profile.npc_colors[unitFrame.namePlateUnitName] then
+    -- Check if nameplate has a non-default color
+    local isCustomColored = unitFrame.UsingCustomColor or unitFrame.PlateFrame.customColor or unitFrame.isForced
+    if r and g and b and isCustomColored then
       -- Apply the nameplate color to the border
       unitFrame.healthBar.border:SetVertexColor(r, g, b, a or 1)
       unitFrame.customBorderColor = {r, g, b, a or 1}
