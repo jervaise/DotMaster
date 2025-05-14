@@ -3,13 +3,13 @@ local DM = DotMaster
 
 -- Add function to install DotMaster mod into Plater
 function DM:InstallPlaterMod()
-  print("DotMaster: InstallPlaterMod function called!")
+  -- print("DotMaster: InstallPlaterMod function called!")
   if DotMasterDB then
-    print("DotMaster: Current DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
+    -- print("DotMaster: Current DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
   else
-    print("DotMaster: ERROR - DotMasterDB not available in InstallPlaterMod")
+    -- print("DotMaster: ERROR - DotMasterDB not available in InstallPlaterMod")
   end
-  print("DotMaster: Current DM.enabled = " .. (DM.enabled and "true" or "false"))
+  -- print("DotMaster: Current DM.enabled = " .. (DM.enabled and "true" or "false"))
 
   local Plater = _G["Plater"]
   if not (Plater and Plater.db and Plater.db.profile) then
@@ -31,57 +31,27 @@ function DM:InstallPlaterMod()
   -- Get settings with fallback to read directly from DotMasterDB for critical settings
   local settings = DM.API:GetSettings() or {}
 
-  -- DEEP DEBUGGING OF SETTINGS
-  print("DotMaster-DEBUG: DETAILED settings analysis in InstallPlaterMod")
-  print("DotMaster-DEBUG: settings.enabled raw value:", tostring(settings.enabled))
-
-  local createdWhere = "unknown"
-  for i = 2, 10 do
-    local info = debugstack(i, 1, 0) or ""
-    if info:find("GetSettings") then
-      createdWhere = "GetSettings at " .. i
-      break
-    end
-  end
-
-  print("DotMaster-DEBUG: settings created from: " .. createdWhere)
-  print("DotMaster-DEBUG: settings table contents:")
-
-  for k, v in pairs(settings) do
-    local valueStr = "nil"
-    if v ~= nil then
-      if type(v) == "table" then
-        valueStr = "table"
-      elseif type(v) == "boolean" then
-        valueStr = v and "true" or "false"
-      else
-        valueStr = tostring(v)
-      end
-    end
-    print("DotMaster-DEBUG:   - " .. k .. " = " .. valueStr)
-  end
-
   -- Debug the settings we're using
-  print("DotMaster: InstallPlaterMod using settings:")
-  print("  - Enabled: " .. (settings.enabled and "true" or "false"))
-  print("  - Force Threat Color: " .. (settings.forceColor and "true" or "false"))
-  print("  - Border Only: " .. (settings.borderOnly and "true" or "false"))
+  -- print("DotMaster: InstallPlaterMod using settings:")
+  -- print("  - Enabled: " .. (settings.enabled and "true" or "false"))
+  -- print("  - Force Threat Color: " .. (settings.forceColor and "true" or "false"))
+  -- print("  - Border Only: " .. (settings.borderOnly and "true" or "false"))
 
   -- For critical settings, ALWAYS use DotMasterDB as the source of truth
   local enabledState
   if DotMasterDB and DotMasterDB.enabled ~= nil then
     enabledState = DotMasterDB.enabled
-    print("DotMaster: Using enabledState directly from DotMasterDB: " .. (enabledState and "ENABLED" or "DISABLED"))
+    -- print("DotMaster: Using enabledState directly from DotMasterDB: " .. (enabledState and "ENABLED" or "DISABLED"))
 
     -- Also ensure settings.enabled is in sync
     if settings.enabled ~= enabledState then
-      print("DotMaster: Synchronizing settings.enabled with DotMasterDB.enabled")
+      -- print("DotMaster: Synchronizing settings.enabled with DotMasterDB.enabled")
       settings.enabled = enabledState
     end
   else
     -- Fallback to settings if DotMasterDB isn't available
     enabledState = settings.enabled
-    print("DotMaster: DotMasterDB not available, using settings.enabled: " .. (enabledState and "ENABLED" or "DISABLED"))
+    -- print("DotMaster: DotMasterDB not available, using settings.enabled: " .. (enabledState and "ENABLED" or "DISABLED"))
   end
 
   -- For critical settings, double-check with DotMasterDB
@@ -89,14 +59,14 @@ function DM:InstallPlaterMod()
     if DotMasterDB.settings then
       if DotMasterDB.settings.forceColor ~= nil then
         if settings.forceColor ~= DotMasterDB.settings.forceColor then
-          print("DotMaster: WARNING - Force Threat Color mismatch, using DotMasterDB value")
+          -- print("DotMaster: WARNING - Force Threat Color mismatch, using DotMasterDB value")
           settings.forceColor = DotMasterDB.settings.forceColor
         end
       end
 
       if DotMasterDB.settings.borderOnly ~= nil then
         if settings.borderOnly ~= DotMasterDB.settings.borderOnly then
-          print("DotMaster: WARNING - Border Only mismatch, using DotMasterDB value")
+          -- print("DotMaster: WARNING - Border Only mismatch, using DotMasterDB value")
           settings.borderOnly = DotMasterDB.settings.borderOnly
         end
       end
@@ -184,7 +154,9 @@ function DM:InstallPlaterMod()
   -- Define constructor code with embedded config
   local constructorCode = string.format([[
 function(self, unitId, unitFrame, envTable, modTable)
-  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping constructor.'); return end
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then --print('DotMaster Integration: DotMaster not found or disabled, skipping constructor.');
+    return
+  end
   -- PRIORITY ORDER:
   -- 1. Force Threat Color (if enabled - overrides all other coloring)
   -- 2. DoT Combinations (if no combinations match)
@@ -198,16 +170,13 @@ function(self, unitId, unitFrame, envTable, modTable)
   envTable.DM_COMBOS = %s
   envTable.DM_FORCE_THREAT_COLOR = %s
   envTable.DM_BORDER_ONLY = %s
+  envTable.DM_EXTEND_PLATER_COLORS = %s
 
   -- Make sure thickness is a valid number with proper conversion
   local borderThickness = tonumber(%s)
 
-  -- Use a clearly identifiable debug message
-  print("|cFFFF9900DotMaster-BorderDebug: APPLYING border thickness " .. tostring(borderThickness) .. "|r")
-
   if not borderThickness or borderThickness < 1 or borderThickness > 10 then
     borderThickness = 2 -- Default to 2px if invalid
-    print("|cFFFF9900DotMaster-BorderDebug: WARNING - Invalid thickness, using default 2px|r")
   end
 
   envTable.DM_BORDER_THICKNESS = borderThickness
@@ -226,7 +195,6 @@ function(self, unitId, unitFrame, envTable, modTable)
     -- Store the original Plater thickness in DotMasterDB for persistence across reloads
     if DotMasterDB and not DotMasterDB.originalPlaterBorderThickness then
       DotMasterDB.originalPlaterBorderThickness = envTable.previousBorderThickness
-      print("|cFFFF9900DotMaster-BorderDebug: STORED original Plater border thickness: " .. DotMasterDB.originalPlaterBorderThickness .. "|r")
     end
 
     -- Set Plater's global border thickness
@@ -236,28 +204,21 @@ function(self, unitId, unitFrame, envTable, modTable)
     if Plater.UpdateAllPlatesBorderThickness then
       Plater.UpdateAllPlatesBorderThickness()
     end
-
-    print("|cFFFF9900DotMaster-BorderDebug: SET PLATER border thickness to " .. envTable.DM_BORDER_THICKNESS .. "|r")
   else
     -- When Border-only mode is disabled, restore Plater's original border thickness
-    print("|cFFFF9900DotMaster-BorderDebug: RESTORING Plater's original border thickness|r")
-
     local originalThickness = 1 -- Default fallback
 
     -- Try to get the original thickness from envTable first
     if envTable.previousBorderThickness then
       originalThickness = envTable.previousBorderThickness
-      print("|cFFFF9900DotMaster-BorderDebug: Using session-stored thickness: " .. originalThickness .. "|r")
     -- Then try DotMasterDB (which persists across reloads)
     elseif DotMasterDB and DotMasterDB.originalPlaterBorderThickness then
       originalThickness = DotMasterDB.originalPlaterBorderThickness
-      print("|cFFFF9900DotMaster-BorderDebug: Using saved thickness from DB: " .. originalThickness .. "|r")
     end
 
     -- Actually restore Plater's border thickness to the original value
     if Plater.db and Plater.db.profile then
       Plater.db.profile.border_thickness = originalThickness
-      print("|cFFFF9900DotMaster-BorderDebug: RESET Plater border thickness to " .. originalThickness .. "|r")
 
       -- Update all nameplates to refresh border thickness
       if Plater.UpdateAllPlatesBorderThickness then
@@ -267,21 +228,22 @@ function(self, unitId, unitFrame, envTable, modTable)
   end
 
   -- Debug info at initialization
-  print("DotMaster: Plater mod initialized - Force Threat Color: " .. (envTable.DM_FORCE_THREAT_COLOR and "ENABLED" or "DISABLED"))
+  -- print("DotMaster: Plater mod initialized - Force Threat Color: " .. (envTable.DM_FORCE_THREAT_COLOR and "ENABLED" or "DISABLED"))
 
-  if envTable.DM_BORDER_ONLY then
-    print("DotMaster: Border Only Mode: ENABLED (Thickness: " .. envTable.DM_BORDER_THICKNESS .. ")")
-    print("DotMaster: DotMaster is controlling border thickness")
-  else
-    print("DotMaster: Border Only Mode: DISABLED")
-    print("DotMaster: Plater is controlling border thickness")
-  end
+  -- if envTable.DM_BORDER_ONLY then
+  --   print("DotMaster: Border Only Mode: ENABLED (Thickness: " .. envTable.DM_BORDER_THICKNESS .. ")")
+  --   print("DotMaster: DotMaster is controlling border thickness")
+  -- else
+  --   print("DotMaster: Border Only Mode: DISABLED")
+  --   print("DotMaster: Plater is controlling border thickness")
+  -- end
 
-  print("DotMaster: Loaded " .. #envTable.DM_SPELLS .. " spells and " .. #envTable.DM_COMBOS .. " combos")
+  -- print("DotMaster: Loaded " .. #envTable.DM_SPELLS .. " spells and " .. #envTable.DM_COMBOS .. " combos")
 end]],
     spellsLuaCode, combosLuaCode,
     settings.forceColor and "true" or "false",
     settings.borderOnly and "true" or "false",
+    settings.extendPlaterColors and "true" or "false",
     settings.borderThickness,
     settings.flashExpiring and "true" or "false",
     settings.flashThresholdSeconds or 3.0,
@@ -289,7 +251,9 @@ end]],
 
   local updateCode = [[
 function(self, unitId, unitFrame, envTable, modTable)
-  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping update.'); return end
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then --print('DotMaster Integration: DotMaster not found or disabled, skipping update.');
+    return
+  end
   -- IMPORTANT: This function runs for every nameplate, every frame
   -- So we need to keep it efficient and avoid excessive debug messages
 
@@ -323,7 +287,6 @@ function(self, unitId, unitFrame, envTable, modTable)
         finalR = math.min(1, r + 0.3) -- Calculate lighter Red component
         finalG = math.min(1, g + 0.3) -- Calculate lighter Green component
         finalB = math.min(1, b + 0.3) -- Calculate lighter Blue component
-        if unitFrame.DM_Text and not isThreatColor then unitFrame.DM_Text:Hide() end
       end
     else
       self.dm_colFlash_IsLighterPhase = false -- Ensure flash state is definitely off if conditions not met
@@ -337,6 +300,18 @@ function(self, unitId, unitFrame, envTable, modTable)
         -- Apply the (potentially flashed) DotMaster color to the border
         unitFrame.healthBar.border:SetVertexColor(finalR, finalG, finalB, finalA)
         unitFrame.customBorderColor = {finalR, finalG, finalB, finalA} -- Let Plater know we set it
+
+        -- If extend Plater colors is enabled, update Plater's border color variables
+        if envTable.DM_EXTEND_PLATER_COLORS then
+          -- Update Plater's internal border color variables if they exist
+          if Plater.db and Plater.db.profile then
+            Plater.db.profile.border_color_r = finalR
+            Plater.db.profile.border_color_g = finalG
+            Plater.db.profile.border_color_b = finalB
+            Plater.db.profile.border_color_a = finalA
+          end
+        end
+
         -- Refresh the main nameplate color to Plater's default, as we only control the border here
         Plater.RefreshNameplateColor(unitFrame)
         unitFrame.healthBar.border:Show()
@@ -354,47 +329,41 @@ function(self, unitId, unitFrame, envTable, modTable)
       if unitFrame.InCombat and not isTanking then
         local color = Plater.db.profile.tank.colors.noaggro
         applyColor(color[1], color[2], color[3], color[4] or 1, true, 999) -- Threat doesn't have specific spell time
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5); unitFrame.DM_Text:SetText("⚠ NOT TANKING"); unitFrame.DM_Text:Show()
         return
       end
     else
       if unitFrame.InCombat and isTanking then
         local color = Plater.db.profile.dps.colors.aggro
         applyColor(color[1], color[2], color[3], color[4] or 1, true, 999) -- Threat doesn't have specific spell time
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5); unitFrame.DM_Text:SetText("⚠ AGGRO"); unitFrame.DM_Text:Show()
         return
       end
     end
   end
 
-  unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-  unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
   local spells = envTable.DM_SPELLS or {}; local combos = envTable.DM_COMBOS or {}
 
   for i, combo in ipairs(combos) do
     if combo.enabled then
       local allSpellsPresent = true
-      for _, spellID in ipairs(combo.spells) do if not Plater.NameplateHasAura(unitFrame, spellID) then allSpellsPresent = false; break end end
+      for _, spellID in ipairs(combo.spells) do if not Plater.NameplateHasAura(unitFrame, spellID, true) then allSpellsPresent = false; break end end
       if allSpellsPresent then
         -- For combos, we don't easily have a single remaining time. Use a high value or a spell from combo.
         -- Here, passing 999 so it flashes only if DM_FLASH_EXPIRING is on, not based on combo time.
         -- If a specific spell in combo should gate this, its time needs to be fetched.
         applyColor(combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1, false, 999)
-        unitFrame.DM_Text:SetText("◆ " .. combo.name); unitFrame.DM_Text:Show(); return
+        return
       end
     end
   end
 
   for i, spell in ipairs(spells) do
-    if spell.enabled and spell.spellID and Plater.NameplateHasAura(unitFrame, spell.spellID) then
+    if spell.enabled and spell.spellID and Plater.NameplateHasAura(unitFrame, spell.spellID, true) then
       local spellIDToQuery = spell.spellID
-      local sName, _, _, _, sDuration, sExpirationTime = Plater.GetAura(unitFrame.namePlateUnitToken, spellIDToQuery)
+      local sName, _, _, _, sDuration, sExpirationTime = Plater.GetAura(unitFrame.namePlateUnitToken, spellIDToQuery, true)
       local remainingTime = 999 -- Default high if no specific expiration
       if sExpirationTime and sExpirationTime > 0 then remainingTime = math.max(0, sExpirationTime - GetTime()) end
       applyColor(spell.color[1], spell.color[2], spell.color[3], spell.color[4] or 1, false, remainingTime)
-      unitFrame.DM_Text:SetText(spell.name); unitFrame.DM_Text:Show(); return
+      return
     end
   end
 
@@ -409,14 +378,23 @@ function(self, unitId, unitFrame, envTable, modTable)
     Plater.RefreshNameplateColor(unitFrame)
     if unitFrame.healthBar.border then unitFrame.customBorderColor = nil end
   end
-  unitFrame.DM_Text:Hide()
+
+  -- Any leftover DM_Text should be hidden and we should consider removing it entirely
+  if unitFrame.DM_Text then
+    unitFrame.DM_Text:Hide()
+    -- Optionally, completely remove the text element
+    -- unitFrame.DM_Text:SetParent(nil)
+    -- unitFrame.DM_Text = nil
+  end
 end
 ]]
 
   -- Add nameplate added hook to run CheckAggro when a nameplate is added
   local nameplatAddedCode = [[
 function(self, unitId, unitFrame, envTable, modTable)
-  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then print('DotMaster Integration: DotMaster not found or disabled, skipping nameplate added.'); return end
+  if not (_G['DotMaster'] and _G['DotMaster'].enabled) then --print('DotMaster Integration: DotMaster not found or disabled, skipping nameplate added.');
+    return
+  end
   -- When a nameplate is first added, check threat if enabled
   if envTable.DM_FORCE_THREAT_COLOR and unitFrame and unitId then
     -- Function to apply color based on border-only setting
@@ -462,10 +440,7 @@ function(self, unitId, unitFrame, envTable, modTable)
         local color = Plater.db.profile.tank.colors.noaggro
         applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
 
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ NOT TANKING")
-        unitFrame.DM_Text:Show()
+        -- Remove text display for tank warning in nameplate added hook
       end
     else
       -- For DPS/Healers: color if tanking and in combat
@@ -474,10 +449,7 @@ function(self, unitId, unitFrame, envTable, modTable)
         local color = Plater.db.profile.dps.colors.aggro
         applyColor(color[1], color[2], color[3], color[4] or 1, true) -- true = threat color
 
-        unitFrame.DM_Text = unitFrame.DM_Text or unitFrame:CreateFontString(nil, "overlay", "GameFontNormal")
-        unitFrame.DM_Text:SetPoint("bottom", unitFrame, "top", 0, 5)
-        unitFrame.DM_Text:SetText("⚠ AGGRO")
-        unitFrame.DM_Text:Show()
+        -- Remove text display for DPS warning in nameplate added hook
       end
     end
   end
@@ -499,14 +471,14 @@ end
     local modEntry = data[foundIndex]
     modEntry.Name = modName                          -- Keep the name as "DotMaster Integration"
     modEntry.Desc = "Managed by DotMaster Addon"     -- Update description
-    modEntry.Author = "DotMaster"                    -- Update author
+    modEntry.Author = "Jervaise"                     -- Update author
     modEntry.Time = time()
     modEntry.Revision = (modEntry.Revision or 0) + 1 -- Increment revision
     modEntry.PlaterCore = Plater.CoreVersion or 0
 
     -- CRITICAL: Explicitly set the Enabled state of the mod based on DotMaster settings
     modEntry.Enabled = enabledState
-    print("DotMaster: Setting DotMaster Integration mod Enabled state to: " .. (enabledState and "ENABLED" or "DISABLED"))
+    -- print("DotMaster: Setting DotMaster Integration mod Enabled state to: " .. (enabledState and "ENABLED" or "DISABLED"))
 
     -- Inject our hooks
     modEntry.Hooks = {
@@ -522,10 +494,10 @@ end
     modEntry.LastHookEdited = "Constructor" -- Indicate which hook was last edited
 
     local forceColorStatus = settings.forceColor and "enabled" or "disabled"
-    DM:PrintMessage("Updated 'DotMaster Integration' with " ..
-      #trackedSpells .. " spells and " .. #combinations .. " combos. Force Threat Color is " .. forceColorStatus ..
-      ". Mod enabled: " .. (enabledState and "yes" or "no") .. ".")
-    DM:PrintMessage("|cFFFFFF00Consider using /reload to fully apply these changes.|r")
+    -- DM:PrintMessage("Updated 'DotMaster Integration' with " ..
+    --   #trackedSpells .. " spells and " .. #combinations .. " combos. Force Threat Color is " .. forceColorStatus ..
+    --   ". Mod enabled: " .. (enabledState and "yes" or "no") .. ".")
+    -- DM:PrintMessage("|cFFFFFF00Consider using /reload to fully apply these changes.|r")
 
     -- Recompile hook scripts and refresh plates (needed after changing hooks)
     if Plater.WipeAndRecompileAllScripts then
@@ -535,7 +507,7 @@ end
     -- Force a more aggressive refresh of all Plater plates
     C_Timer.After(0.1, function()
       if Plater.FullRefreshAllPlates then
-        print("DotMaster: Forcing full Plater refresh...")
+        -- print("DotMaster: Forcing full Plater refresh...")
         Plater.FullRefreshAllPlates()
       end
     end)
@@ -544,19 +516,21 @@ end
     C_Timer.After(0.5, function()
       if Plater.db and Plater.db.profile and Plater.db.profile.hook_data and Plater.db.profile.hook_data[foundIndex] then
         local currentState = Plater.db.profile.hook_data[foundIndex].Enabled
-        print("DotMaster: Verifying DotMaster Integration mod state - Expected: " ..
-          (enabledState and "ENABLED" or "DISABLED") ..
-          ", Actual: " .. (currentState and "ENABLED" or "DISABLED"))
+        -- print("DotMaster: Verifying DotMaster Integration mod state - Expected: " ..
+        --  (enabledState and "ENABLED" or "DISABLED") ..
+        --  ", Actual: " .. (currentState and "ENABLED" or "DISABLED"))
 
         -- If there's a mismatch, try to force it again
         if currentState ~= enabledState then
-          print("DotMaster: State mismatch detected, forcing correction...")
+          -- print("DotMaster: State mismatch detected, forcing correction...")
           Plater.db.profile.hook_data[foundIndex].Enabled = enabledState
           Plater.WipeAndRecompileAllScripts("hook")
           Plater.FullRefreshAllPlates()
         end
       end
     end)
+
+    -- Update the mod in the Plater hook DB
   else
     -- If the 'DotMaster Integration' mod was NOT found, print an error and do nothing else
     DM:PrintMessage(

@@ -344,17 +344,6 @@ end
 
 -- Settings functions
 function DM.API:GetSettings()
-  print("DotMaster-DEBUG: GetSettings called! Call stack:")
-  print(debugstack(2, 3, 2))
-
-  if DotMasterDB then
-    print("DotMaster-DEBUG: DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
-  else
-    print("DotMaster-DEBUG: DotMasterDB is nil!")
-  end
-
-  print("DotMaster-DEBUG: DM.enabled = " .. (DM.enabled and "true" or "false"))
-
   -- First check if we have class/spec specific settings
   local classSpecSettings = nil
   if DM.ClassSpec then
@@ -364,13 +353,6 @@ function DM.API:GetSettings()
         DotMasterDB.classProfiles[currentClass][currentSpecID] and
         DotMasterDB.classProfiles[currentClass][currentSpecID].settings then
       classSpecSettings = DotMasterDB.classProfiles[currentClass][currentSpecID].settings
-      print("DotMaster-DEBUG: Using classSpecSettings")
-
-      -- IMPORTANT: If enabled exists in classSpecSettings, warn about it and ignore it
-      if classSpecSettings.enabled ~= nil then
-        print("DotMaster-DEBUG: WARNING - Found enabled=" .. (classSpecSettings.enabled and "true" or "false") ..
-          " in classSpecSettings, but will prioritize global setting")
-      end
     end
   end
 
@@ -390,11 +372,8 @@ function DM.API:GetSettings()
     -- Ensure 'enabled' ALWAYS comes from global DotMasterDB.enabled, not from classSpecSettings
     if DotMasterDB and DotMasterDB.enabled ~= nil then
       settings.enabled = DotMasterDB.enabled
-      print("DotMaster-DEBUG: Overriding settings.enabled with DotMasterDB.enabled = " ..
-        (settings.enabled and "true" or "false"))
     else
       settings.enabled = false -- Default to disabled if not found
-      print("DotMaster-DEBUG: No DotMasterDB.enabled found, setting enabled=false")
     end
 
     -- Always use global minimap settings
@@ -412,18 +391,17 @@ function DM.API:GetSettings()
       local thickness = tonumber(globalSettings.borderThickness)
       if thickness == nil or thickness < 1 or thickness > 10 then
         thickness = 2 -- Default to 2 if invalid
-        print("DotMaster: WARNING - Invalid border thickness value, using default of 2px instead")
       end
       settings.borderThickness = thickness
-
-      -- Print a clearly identifiable message for tracking when this happens
-      print("|cFFFF9900DotMaster-BorderDebug: SAVED thickness value " .. thickness .. " to DotMasterDB|r")
     end
     if globalSettings.flashExpiring ~= nil then
       settings.flashExpiring = globalSettings.flashExpiring
     end
     if globalSettings.flashThresholdSeconds ~= nil then
       settings.flashThresholdSeconds = globalSettings.flashThresholdSeconds
+    end
+    if globalSettings.extendPlaterColors ~= nil then
+      settings.extendPlaterColors = globalSettings.extendPlaterColors
     end
 
     return settings
@@ -435,14 +413,11 @@ function DM.API:GetSettings()
   -- Get the actual enabled state directly from DotMasterDB for safety
   if DotMasterDB and DotMasterDB.enabled ~= nil then
     defaultEnabledValue = DotMasterDB.enabled
-    print("DotMaster: API.GetSettings - Using enabled=" ..
-      (defaultEnabledValue and "true" or "false") .. " from DotMasterDB")
-  else
-    print("DotMaster: API.GetSettings - No DotMasterDB.enabled, using default: DISABLED")
   end
 
   -- Use the right settings source to avoid nil errors
   local globalSettings = DotMasterDB and DotMasterDB.settings or {}
+  local minimapSettings = DotMasterDB and DotMasterDB.minimapIcon or { hide = false }
 
   return {
     enabled = defaultEnabledValue,
@@ -451,6 +426,7 @@ function DM.API:GetSettings()
     borderThickness = tonumber(globalSettings.borderThickness) or 2,
     flashExpiring = (globalSettings.flashExpiring ~= nil) and globalSettings.flashExpiring or false,
     flashThresholdSeconds = globalSettings.flashThresholdSeconds or 3.0,
+    extendPlaterColors = (globalSettings.extendPlaterColors ~= nil) and globalSettings.extendPlaterColors or false,
     minimapIcon = minimapSettings
   }
 end
@@ -472,12 +448,10 @@ function DM.API:SaveSettings(settings)
     -- ALWAYS save certain settings globally to ensure they persist across class/spec changes
     if settings.forceColor ~= nil then
       DotMasterDB.settings.forceColor = settings.forceColor
-      print("DotMaster: Force Threat Color setting saved globally: " .. (settings.forceColor and "ENABLED" or "DISABLED"))
     end
 
     if settings.borderOnly ~= nil then
       DotMasterDB.settings.borderOnly = settings.borderOnly
-      print("DotMaster: Border Only setting saved globally: " .. (settings.borderOnly and "ENABLED" or "DISABLED"))
     end
 
     if settings.borderThickness ~= nil then
@@ -485,22 +459,20 @@ function DM.API:SaveSettings(settings)
       local thickness = tonumber(settings.borderThickness)
       if thickness == nil or thickness < 1 or thickness > 10 then
         thickness = 2 -- Default to 2 if invalid
-        print("DotMaster: WARNING - Invalid border thickness value, using default of 2px instead")
       end
       DotMasterDB.settings.borderThickness = thickness
-
-      -- Print a clearly identifiable message for tracking when this happens
-      print("|cFFFF9900DotMaster-BorderDebug: SAVED thickness value " .. thickness .. " to DotMasterDB|r")
     end
 
     if settings.flashExpiring ~= nil then
       DotMasterDB.settings.flashExpiring = settings.flashExpiring
-      print("DotMaster: Flash Expiring setting saved globally: " .. (settings.flashExpiring and "ENABLED" or "DISABLED"))
     end
 
     if settings.flashThresholdSeconds ~= nil then
       DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
-      print("DotMaster: Flash Threshold saved globally: " .. settings.flashThresholdSeconds .. " seconds")
+    end
+
+    if settings.extendPlaterColors ~= nil then
+      DotMasterDB.settings.extendPlaterColors = settings.extendPlaterColors
     end
   end
 
@@ -516,11 +488,11 @@ function DM.API:SaveSettings(settings)
       settings.borderOnly ~= nil or
       settings.borderThickness ~= nil or
       settings.flashExpiring ~= nil or
-      settings.flashThresholdSeconds ~= nil
+      settings.flashThresholdSeconds ~= nil or
+      settings.extendPlaterColors ~= nil
 
   if visualSettingChanged and DM.InstallPlaterMod then
     C_Timer.After(0.2, function()
-      print("DotMaster: Reinstalling Plater mod with updated visual settings")
       DM:InstallPlaterMod()
     end)
   end
@@ -529,29 +501,18 @@ function DM.API:SaveSettings(settings)
 end
 
 function DM.API:EnableAddon(enabled)
-  -- Debug the current state
-  print("DotMaster: EnableAddon CALLED with enabled = " .. (enabled and "true" or "false"))
-  print("DotMaster: BEFORE: DM.enabled = " .. (DM.enabled and "true" or "false"))
-  if DotMasterDB then
-    print("DotMaster: BEFORE: DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
-  end
-
   -- Update global enabled state
   DM.enabled = enabled
 
   -- Force-save to DotMasterDB immediately
   if DotMasterDB then
     DotMasterDB.enabled = enabled
-    print("DotMaster: Force-saved enabled state to DotMasterDB: " .. (enabled and "ENABLED" or "DISABLED"))
-  else
-    print("DotMaster: ERROR - DotMasterDB not available for saving enabled state!")
   end
 
   -- Update API settings object to match
   if self.GetSettings then
     local settings = self:GetSettings()
     if settings.enabled ~= enabled then
-      print("DotMaster: Correcting settings.enabled mismatch")
       settings.enabled = enabled
     end
   end
@@ -560,74 +521,57 @@ function DM.API:EnableAddon(enabled)
   C_Timer.After(0.05, function()
     -- Directly reinstall the Plater mod to ensure proper enabled state
     if DM.InstallPlaterMod then
-      print("DotMaster: Reinstalling Plater mod to update enabled state")
       DM:InstallPlaterMod()
     end
 
-    -- Verify the DotMaster Integration mod state after a delay
-    C_Timer.After(0.5, function()
+    -- Ensure DotMaster Integration is in the right state
+    C_Timer.After(0.4, function()
       local Plater = _G["Plater"]
       if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
-        local modIndex
+        local modName = "DotMaster Integration"
+        local foundMod = false
+        local modEnabled = false
+
         for i, mod in ipairs(Plater.db.profile.hook_data) do
-          if mod.Name == "DotMaster Integration" then
-            modIndex = i
+          if mod.Name == modName then
+            foundMod = true
+            modEnabled = mod.Enabled
+
+            -- If there's a mismatch, try to force correct it
+            if modEnabled ~= enabled then
+              mod.Enabled = enabled
+
+              -- Try to apply changes immediately
+              Plater.WipeAndRecompileAllScripts("hook")
+              Plater.FullRefreshAllPlates()
+            end
+
             break
           end
         end
 
-        if modIndex then
-          local currentModState = Plater.db.profile.hook_data[modIndex].Enabled
-          print("DotMaster: Verifying DotMaster Integration state - Current: " ..
-            (currentModState and "ENABLED" or "DISABLED") ..
-            ", Should be: " .. (enabled and "ENABLED" or "DISABLED"))
+        -- Double check the state again after a short delay
+        if foundMod and modEnabled ~= enabled then
+          C_Timer.After(0.2, function()
+            if Plater and Plater.db and Plater.db.profile and Plater.db.profile.hook_data then
+              for i, mod in ipairs(Plater.db.profile.hook_data) do
+                if mod.Name == modName then
+                  local finalState = mod.Enabled
 
-          -- If still not correct, force it
-          if currentModState ~= enabled then
-            print("DotMaster: CRITICAL: State mismatch detected! Forcing DotMaster Integration state...")
-            Plater.db.profile.hook_data[modIndex].Enabled = enabled
+                  if finalState ~= enabled then
+                    -- Heavy-handed approach - set directly in Plater's data
+                    mod.Enabled = enabled
 
-            -- Force Plater to refresh
-            if Plater.WipeAndRecompileAllScripts then
-              Plater.WipeAndRecompileAllScripts("hook")
-            end
-            if Plater.FullRefreshAllPlates then
-              Plater.FullRefreshAllPlates()
-            end
-          end
-        end
-      end
-    end)
+                    -- Force Plater update
+                    Plater.WipeAndRecompileAllScripts("hook")
+                    Plater.FullRefreshAllPlates()
+                  end
 
-    -- Second verification attempt with more aggressive action
-    C_Timer.After(1.0, function()
-      if not Plater or not Plater.db or not Plater.db.profile or not Plater.db.profile.hook_data then
-        return
-      end
-
-      for _, mod in ipairs(Plater.db.profile.hook_data) do
-        if mod.Name == "DotMaster Integration" then
-          local expectedState = DotMasterDB and DotMasterDB.enabled
-          if expectedState == nil then
-            print("DotMaster: WARNING - DotMasterDB.enabled is nil, using default: DISABLED")
-            expectedState = false
-          end
-          if mod.Enabled ~= expectedState then
-            local currentStateStr = mod.Enabled and "ENABLED" or "DISABLED"
-            local expectedStateStr = expectedState and "ENABLED" or "DISABLED"
-            print("DotMaster: CRITICAL ERROR! Final attempt to force DotMaster Integration state...")
-            print("DotMaster: Current: " .. currentStateStr .. ", Expected: " .. expectedStateStr)
-            mod.Enabled = expectedState
-
-            C_Timer.After(0.1, function()
-              if Plater.WipeAndRecompileAllScripts then
-                Plater.WipeAndRecompileAllScripts("hook")
+                  break
+                end
               end
-              if Plater.FullRefreshAllPlates then
-                Plater.FullRefreshAllPlates()
-              end
-            end)
-          end
+            end
+          end)
         end
       end
     end)

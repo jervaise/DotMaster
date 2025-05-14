@@ -11,7 +11,8 @@ local function RestoreCheckboxTexts()
   local checkboxes = {
     "DotMasterEnableCheckbox",
     "DotMasterMinimapCheckbox",
-    "DotMasterForceColorCheckbox"
+    "DotMasterForceColorCheckbox",
+    "DotMasterExtendColorsCheckbox"
   }
 
   for _, checkboxName in ipairs(checkboxes) do
@@ -25,6 +26,8 @@ local function RestoreCheckboxTexts()
           checkbox.labelText:SetText("Show Minimap Icon")
         elseif checkboxName == "DotMasterForceColorCheckbox" then
           checkbox.labelText:SetText("Force Threat Color")
+        elseif checkboxName == "DotMasterExtendColorsCheckbox" then
+          checkbox.labelText:SetText("Extend Plater Colors to Borders")
         end
       end
     end
@@ -135,29 +138,18 @@ function DM:CreateGeneralTab(parent)
   enableCheckbox:SetScript("OnClick", function(self)
     local enabled = self:GetChecked()
 
-    -- Debug the state before changes
-    print("DotMaster: Setting enabled state from " .. (DM.enabled and "ENABLED" or "DISABLED") ..
-      " to " .. (enabled and "ENABLED" or "DISABLED"))
+    -- Update DotMaster addon state
+    DM.enabled = enabled
 
-    -- Update the in-memory setting
-    settings.enabled = enabled
-
-    -- Force-write directly to DotMasterDB immediately
+    -- Force-save directly to DotMasterDB
     if DotMasterDB ~= nil then
       DotMasterDB.enabled = enabled
-      print("DotMaster: Force-saved enabled state to DotMasterDB: " .. (enabled and "ENABLED" or "DISABLED"))
     end
-
-    -- Update the core state variable too
-    DM.enabled = enabled
 
     -- Call the API function to update Plater
     DM.API:EnableAddon(enabled)
 
-    -- Print a user-facing message
-    DM:PrintMessage(enabled and "Enabled" or "Disabled")
-
-    -- Use AutoSave for proper serialization
+    -- AutoSave for serialization
     DM:AutoSave()
   end)
 
@@ -198,12 +190,7 @@ function DM:CreateGeneralTab(parent)
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
       DotMasterDB.settings.forceColor = forceColor
-      print("DotMaster: Force-saved Force Threat Color setting to DotMasterDB: " ..
-        (forceColor and "ENABLED" or "DISABLED"))
     end
-
-    -- Print message to user
-    DM:PrintMessage("Force Threat Color " .. (forceColor and "Enabled" or "Disabled"))
 
     -- AutoSave for serialization
     DM:AutoSave()
@@ -215,9 +202,35 @@ function DM:CreateGeneralTab(parent)
     end
   end)
 
+  -- Create a checkbox for extending Plater colors to borders
+  local extendColorsCheckbox = CreateStyledCheckbox("DotMasterExtendColorsCheckbox",
+    rightColumn, forceColorCheckbox, -3, "Extend Plater Colors to Borders")
+  extendColorsCheckbox:SetChecked(settings.extendPlaterColors)
+  extendColorsCheckbox:SetScript("OnClick", function(self)
+    local extendColors = self:GetChecked()
+
+    -- Update the local settings
+    settings.extendPlaterColors = extendColors
+
+    -- Force-save directly to DotMasterDB
+    if DotMasterDB ~= nil then
+      if not DotMasterDB.settings then DotMasterDB.settings = {} end
+      DotMasterDB.settings.extendPlaterColors = extendColors
+    end
+
+    -- AutoSave for serialization
+    DM:AutoSave()
+
+    -- Reinstall Plater mod to ensure changes take effect
+    if settings.enabled and Plater and DM.PlaterIntegration then
+      print("DotMaster: Reinstalling Plater mod due to Extend Colors setting change")
+      DM.PlaterIntegration:InstallPlaterMod()
+    end
+  end)
+
   -- Create a checkbox for border-only mode
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
-    rightColumn, forceColorCheckbox, -3, "Border-only")
+    rightColumn, extendColorsCheckbox, -3, "Border-only")
   borderOnlyCheckbox:SetChecked(settings.borderOnly)
 
   -- Border thickness control
@@ -254,13 +267,9 @@ function DM:CreateGeneralTab(parent)
       -- Update the display
       thicknessValue:SetText(settings.borderThickness .. " px")
 
-      -- Distinctive debug message to track the change
-      print("|cFFFF9900DotMaster-BorderDebug: DECREASED thickness from " .. oldValue .. " to " .. newValue .. "|r")
-
       -- Force-save the borderThickness to DotMasterDB immediately
       if DotMasterDB and DotMasterDB.settings then
         DotMasterDB.settings.borderThickness = newValue
-        print("|cFFFF9900DotMaster-BorderDebug: FORCE SAVED thickness value " .. newValue .. " to DotMasterDB|r")
       end
 
       -- Use AutoSave instead of direct SaveSettings
@@ -290,13 +299,9 @@ function DM:CreateGeneralTab(parent)
       -- Update the display
       thicknessValue:SetText(settings.borderThickness .. " px")
 
-      -- Distinctive debug message to track the change
-      print("|cFFFF9900DotMaster-BorderDebug: INCREASED thickness from " .. oldValue .. " to " .. newValue .. "|r")
-
       -- Force-save the borderThickness to DotMasterDB immediately
       if DotMasterDB and DotMasterDB.settings then
         DotMasterDB.settings.borderThickness = newValue
-        print("|cFFFF9900DotMaster-BorderDebug: FORCE SAVED thickness value " .. newValue .. " to DotMasterDB|r")
       end
 
       -- Use AutoSave instead of direct SaveSettings
@@ -320,27 +325,14 @@ function DM:CreateGeneralTab(parent)
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
       DotMasterDB.settings.borderOnly = borderOnly
-      print("DotMaster: Force-saved Border Only setting to DotMasterDB: " ..
-        (borderOnly and "ENABLED" or "DISABLED"))
-
-      -- If disabling border-only mode, mark that we need to restore Plater's thickness on reload
-      if not borderOnly then
-        DotMasterDB.shouldRestorePlaterThickness = true
-        print("DotMaster: Border-only mode disabled - will restore Plater's original thickness on reload")
-      end
     end
 
-    -- Show/hide thickness container - EXPLICITLY show/hide it
+    -- Show/hide thickness controls based on border-only state
     if borderOnly then
-      print("DotMaster: Showing thickness controls")
       thicknessContainer:Show()
     else
-      print("DotMaster: Hiding thickness controls")
       thicknessContainer:Hide()
     end
-
-    -- Print message to user
-    DM:PrintMessage("Border-only " .. (borderOnly and "Enabled" or "Disabled"))
 
     -- AutoSave for serialization
     DM:AutoSave()
@@ -361,10 +353,8 @@ function DM:CreateGeneralTab(parent)
 
   -- Initially hide/show based on state
   if settings.borderOnly then
-    print("DotMaster: Initially showing thickness controls")
     thicknessContainer:Show()
   else
-    print("DotMaster: Initially hiding thickness controls")
     thicknessContainer:Hide()
   end
 
@@ -445,8 +435,6 @@ function DM:CreateGeneralTab(parent)
     if DotMasterDB ~= nil then
       if not DotMasterDB.settings then DotMasterDB.settings = {} end
       DotMasterDB.settings.flashExpiring = flashExpiring
-      print("DotMaster: Force-saved Flash Expiring setting to DotMasterDB: " ..
-        (flashExpiring and "ENABLED" or "DISABLED"))
     end
 
     -- Show/hide seconds container
@@ -457,9 +445,6 @@ function DM:CreateGeneralTab(parent)
         secondsContainer:Hide()
       end
     end
-
-    -- Print message to user
-    DM:PrintMessage("Expiry Flash " .. (flashExpiring and "Enabled" or "Disabled"))
 
     -- AutoSave for serialization
     DM:AutoSave()

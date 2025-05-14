@@ -22,6 +22,26 @@ function DM.ClassSpec:InitializeClassSpecProfiles()
     DotMasterDB.classProfiles = {}
   end
 
+  -- Initialize class colors if not defined yet
+  if not DM.classColors then
+    DM.classColors = {
+      WARRIOR = { r = 0.78, g = 0.61, b = 0.43 },
+      PALADIN = { r = 0.96, g = 0.55, b = 0.73 },
+      HUNTER = { r = 0.67, g = 0.83, b = 0.45 },
+      ROGUE = { r = 1.00, g = 0.96, b = 0.41 },
+      PRIEST = { r = 1.00, g = 1.00, b = 1.00 },
+      DEATHKNIGHT = { r = 0.77, g = 0.12, b = 0.23 },
+      SHAMAN = { r = 0.00, g = 0.44, b = 0.87 },
+      MAGE = { r = 0.41, g = 0.80, b = 0.94 },
+      WARLOCK = { r = 0.58, g = 0.51, b = 0.79 },
+      MONK = { r = 0.00, g = 1.00, b = 0.59 },
+      DRUID = { r = 1.00, g = 0.49, b = 0.04 },
+      DEMONHUNTER = { r = 0.64, g = 0.19, b = 0.79 },
+      EVOKER = { r = 0.20, g = 0.58, b = 0.50 },
+      UNKNOWN = { r = 0.70, g = 0.70, b = 0.70 }
+    }
+  end
+
   local currentClass, currentSpecID = self:GetCurrentClassAndSpec()
 
   -- Create class entry if it doesn't exist
@@ -44,141 +64,66 @@ function DM.ClassSpec:InitializeClassSpecProfiles()
           k ~= "borderOnly" and
           k ~= "borderThickness" and
           k ~= "flashExpiring" and
-          k ~= "flashThresholdSeconds" then
+          k ~= "flashThresholdSeconds" and
+          k ~= "extendPlaterColors" then
         classSpecSettings[k] = v
       end
     end
 
     -- Initialize with filtered settings
     DotMasterDB.classProfiles[currentClass][currentSpecID] = {
-      spells = DM.API:GetTrackedSpells(),
-      combos = DM.API:GetCombinations(),
+      spells = {}, -- Initialize with empty arrays instead of API calls which might not be ready
+      combos = {},
       settings = classSpecSettings
     }
 
     -- If no spells are configured yet, add appropriate test spells based on class
-    local spells = DotMasterDB.classProfiles[currentClass][currentSpecID].spells
-    if not spells or #spells == 0 then
+    local config = DotMasterDB.classProfiles[currentClass]
+        [currentSpecID] -- Use local variable referencing the DB entry
+    if not config.spells or #config.spells == 0 then
       -- Add class-specific test spells
       if currentClass == "PRIEST" then
-        table.insert(spells, {
-          spellID = 34914, -- Vampiric Touch
-          color = { r = 0.8, g = 0.1, b = 0.8, a = 1.0 },
-          priority = 1,
-          name = "Vampiric Touch",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 589, -- Shadow Word: Pain
-          color = { r = 0.5, g = 0.0, b = 0.5, a = 1.0 },
-          priority = 2,
-          name = "Shadow Word: Pain",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Priest test spells")
+        -- Priest Test Spells
+        config.spells = {
+          { spellID = 589,   name = "Shadow Word: Pain", color = { 0.7, 0, 1 },     enabled = true },
+          { spellID = 34914, name = "Vampiric Touch",    color = { 0.3, 0.3, 0.7 }, enabled = true }
+        }
       elseif currentClass == "WARLOCK" then
-        table.insert(spells, {
-          spellID = 980, -- Agony
-          color = { r = 0.4, g = 0.7, b = 0.0, a = 1.0 },
-          priority = 1,
-          name = "Agony",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 146739, -- Corruption
-          color = { r = 0.0, g = 0.5, b = 0.0, a = 1.0 },
-          priority = 2,
-          name = "Corruption",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Warlock test spells")
+        -- Warlock Test Spells
+        config.spells = {
+          { spellID = 980, name = "Agony",      color = { 0.5, 0.2, 0.7 }, enabled = true },
+          { spellID = 172, name = "Corruption", color = { 0.3, 0.8, 0.3 }, enabled = true }
+        }
       elseif currentClass == "DRUID" then
-        table.insert(spells, {
-          spellID = 164812, -- Moonfire
-          color = { r = 0.3, g = 0.5, b = 1.0, a = 1.0 },
-          priority = 1,
-          name = "Moonfire",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 164815, -- Sunfire
-          color = { r = 1.0, g = 0.8, b = 0.0, a = 1.0 },
-          priority = 2,
-          name = "Sunfire",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Druid test spells")
+        -- Druid Test Spells
+        config.spells = {
+          { spellID = 8921,   name = "Moonfire", color = { 0.2, 0.4, 1 }, enabled = true },
+          { spellID = 155722, name = "Rake",     color = { 1, 0.4, 0 },   enabled = true }
+        }
       elseif currentClass == "HUNTER" then
-        table.insert(spells, {
-          spellID = 257284, -- Hunter's Mark
-          color = { r = 1.0, g = 0.0, b = 0.0, a = 1.0 },
-          priority = 1,
-          name = "Hunter's Mark",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 271788, -- Serpent Sting
-          color = { r = 0.0, g = 0.8, b = 0.0, a = 1.0 },
-          priority = 2,
-          name = "Serpent Sting",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Hunter test spells")
+        -- Hunter Test Spells (Serpent Sting and similar)
+        config.spells = {
+          { spellID = 271788, name = "Serpent Sting", color = { 0, 0.8, 0 }, enabled = true },
+          { spellID = 3355,   name = "Freezing Trap", color = { 0, 0.7, 1 }, enabled = true }
+        }
       elseif currentClass == "MAGE" then
-        table.insert(spells, {
-          spellID = 205708, -- Chilled
-          color = { r = 0.5, g = 0.5, b = 1.0, a = 1.0 },
-          priority = 1,
-          name = "Chilled",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 12654, -- Ignite
-          color = { r = 1.0, g = 0.3, b = 0.0, a = 1.0 },
-          priority = 2,
-          name = "Ignite",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Mage test spells")
+        -- Mage Test Spells
+        config.spells = {
+          { spellID = 12654,  name = "Ignite",  color = { 1, 0.4, 0 },   enabled = true },
+          { spellID = 205708, name = "Chilled", color = { 0.5, 0.5, 1 }, enabled = true }
+        }
       elseif currentClass == "DEATHKNIGHT" then
-        table.insert(spells, {
-          spellID = 191587, -- Virulent Plague
-          color = { r = 0.3, g = 0.7, b = 0.3, a = 1.0 },
-          priority = 1,
-          name = "Virulent Plague",
-          enabled = true,
-        })
-
-        table.insert(spells, {
-          spellID = 55095, -- Frost Fever
-          color = { r = 0.0, g = 0.5, b = 1.0, a = 1.0 },
-          priority = 2,
-          name = "Frost Fever",
-          enabled = true,
-        })
-
-        DM:PrintMessage("Added Death Knight test spells")
+        -- Death Knight Test Spells
+        config.spells = {
+          { spellID = 191587, name = "Virulent Plague", color = { 0.2, 0.4, 1 }, enabled = true },
+          { spellID = 55078,  name = "Blood Plague",    color = { 0.8, 0, 0 },   enabled = true }
+        }
       else
         -- For any other class, add a placeholder spell with class color
         local classColor = DM.classColors[currentClass] or DM.classColors["UNKNOWN"]
-        table.insert(spells, {
-          spellID = 2825, -- Bloodlust/Heroism (works for any class to track)
-          color = { r = classColor.r, g = classColor.g, b = classColor.b, a = 1.0 },
-          priority = 1,
-          name = "Class Test Spell",
-          enabled = true,
-        })
-        DM:PrintMessage("Added test spell for " .. currentClass)
+        config.spells = {
+          { spellID = 589, name = "Test DoT", color = { 1, 0, 1 }, enabled = true }
+        }
       end
     end
   end
@@ -205,15 +150,6 @@ end
 
 -- Function to push current class/spec configuration to DotMaster Integration
 function DM.ClassSpec:PushConfigToPlater()
-  -- Debugging origin of settings
-  print("DotMaster-DEBUG: PushConfigToPlater called (start of function)")
-  if DotMasterDB then
-    print("DotMaster-DEBUG: DotMasterDB.enabled = " .. (DotMasterDB.enabled and "true" or "false"))
-  else
-    print("DotMaster-DEBUG: DotMasterDB is nil!")
-  end
-  print("DotMaster-DEBUG: DM.enabled = " .. (DM.enabled and "true" or "false"))
-
   -- Throttle updates to prevent spamming when many settings change at once
   local now = GetTime()
   if self.lastPushTime and now - self.lastPushTime < 0.5 then
@@ -237,32 +173,6 @@ function DM.ClassSpec:PushConfigToPlater()
   -- Get the current class/spec profile
   local config = DotMasterDB.classProfiles[currentClass][currentSpecID]
 
-  -- Debug: Print detailed config info
-  DM:PrintMessage("Pushing config for " .. currentClass .. " spec #" .. currentSpecID)
-  DM:PrintMessage("Spells: " .. (config.spells and #config.spells or 0) ..
-    ", Combos: " .. (config.combos and #config.combos or 0))
-
-  -- Print details of first spell if available
-  if config.spells and #config.spells > 0 then
-    local spell = config.spells[1]
-    DM:PrintMessage("Sample spell: ID=" .. (spell.spellID or "nil") ..
-      ", name=" .. (spell.name or "unnamed") ..
-      ", enabled=" .. (spell.enabled == true and "true" or "false"))
-
-    if spell.color then
-      local colorInfo = "Color: "
-      if spell.color.r then
-        colorInfo = colorInfo .. "RGBA(" .. spell.color.r .. "," .. spell.color.g .. "," ..
-            spell.color.b .. "," .. (spell.color.a or 1) .. ")"
-      else
-        colorInfo = colorInfo .. "Array[" .. table.concat(spell.color, ",") .. "]"
-      end
-      DM:PrintMessage(colorInfo)
-    else
-      DM:PrintMessage("No color defined for spell")
-    end
-  end
-
   -- Find the DotMaster Integration mod index
   local dotMasterIntegrationIndex = self:GetDotMasterIntegrationIndex()
   if not dotMasterIntegrationIndex then
@@ -278,6 +188,7 @@ function DM.ClassSpec:PushConfigToPlater()
   end
 
   -- Push configuration to DotMaster Integration
+  -- Only include spells and combos for the current class and spec
   local configToPush = {
     spells = config.spells or {},
     combos = config.combos or {},
@@ -290,8 +201,6 @@ function DM.ClassSpec:PushConfigToPlater()
       configToPush.settings = {}
     end
     configToPush.settings.forceColor = DotMasterDB.settings.forceColor
-    print("DotMaster: Using global Force Threat Color setting: " ..
-      (DotMasterDB.settings.forceColor and "ENABLED" or "DISABLED"))
   end
 
   -- Ensure there's at least one test spell if none exist
@@ -303,7 +212,6 @@ function DM.ClassSpec:PushConfigToPlater()
       name = "Test Spell",
       enabled = true
     })
-    DM:PrintMessage("Added emergency test spell to DotMaster Integration config")
   end
 
   -- Convert all color formats to array format which we know works
@@ -332,14 +240,9 @@ function DM.ClassSpec:PushConfigToPlater()
   -- Get the enabled state from DM.enabled which is the master switch
   local isEnabled = DM.enabled
 
-  print("DotMaster-Debug: PushConfigToPlater - Current DotMaster Integration state: " ..
-    (Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled and "ENABLED" or "DISABLED") ..
-    ", Target state: " .. (isEnabled and "ENABLED" or "DISABLED"))
-
   -- Only update the mod's enabled state if it differs from the global addon state
   if Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled ~= isEnabled then
     Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled = isEnabled
-    DM:PrintMessage((isEnabled and "Enabled" or "Disabled") .. " DotMaster Integration Plater mod")
   end
 
   -- Verify the state after a small delay to ensure it has applied
@@ -347,7 +250,6 @@ function DM.ClassSpec:PushConfigToPlater()
     if Plater.db.profile.hook_data[dotMasterIntegrationIndex] then
       local currentState = Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled
       if currentState ~= isEnabled then
-        print("DotMaster: WARNING! State mismatch for DotMaster Integration mod after push. Re-asserting...")
         Plater.db.profile.hook_data[dotMasterIntegrationIndex].Enabled = isEnabled
       end
     end
@@ -366,9 +268,6 @@ function DM.ClassSpec:PushConfigToPlater()
   if Plater.FullRefreshAllPlates then
     Plater.FullRefreshAllPlates()
   end
-
-  DM:PrintMessage("Saved " .. #(config.spells or {}) .. " spells and " .. #(config.combos or {}) ..
-    " combinations to DotMaster Integration for " .. currentClass .. " spec #" .. currentSpecID)
 end
 
 -- Save current settings to class/spec profile
@@ -429,4 +328,17 @@ function DM.ClassSpec:Initialize()
 
   -- Initialize class/spec profiles
   self:InitializeClassSpecProfiles()
+end
+
+function DM:AddEmergencyTestSpell()
+  -- Create a minimal config with just a test spell
+  local config = {
+    spells = {
+      { spellID = 589, name = "Test DoT", color = { 1, 0, 1 }, enabled = true }
+    },
+    combos = {}
+  }
+
+  -- Push this minimal config
+  DM:PushPlaterConfig(config, true)
 end
