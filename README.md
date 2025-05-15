@@ -1,6 +1,6 @@
 # DotMaster
 
-## Version 2.0.2
+## Version 2.1
 
 DotMaster is a World of Warcraft addon that works with Plater Nameplates to enhance DoT (Damage over Time) tracking.
 
@@ -12,6 +12,8 @@ DotMaster is a World of Warcraft addon that works with Plater Nameplates to enha
 - Create combinations of multiple DoTs with unique colors
 - Class and specialization specific profiles
 - Full Plater integration
+- Proper priority sorting for spell colors (new in 2.1)
+- Improved database reset functionality (new in 2.1)
 
 ## Installation
 
@@ -32,6 +34,14 @@ DotMaster is a World of Warcraft addon that works with Plater Nameplates to enha
 - `/dm reload` - Reload UI
 
 ## Recent Changes
+
+### Version 2.1 (Stable Release)
+- Fixed spell priority sorting in Plater integration (lower number = higher priority)
+- Added proper type conversion for enabled/disabled and tracked/untracked status
+- Improved database reset functionality with complete wipe and class reinitialization
+- Fixed UI error in tabs handling
+- Enhanced Plater color integration with better priority system
+- Various bug fixes and stability improvements
 
 See the [CHANGELOG.md](CHANGELOG.md) file for detailed information about recent changes.
 

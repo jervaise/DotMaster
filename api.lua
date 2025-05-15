@@ -22,7 +22,7 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "2.0.2"
+  return "2.1"
 end
 
 -- Debug function to print out DotMasterDB contents
@@ -79,13 +79,37 @@ function DM.API:GetTrackedSpells()
   local spells = {}
   -- Use the tracked spells database
   for id, entry in pairs(DotMaster.dmspellsdb or {}) do
-    if entry.enabled and entry.enabled ~= 0 then
+    -- Convert numeric enabled values to proper boolean (0 = false, 1 = true)
+    local isEnabled = false
+    if entry.enabled then
+      -- Check if it's a number (0 or 1) or already a boolean
+      if type(entry.enabled) == "number" then
+        isEnabled = (entry.enabled ~= 0)
+      else
+        isEnabled = (entry.enabled == true)
+      end
+    end
+
+    -- Also check tracked status (numeric 0/1 or boolean)
+    local isTracked = false
+    if entry.tracked then
+      -- Check if it's a number (0 or 1) or already a boolean
+      if type(entry.tracked) == "number" then
+        isTracked = (entry.tracked ~= 0)
+      else
+        isTracked = (entry.tracked == true)
+      end
+    end
+
+    -- Only include spells that are both enabled AND tracked
+    if isEnabled and isTracked then
       table.insert(spells, {
         spellID = tonumber(id),
         color = entry.color,
         priority = entry.priority,
         name = entry.spellname,
-        enabled = true,
+        enabled = true, -- Always true boolean for Plater integration
+        tracked = true, -- Always true boolean for consistency
       })
     end
   end
@@ -140,14 +164,25 @@ function DM.API:GetCombinations()
   -- Use the combinations database
   if DotMaster.combinations and DotMaster.combinations.data then
     for id, combo in pairs(DotMaster.combinations.data) do
+      -- Convert numeric enabled values to proper boolean (0 = false, 1 = true)
+      local isEnabled = false
       if combo.enabled then
+        -- Check if it's a number (0 or 1) or already a boolean
+        if type(combo.enabled) == "number" then
+          isEnabled = (combo.enabled ~= 0)
+        else
+          isEnabled = (combo.enabled == true)
+        end
+      end
+
+      if isEnabled then
         table.insert(combos, {
           comboID = id,
           spellList = combo.spells,
           color = combo.color,
           priority = combo.priority,
           name = combo.name,
-          enabled = true,
+          enabled = true,         -- Always true boolean for Plater integration
           spec = combo.spec or 0, -- Include spec field with fallback
         })
       end

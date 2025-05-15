@@ -832,6 +832,9 @@ function DM.GUI:CreateTabs(parent, tabInfo)
   local tabWidth = 110
   local tabHeight = 28
 
+  -- Set the numTabs property on the parent frame - CRITICAL for PanelTemplates_UpdateTabs
+  parent.numTabs = #tabInfo
+
   for i, info in ipairs(tabInfo) do
     local tab = CreateFrame("Button", "DotMasterTab" .. i, tabGroup, "CharacterFrameTabButtonTemplate")
     tab:SetSize(tabWidth, tabHeight)

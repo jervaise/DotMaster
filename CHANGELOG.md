@@ -1,5 +1,23 @@
 # DotMaster Changelog
 
+## [2.1] - 2024-06-20
+### Added
+- Enhanced database reset functionality with complete wipe and fresh state initialization
+- Added support for all classes and specializations in database reset
+- Improved debug messages for reset operations
+
+### Fixed
+- Fixed spell priority implementation in Plater integration - lower numbers now correctly represent higher priority
+- Added proper normalization for enabled/disabled and tracked/untracked values (0/1 to true/false)
+- Resolved tab selection issue causing Lua errors (`'for' limit must be a number`)
+- Fixed database tab and tracked spells tab refresh after database reset
+- Enhanced spell selection UI to properly filter based on tracked status
+
+### Changed
+- Improved color handling for nameplates with optimized priority sorting
+- Enhanced error handling throughout the addon
+- Updated documentation for v2.1 release
+
 ## [2.0.2] - 2023-12-15
 ### Added
 - Show spec icons next to spec names in the database tab

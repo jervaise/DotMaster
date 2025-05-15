@@ -20,7 +20,7 @@ DM.defaults = DM.defaults or {
   borderThickness = 2,
   flashExpiring = false,
   flashThresholdSeconds = 3.0,
-  version = "2.0.0",
+  version = "2.1",
   trackSwapBuffs = true
 }
 
