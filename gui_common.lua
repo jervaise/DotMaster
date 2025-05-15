@@ -561,7 +561,9 @@ function DM:CreateGUI()
     -- Tab styling
     local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
     normalTexture:SetAllPoints()
-    normalTexture:SetColorTexture(0, 0, 0, 0.7) -- Darker background with better transparency
+    -- Set initial inactive color
+    normalTexture:SetColorTexture(0, 0, 0, 0.7)
+    tabButton.normalTexture = normalTexture -- Store reference to the texture
 
     -- Tab text
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -583,13 +585,19 @@ function DM:CreateGUI()
       -- Hide all frames and deselect all tabs
       for j, tabFrame in ipairs(tabFrames) do
         tabFrame:Hide()
-        local tab = _G["DotMasterTab" .. j]
-        tab:GetRegions():SetColorTexture(0, 0, 0, 0.7) -- Match debug window style
+        local otherTab = _G["DotMasterTab" .. j]
+        if otherTab and otherTab.normalTexture then
+          -- Set to inactive color
+          otherTab.normalTexture:SetColorTexture(0, 0, 0, 0.7)
+        end
       end
 
       -- Show selected frame and highlight tab
       tabFrames[self.id]:Show()
-      self:GetRegions():SetColorTexture(0.2, 0.2, 0.2, 0.8) -- Slightly lighter for selected tab
+      if self.normalTexture then
+        -- Set to active color
+        self.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+      end
       activeTab = self.id
 
       -- Refresh appropriate tab content when clicked
@@ -614,7 +622,11 @@ function DM:CreateGUI()
   end
 
   -- Set initial active tab
-  _G["DotMasterTab1"]:GetRegions():SetColorTexture(0.3, 0.3, 0.3, 0.8)
+  local firstTab = _G["DotMasterTab1"]
+  if firstTab and firstTab.normalTexture then
+    -- Set to active color
+    firstTab.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  end
   tabFrames[1]:Show()
 
   -- Ensure functions exist before calling them

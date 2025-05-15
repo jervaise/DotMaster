@@ -5,18 +5,16 @@ local DM = DotMaster
 
 -- Function to check if combinations database is initialized
 function DM:IsCombinationsInitialized()
-  if not DM.combinations then
-    DM:DebugMsg("Combinations database is not initialized (DM.combinations is nil)")
+  -- Check if the current spec has a profile initialized
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DebugMsg("Combinations database is not initialized (current spec profile not found)")
     return false
   end
 
-  if not DM.combinations.data then
-    DM:DebugMsg("Combinations database is not initialized (DM.combinations.data is nil)")
-    return false
-  end
-
-  if not DM.combinations.settings then
-    DM:DebugMsg("Combinations database is not initialized (DM.combinations.settings is nil)")
+  -- Check if the current spec has a combinations field
+  if not currentProfile.combinations then
+    DM:DebugMsg("Combinations database is not initialized (current spec profile has no combinations field)")
     return false
   end
 
@@ -25,38 +23,37 @@ end
 
 -- Function to force initialization of combinations database
 function DM:ForceCombinationsInitialization()
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DebugMsg("Cannot initialize combinations - no current spec profile")
+    return false
+  end
+
   if DM:IsCombinationsInitialized() then
-    DM:DebugMsg("Combinations database already initialized")
+    DM:DebugMsg("Combinations database already initialized for current spec")
     return true
   end
 
-  DM:DebugMsg("Forcing combinations database initialization...")
+  DM:DebugMsg("Forcing combinations database initialization for current spec...")
 
-  -- Create a minimal valid structure
-  if not DM.combinations then
-    DM.combinations = {}
-  end
-
-  if not DM.combinations.settings then
-    DM.combinations.settings = {
-      enabled = true,
-      priorityOverIndividual = true,
+  -- Create a minimal valid structure in the current spec profile
+  if not currentProfile.combinations then
+    currentProfile.combinations = {
+      data = {},
+      settings = {
+        enabled = true,
+        priorityOverIndividual = true,
+      }
     }
-  end
-
-  if not DM.combinations.data then
-    DM.combinations.data = {}
+    DM:DebugMsg("Created combinations structure in current spec profile")
   end
 
   -- Save to permanent storage
-  if not DotMasterDB then
-    DotMasterDB = {}
+  if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+    DM.ClassSpec:SaveCurrentSettings()
+    DM:DebugMsg("Saved initialized combinations structure to permanent storage")
   end
 
-  DotMasterDB.combinations = DM.combinations
-
-  -- Announce initialization
-  DM:DebugMsg("Combinations database force-initialized successfully")
   return true
 end
 
@@ -117,24 +114,48 @@ DM.defaultCombinations = {
   data = {}
 }
 
+-- Helper function to get the combinations from the current spec profile
+function DM:GetCurrentSpecCombinations()
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DebugMsg("WARNING: Cannot get combinations - no current spec profile")
+    return nil
+  end
+
+  if not currentProfile.combinations then
+    -- Initialize combinations structure if it doesn't exist
+    currentProfile.combinations = {
+      data = {},
+      settings = {
+        enabled = true,
+        priorityOverIndividual = true,
+      }
+    }
+    DM:DebugMsg("Created initial combinations structure in current spec profile")
+  end
+
+  return currentProfile.combinations
+end
+
 -- Initialize combinations database
 function DM:InitializeCombinationsDB()
   DM:DebugMsg("Initializing combinations database")
 
-  -- Make sure DotMasterDB exists
-  if not DotMasterDB then
-    DotMasterDB = {}
-    DM:DebugMsg("Created new DotMasterDB table")
+  -- Make sure current spec profile exists
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DebugMsg("Cannot initialize combinations - no current spec profile")
+    return
   end
 
   -- Create combinations namespace if it doesn't exist
-  if not DotMasterDB.combinations then
+  if not currentProfile.combinations then
     -- Check if DeepCopy function exists
     if DM.DeepCopy then
-      DotMasterDB.combinations = DM.DeepCopy(DM.defaultCombinations)
+      currentProfile.combinations = DM.DeepCopy(DM.defaultCombinations)
     else
       -- Fallback to simple copy if DeepCopy isn't available
-      DotMasterDB.combinations = {
+      currentProfile.combinations = {
         settings = {
           enabled = true,
           priorityOverIndividual = true,
@@ -142,15 +163,15 @@ function DM:InitializeCombinationsDB()
         data = {}
       }
     end
-    DM:DebugMsg("Created new combinations database structure")
+    DM:DebugMsg("Created new combinations database structure in current spec profile")
   end
 
   -- Ensure all required fields exist (for version upgrades)
-  if DotMasterDB.combinations and not DotMasterDB.combinations.settings then
+  if currentProfile.combinations and not currentProfile.combinations.settings then
     if DM.DeepCopy then
-      DotMasterDB.combinations.settings = DM.DeepCopy(DM.defaultCombinations.settings)
+      currentProfile.combinations.settings = DM.DeepCopy(DM.defaultCombinations.settings)
     else
-      DotMasterDB.combinations.settings = {
+      currentProfile.combinations.settings = {
         enabled = true,
         priorityOverIndividual = true,
       }
@@ -158,57 +179,89 @@ function DM:InitializeCombinationsDB()
     DM:DebugMsg("Added missing settings to combinations database")
   end
 
-  if DotMasterDB.combinations and not DotMasterDB.combinations.data then
-    DotMasterDB.combinations.data = {}
+  if currentProfile.combinations and not currentProfile.combinations.data then
+    currentProfile.combinations.data = {}
     DM:DebugMsg("Added missing data table to combinations database")
   end
 
-  -- Store reference for easier access
-  DM.combinations = DotMasterDB.combinations
+  -- Store a reference for backwards compatibility
+  DM.combinations = currentProfile.combinations
 
-  local comboCount = (DotMasterDB.combinations and DotMasterDB.combinations.data) and
-      DM:TableCount(DotMasterDB.combinations.data) or 0
+  local comboCount = 0
+  if currentProfile.combinations and currentProfile.combinations.data then
+    comboCount = DM:TableCount(currentProfile.combinations.data)
+  end
   DM:DebugMsg("Combinations database initialized with " .. comboCount .. " combinations")
+
+  -- Save changes to permanent storage
+  if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+    DM.ClassSpec:SaveCurrentSettings()
+  end
 end
 
 -- Save combinations database
 function DM:SaveCombinationsDB()
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DebugMsg("ERROR: Cannot save combinations - no current spec profile")
+    return
+  end
+
+  -- Store a reference for backwards compatibility
+  DM.combinations = currentProfile.combinations
+
+  -- Get the current class and spec
+  local currentClass, currentSpecID = nil, nil
+  if DM.ClassSpec and DM.ClassSpec.GetCurrentClassAndSpec then
+    currentClass, currentSpecID = DM.ClassSpec:GetCurrentClassAndSpec()
+  else
+    DM:DebugMsg("ERROR: Cannot save combinations - GetCurrentClassAndSpec function not found")
+    return
+  end
+
+  -- Make sure the database structure exists
   if not DotMasterDB then
-    DM:DebugMsg("ERROR: Cannot save combinations - DotMasterDB not initialized")
-    return
+    DotMasterDB = {}
+  end
+  if not DotMasterDB.classProfiles then
+    DotMasterDB.classProfiles = {}
+  end
+  if not DotMasterDB.classProfiles[currentClass] then
+    DotMasterDB.classProfiles[currentClass] = {}
+  end
+  if not DotMasterDB.classProfiles[currentClass][currentSpecID] then
+    DotMasterDB.classProfiles[currentClass][currentSpecID] = {
+      spells = {},
+      combinations = { data = {}, settings = {} },
+      settings = {}
+    }
   end
 
-  -- Check if combinations exists before saving
-  if not DM.combinations then
-    DM:DebugMsg("ERROR: Cannot save combinations - DM.combinations not initialized")
-    return
+  -- Only update the combinations portion of the profile
+  DotMasterDB.classProfiles[currentClass][currentSpecID].combinations = currentProfile.combinations
+
+  -- Ensure we maintain the direct reference for the current session
+  self.currentProfile = DotMasterDB.classProfiles[currentClass][currentSpecID]
+
+  -- Push the changes to Plater if necessary
+  if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+    DM.ClassSpec:PushConfigToPlater()
   end
 
-  -- Ensure the combinations entry exists
-  DotMasterDB.combinations = DM.combinations
-
-  local comboCount = (DM.combinations and DM.combinations.data) and DM:TableCount(DM.combinations.data) or 0
+  local comboCount = 0
+  if currentProfile.combinations and currentProfile.combinations.data then
+    comboCount = DM:TableCount(currentProfile.combinations.data)
+  end
   DM:DebugMsg("Combinations database saved with " .. comboCount .. " combinations")
 end
 
 -- Create a new combination
 function DM:CreateCombination(name, spells, color)
-  -- Ensure combinations system is initialized
-  if not DM.combinations then
-    DM:DebugMsg("ERROR: Cannot create combination - database not initialized")
-    -- Try to initialize if missing
-    if DM.InitializeCombinationsDB then
-      local success, errorMsg = pcall(function()
-        DM:InitializeCombinationsDB()
-      end)
-
-      if not success or not DM.combinations then
-        DM:DebugMsg("Failed to initialize combinations database: " .. (errorMsg or "unknown error"))
-        return nil
-      end
-    else
-      return nil
-    end
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not currentCombinations then
+    DM:DebugMsg("ERROR: Cannot create combination - failed to get current spec combinations")
+    return nil
   end
 
   -- Generate a unique ID using timestamp
@@ -216,8 +269,8 @@ function DM:CreateCombination(name, spells, color)
 
   -- Find the highest priority and increment by 1
   local priority = 1
-  if DM.combinations.data then
-    for _, combo in pairs(DM.combinations.data) do
+  if currentCombinations.data then
+    for _, combo in pairs(currentCombinations.data) do
       if combo and combo.priority and combo.priority >= priority then
         priority = combo.priority + 1
       end
@@ -225,80 +278,72 @@ function DM:CreateCombination(name, spells, color)
   end
 
   -- Create the new combination
-  if not DM.combinations.data then
-    DM.combinations.data = {}
+  if not currentCombinations.data then
+    currentCombinations.data = {}
   end
 
-  DM.combinations.data[id] = {
+  currentCombinations.data[id] = {
     name = name or "New Combination",
     spells = spells or {},
     color = color or { r = 1, g = 0, b = 0, a = 1 },
     priority = priority,
     enabled = true,
-    threshold = "all", -- "all" or numeric value
-    isExpanded = false -- ALWAYS start collapsed
+    threshold = "all",  -- "all" or numeric value
+    isExpanded = false, -- ALWAYS start collapsed
   }
 
   -- Debug message to confirm expanded state is set correctly
   DM:DebugMsg("New combination created with ID: " .. id .. ", isExpanded explicitly set to false")
 
-  -- Save changes safely
-  local success, errorMsg = pcall(function()
-    DM:SaveCombinationsDB()
-  end)
-
-  if not success then
-    DM:DebugMsg("Error saving after creating combination: " .. (errorMsg or "unknown error"))
-  end
+  -- Save changes
+  DM:SaveCombinationsDB()
 
   return id
 end
 
 -- Delete a combination
 function DM:DeleteCombination(id)
-  if not DM.combinations then
-    DM:DebugMsg("ERROR: Cannot delete combination - database not initialized")
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not currentCombinations then
+    DM:DebugMsg("ERROR: Cannot delete combination - failed to get current spec combinations")
     return false
   end
 
-  if not DM.combinations.data then
+  if not currentCombinations.data then
     DM:DebugMsg("ERROR: Cannot delete combination - data table not initialized")
     return false
   end
 
-  if not id or not DM.combinations.data[id] then
+  if not id or not currentCombinations.data[id] then
     DM:DebugMsg("ERROR: Cannot delete combination - ID not found: " .. tostring(id))
     return false
   end
 
   -- Remove the combination
-  DM.combinations.data[id] = nil
+  currentCombinations.data[id] = nil
 
-  -- Save changes safely
-  local success, errorMsg = pcall(function()
-    DM:SaveCombinationsDB()
-  end)
-
-  if not success then
-    DM:DebugMsg("Error saving after deleting combination: " .. (errorMsg or "unknown error"))
-  end
+  -- Save changes
+  DM:SaveCombinationsDB()
 
   return true
 end
 
 -- Update an existing combination
 function DM:UpdateCombination(id, updates)
-  if not DM.combinations then
-    DM:DebugMsg("ERROR: Cannot update combination - database not initialized")
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not currentCombinations then
+    DM:DebugMsg("ERROR: Cannot update combination - failed to get current spec combinations")
     return false
   end
 
-  if not DM.combinations.data then
+  if not currentCombinations.data then
     DM:DebugMsg("ERROR: Cannot update combination - data table not initialized")
     return false
   end
 
-  if not id or not DM.combinations.data[id] then
+  if not id or not currentCombinations.data[id] then
     DM:DebugMsg("ERROR: Cannot update combination - ID not found: " .. tostring(id))
     return false
   end
@@ -310,29 +355,25 @@ function DM:UpdateCombination(id, updates)
 
   -- Apply updates
   for key, value in pairs(updates) do
-    DM.combinations.data[id][key] = value
+    currentCombinations.data[id][key] = value
   end
 
-  -- Save changes safely
-  local success, errorMsg = pcall(function()
-    DM:SaveCombinationsDB()
-  end)
-
-  if not success then
-    DM:DebugMsg("Error saving after updating combination: " .. (errorMsg or "unknown error"))
-  end
+  -- Save changes
+  DM:SaveCombinationsDB()
 
   return true
 end
 
 -- Update combination priorities
 function DM:UpdateCombinationPriorities(priorityTable)
-  if not DM.combinations then
-    DM:DebugMsg("ERROR: Cannot update priorities - database not initialized")
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not currentCombinations then
+    DM:DebugMsg("ERROR: Cannot update priorities - failed to get current spec combinations")
     return false
   end
 
-  if not DM.combinations.data then
+  if not currentCombinations.data then
     DM:DebugMsg("ERROR: Cannot update priorities - data table not initialized")
     return false
   end
@@ -344,19 +385,13 @@ function DM:UpdateCombinationPriorities(priorityTable)
 
   -- Apply the new priorities
   for id, priority in pairs(priorityTable) do
-    if DM.combinations.data[id] then
-      DM.combinations.data[id].priority = priority
+    if currentCombinations.data[id] then
+      currentCombinations.data[id].priority = priority
     end
   end
 
-  -- Save changes safely
-  local success, errorMsg = pcall(function()
-    DM:SaveCombinationsDB()
-  end)
-
-  if not success then
-    DM:DebugMsg("Error saving after updating priorities: " .. (errorMsg or "unknown error"))
-  end
+  -- Save changes
+  DM:SaveCombinationsDB()
 
   return true
 end

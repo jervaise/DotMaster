@@ -90,6 +90,12 @@ function DM:InstallPlaterMod()
     settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
   end
 
+  -- Determine effective extendPlaterColors based on borderOnly setting
+  local effectiveExtendPlaterColors = settings.extendPlaterColors
+  if settings.borderOnly then
+    effectiveExtendPlaterColors = false -- If borderOnly is true, extendPlaterColors is treated as false for the script
+  end
+
   -- Format tracked spells for direct embedding
   local spellsLuaCode = "{\n"
   for i, spell in ipairs(trackedSpells) do
@@ -234,7 +240,7 @@ end]],
     spellsLuaCode, combosLuaCode,
     settings.forceColor and "true" or "false",
     settings.borderOnly and "true" or "false",
-    settings.extendPlaterColors and "true" or "false",
+    effectiveExtendPlaterColors and "true" or "false",
     settings.borderThickness or 2,
     settings.flashExpiring and "true" or "false",
     settings.flashThresholdSeconds or 3.0,
@@ -336,12 +342,32 @@ function(self, unitId, unitFrame, envTable, modTable)
   for i, combo in ipairs(combos) do
     if combo.enabled then
       local allSpellsPresent = true
-      for _, spellID in ipairs(combo.spells) do if not Plater.NameplateHasAura(unitFrame, spellID, true) then allSpellsPresent = false; break end end
+      local minRemainingTime = 9999 -- Initialize with a very high number
+
+      -- First, check if all spells are present and find the minimum remaining time
+      for _, spellID in ipairs(combo.spells) do
+        if Plater.NameplateHasAura(unitFrame, spellID, true) then
+          local sName, _, _, _, sDuration, sExpirationTime = Plater.GetAura(unitFrame.namePlateUnitToken, spellID, true)
+          if sExpirationTime and sExpirationTime > 0 then
+            local remaining = math.max(0, sExpirationTime - GetTime())
+            if remaining < minRemainingTime then
+              minRemainingTime = remaining
+            end
+          else
+            -- If any spell in the combo has no expiration (e.g., some passive auras if misconfigured),
+            -- we can't determine a reliable combo expiry. Treat as not expiring for flash purposes.
+            minRemainingTime = 9999
+            break -- Exit inner loop, this spell makes combo expiry indefinite for flashing
+          end
+        else
+          allSpellsPresent = false
+          break -- Exit inner loop, not all spells are present
+        end
+      end
+
       if allSpellsPresent then
-        -- For combos, we don't easily have a single remaining time. Use a high value or a spell from combo.
-        -- Here, passing 999 so it flashes only if DM_FLASH_EXPIRING is on, not based on combo time.
-        -- If a specific spell in combo should gate this, its time needs to be fetched.
-        applyColor(combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1, false, 999)
+        -- Pass the calculated minimum remaining time of the spells in the combination
+        applyColor(combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1, false, minRemainingTime)
         return
       end
     end
@@ -379,8 +405,22 @@ function(self, unitId, unitFrame, envTable, modTable)
   end
 
   if envTable.DM_BORDER_ONLY then
-    if unitFrame.healthBar.border then unitFrame.customBorderColor = nil; Plater.RefreshNameplateColor(unitFrame) end
+    if unitFrame.healthBar.border then
+        -- We are in border-only mode, and no DotMaster spell/combo is currently active for this plate.
+        -- We need to ensure Plater takes back control of the border.
+        -- By setting customBorderColor to nil, we signal to Plater that DotMaster is no longer
+        -- explicitly overriding the border. Plater.RefreshNameplateColor should then apply Plater's
+        -- own logic for border visibility and color based on its settings for the current unit state.
+        unitFrame.customBorderColor = nil
+        -- Attempt to explicitly clear/reset vertex color to OPAQUE black before Plater's refresh.
+        unitFrame.healthBar.border:SetVertexColor(0,0,0,1)
+        Plater.RefreshNameplateColor(unitFrame)
+    end
   else
+    -- Not in border-only mode. Plater should be controlling the border entirely based on its settings,
+    -- or how it interprets the nameplate color DotMaster might have set via Plater.SetNameplateColor().
+    -- DotMaster simply ensures customBorderColor is nil so Plater doesn't think DotMaster is still
+    -- trying to explicitly control the border.
     Plater.RefreshNameplateColor(unitFrame)
     if unitFrame.healthBar.border then unitFrame.customBorderColor = nil end
   end

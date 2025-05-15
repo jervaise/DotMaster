@@ -181,6 +181,34 @@ end
 
 -- Function to save the database to saved variables
 function DM:SaveDMSpellsDB()
+  -- First save to the current profile if available
+  if self.currentProfile then
+    self.currentProfile.spells = DM.dmspellsdb
+    local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+    DM:DatabaseDebug("Saved dmspellsdb to current profile (" .. count .. " spells)")
+
+    -- If we have class/spec integration, also make sure it's saved properly
+    if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+      DM.ClassSpec:SaveCurrentSettings()
+    end
+    return
+  end
+
+  -- If we don't have a current profile reference, try to get it
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if currentProfile then
+    currentProfile.spells = DM.dmspellsdb
+    local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+    DM:DatabaseDebug("Saved dmspellsdb to spec profile via GetCurrentSpecProfile (" .. count .. " spells)")
+
+    -- If we have class/spec integration, also make sure it's saved properly
+    if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+      DM.ClassSpec:SaveCurrentSettings()
+    end
+    return
+  end
+
+  -- Fallback to legacy method if the above failed
   if not DotMasterDB then
     DM:DatabaseDebug("Creating new SavedVariables table for DotMasterDB")
     DotMasterDB = {}
@@ -189,7 +217,7 @@ function DM:SaveDMSpellsDB()
   DotMasterDB.dmspellsdb = DM.dmspellsdb
 
   local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
-  DM:DatabaseDebug("dmspellsdb saved to saved variables (" .. count .. " spells)")
+  DM:DatabaseDebug("Saved dmspellsdb to legacy SavedVariables (" .. count .. " spells)")
 end
 
 -- Function to normalize database IDs to ensure they're all numbers
@@ -222,33 +250,31 @@ end
 
 -- Function to load the database from saved variables
 function DM:LoadDMSpellsDB()
-  -- Check if saved variables exist and contain dmspellsdb
-  if DotMasterDB and DotMasterDB.dmspellsdb then
-    -- Capture current count for debugging
-    local oldCount = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
-
-    -- Load spell data from saved variables
-    DM.dmspellsdb = DotMasterDB.dmspellsdb
-
-    -- Count loaded spells
-    local newCount = DM:TableCount(DM.dmspellsdb)
-    DM:DatabaseDebug("dmspellsdb loaded from saved variables: " .. newCount .. " spells (was " .. oldCount .. ")")
-
-    -- Normalize IDs to ensure they're all numbers
-    DM:NormalizeDatabaseIDs()
-  else
-    -- Initialize empty database
-    DM.dmspellsdb = {}
-    DM:DatabaseDebug("No saved database found, initialized new empty dmspellsdb.")
+  -- First check if we already have a current profile reference
+  if self.currentProfile and self.currentProfile.spells then
+    DM.dmspellsdb = self.currentProfile.spells
+    local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+    DM:DatabaseDebug("Loaded dmspellsdb from current profile (" .. count .. " spells)")
+    return
   end
 
-  -- Check for and warn about legacy spellConfig data
-  if DotMasterDB and DotMasterDB.spellConfig then
-    DM:DatabaseDebug(
-      "WARNING: Legacy spellConfig data found in SavedVariables. Run '/dm reset' or '/dm fixdb' to clean up.")
+  -- If we don't have a currentProfile yet, try to get it
+  local currentProfile = self:GetCurrentSpecProfile()
+  if currentProfile and currentProfile.spells then
+    DM.dmspellsdb = currentProfile.spells
+    local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+    DM:DatabaseDebug("Loaded dmspellsdb from GetCurrentSpecProfile (" .. count .. " spells)")
+    return
+  end
 
-    -- Optionally migrate any remaining spells from spellConfig if needed
-    -- This code is left as a placeholder for potential migration needs
+  -- Fallback to legacy method if the above failed
+  if DotMasterDB and DotMasterDB.dmspellsdb then
+    DM.dmspellsdb = DotMasterDB.dmspellsdb
+    local count = DM.dmspellsdb and DM:TableCount(DM.dmspellsdb) or 0
+    DM:DatabaseDebug("Loaded dmspellsdb from legacy saved variables (" .. count .. " spells)")
+  else
+    DM.dmspellsdb = {}
+    DM:DatabaseDebug("No saved dmspellsdb found, initialized empty table")
   end
 end
 

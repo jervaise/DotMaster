@@ -76,56 +76,6 @@ function DM.ClassSpec:InitializeClassSpecProfiles()
       combos = {},
       settings = classSpecSettings
     }
-
-    -- If no spells are configured yet, add appropriate test spells based on class
-    local config = DotMasterDB.classProfiles[currentClass]
-        [currentSpecID] -- Use local variable referencing the DB entry
-    if not config.spells or #config.spells == 0 then
-      -- Add class-specific test spells
-      if currentClass == "PRIEST" then
-        -- Priest Test Spells
-        config.spells = {
-          { spellID = 589,   name = "Shadow Word: Pain", color = { 0.7, 0, 1 },     enabled = true },
-          { spellID = 34914, name = "Vampiric Touch",    color = { 0.3, 0.3, 0.7 }, enabled = true }
-        }
-      elseif currentClass == "WARLOCK" then
-        -- Warlock Test Spells
-        config.spells = {
-          { spellID = 980, name = "Agony",      color = { 0.5, 0.2, 0.7 }, enabled = true },
-          { spellID = 172, name = "Corruption", color = { 0.3, 0.8, 0.3 }, enabled = true }
-        }
-      elseif currentClass == "DRUID" then
-        -- Druid Test Spells
-        config.spells = {
-          { spellID = 8921,   name = "Moonfire", color = { 0.2, 0.4, 1 }, enabled = true },
-          { spellID = 155722, name = "Rake",     color = { 1, 0.4, 0 },   enabled = true }
-        }
-      elseif currentClass == "HUNTER" then
-        -- Hunter Test Spells (Serpent Sting and similar)
-        config.spells = {
-          { spellID = 271788, name = "Serpent Sting", color = { 0, 0.8, 0 }, enabled = true },
-          { spellID = 3355,   name = "Freezing Trap", color = { 0, 0.7, 1 }, enabled = true }
-        }
-      elseif currentClass == "MAGE" then
-        -- Mage Test Spells
-        config.spells = {
-          { spellID = 12654,  name = "Ignite",  color = { 1, 0.4, 0 },   enabled = true },
-          { spellID = 205708, name = "Chilled", color = { 0.5, 0.5, 1 }, enabled = true }
-        }
-      elseif currentClass == "DEATHKNIGHT" then
-        -- Death Knight Test Spells
-        config.spells = {
-          { spellID = 191587, name = "Virulent Plague", color = { 0.2, 0.4, 1 }, enabled = true },
-          { spellID = 55078,  name = "Blood Plague",    color = { 0.8, 0, 0 },   enabled = true }
-        }
-      else
-        -- For any other class, add a placeholder spell with class color
-        local classColor = DM.classColors[currentClass] or DM.classColors["UNKNOWN"]
-        config.spells = {
-          { spellID = 589, name = "Test DoT", color = { 1, 0, 1 }, enabled = true }
-        }
-      end
-    end
   end
 end
 
@@ -149,16 +99,16 @@ function DM.ClassSpec:GetDotMasterIntegrationIndex()
 end
 
 -- Function to push current class/spec configuration to DotMaster Integration
-function DM.ClassSpec:PushConfigToPlater()
+function DM.ClassSpec:PushConfigToPlater(forcePush)
   -- Throttle updates to prevent spamming when many settings change at once
   local now = GetTime()
-  if self.lastPushTime and now - self.lastPushTime < 0.5 then
+  if not forcePush and self.lastPushTime and now - self.lastPushTime < 0.5 then
     -- Already pushed recently, schedule a delayed update
     if not self.pendingPush then
       self.pendingPush = C_Timer.NewTimer(0.5, function()
         self.pendingPush = nil
         self.lastPushTime = nil -- Reset timer to force update
-        self:PushConfigToPlater()
+        self:PushConfigToPlater(forcePush)
       end)
     end
     return
@@ -213,17 +163,6 @@ function DM.ClassSpec:PushConfigToPlater()
       configToPush.settings = {}
     end
     configToPush.settings.forceColor = DotMasterDB.settings.forceColor
-  end
-
-  -- Ensure there's at least one test spell if none exist
-  if #configToPush.spells == 0 then
-    table.insert(configToPush.spells, {
-      spellID = 34914, -- Vampiric Touch for Priests
-      color = { r = 0.8, g = 0.1, b = 0.8, a = 1.0 },
-      priority = 1,
-      name = "Test Spell",
-      enabled = true
-    })
   end
 
   -- Convert all color formats to array format which we know works
@@ -286,16 +225,20 @@ end
 function DM.ClassSpec:SaveCurrentSettings()
   local currentClass, currentSpecID = self:GetCurrentClassAndSpec()
 
-  -- Make sure class/spec profiles are initialized
+  -- Make sure class/spec profiles are initialized and we have a current profile reference
   self:InitializeClassSpecProfiles()
+  local currentProfileRef = DM:GetCurrentSpecProfile() -- Ensures DM.currentProfile is set
+  if not currentProfileRef then
+    DM:DebugMsg("ERROR: SaveCurrentSettings - Could not get current profile reference.")
+    return
+  end
 
-  -- Get current settings
-  local currentSettings = DM.API:GetSettings()
+  -- Get current global settings from API
+  local currentGlobalSettings = DM.API:GetSettings()
 
-  -- Remove global settings that should not be saved per class/spec
+  -- Filter out global settings, keeping only spec-specific ones
   local classSpecSettings = {}
-  for k, v in pairs(currentSettings) do
-    -- Skip these settings as they are stored globally
+  for k, v in pairs(currentGlobalSettings) do
     if k ~= "minimapIcon" and
         k ~= "enabled" and
         k ~= "forceColor" and
@@ -307,20 +250,57 @@ function DM.ClassSpec:SaveCurrentSettings()
     end
   end
 
-  -- Update the class/spec profile with current settings
+  -- Update the DotMasterDB record for the current class/spec
+  -- Use the direct references from DM.currentProfile for spells and combinations
   DotMasterDB.classProfiles[currentClass][currentSpecID] = {
-    spells = DM.API:GetTrackedSpells(),
-    combos = DM.API:GetCombinations(),
+    spells = DM.currentProfile.spells or {},
+    combos = DM.currentProfile.combinations or { data = {}, settings = {} },
     settings = classSpecSettings
   }
+
+  DM:DebugMsg(string.format("Saved settings for %s - %s. Spells: %d, Combos: %d",
+    currentClass, currentSpecID,
+    DM.currentProfile.spells and DM:TableCount(DM.currentProfile.spells) or 0,
+    DM.currentProfile.combinations and DM.currentProfile.combinations.data and
+    DM:TableCount(DM.currentProfile.combinations.data) or 0
+  ))
 
   -- Push updated configuration to Plater
   self:PushConfigToPlater()
 end
 
 -- Event handler
-function DM.ClassSpec:OnEvent(event, ...)
-  if event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGIN" then
+function DM.ClassSpec:OnEvent(event, unit, ...)
+  if event == "PLAYER_SPECIALIZATION_CHANGED" then
+    -- Only handle if it's the player's spec that changed
+    if unit == "player" then
+      DM:DebugMsg("Player specialization changed, updating profile...")
+
+      -- Switch to the new spec profile
+      if self.SwitchSpecProfile then
+        self:SwitchSpecProfile()
+      end
+
+      -- Force reinstall/push with current settings when spec changes (simulates GUI closing)
+      if DM.InstallPlaterMod then
+        DM:InstallPlaterMod()
+      end
+
+      -- Force update the status in footer if it exists
+      if DM.UpdatePlaterStatusFooter then
+        DM:UpdatePlaterStatusFooter()
+      end
+
+      -- Also explicitly push current profile to Plater
+      self:PushConfigToPlater(true) -- true = force push
+
+      DM:DebugMsg("Spec change complete - profile updated and pushed to Plater")
+    end
+  elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGIN" then
+    -- Initialize profile and push to Plater
+    if DM.InitializeCurrentProfile then
+      DM:InitializeCurrentProfile()
+    end
     self:PushConfigToPlater()
   end
 end
@@ -342,15 +322,65 @@ function DM.ClassSpec:Initialize()
   self:InitializeClassSpecProfiles()
 end
 
-function DM:AddEmergencyTestSpell()
-  -- Create a minimal config with just a test spell
-  local config = {
-    spells = {
-      { spellID = 589, name = "Test DoT", color = { 1, 0, 1 }, enabled = true }
-    },
-    combos = {}
+-- Function to switch to the current spec profile
+function DM.ClassSpec:SwitchSpecProfile()
+  local currentClass, currentSpecID = self:GetCurrentClassAndSpec()
+
+  -- Make sure class/spec profiles are initialized
+  self:InitializeClassSpecProfiles()
+
+  -- Get or create the current spec's profile
+  local currentProfile
+  if DM.InitializeCurrentProfile then
+    currentProfile = DM:InitializeCurrentProfile()
+  else
+    currentProfile = DM:GetCurrentSpecProfile()
+  end
+
+  if not currentProfile then
+    DM:DebugMsg("ERROR: Failed to get current spec profile during spec switch")
+    return
+  end
+
+  -- Load settings from the profile
+  if currentProfile.settings then
+    for key, value in pairs(currentProfile.settings) do
+      -- Update API settings
+      if DM.API and DM.API.settings then
+        DM.API.settings[key] = value
+      end
+    end
+  end
+
+  -- Update spells reference
+  DM.dmspellsdb = currentProfile.spells or {}
+
+  -- Update combinations reference
+  DM.combinations = currentProfile.combinations or {
+    data = {},
+    settings = {
+      enabled = true,
+      priorityOverIndividual = true
+    }
   }
 
-  -- Push this minimal config
-  DM:PushPlaterConfig(config, true)
+  DM:DebugMsg(string.format("Switched to %s spec #%d profile", currentClass, currentSpecID))
+
+  -- Push the profile to Plater
+  self:PushConfigToPlater()
+
+  -- Update the UI if the GUI exists
+  C_Timer.After(0.3, function()
+    if DM.GUI then
+      if DM.GUI.RefreshDatabaseTabList then
+        DM.GUI:RefreshDatabaseTabList()
+      end
+      if DM.GUI.RefreshTrackedSpellTabList then
+        DM.GUI:RefreshTrackedSpellTabList()
+      end
+      if DM.GUI.UpdateCombinationsList then
+        DM.GUI:UpdateCombinationsList()
+      end
+    end
+  end)
 end

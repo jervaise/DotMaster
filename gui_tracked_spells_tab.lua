@@ -264,51 +264,48 @@ end
 function GUI:GetGroupedTrackedSpells()
   local grouped = {}
 
-  -- Make sure we have access to the database
-  if not DM.dmspellsdb then
-    DM:DatabaseDebug("dmspellsdb is nil - attempting to load")
-
-    -- Try to load database if it's missing
-    if DM.LoadDMSpellsDB then
-      DM:LoadDMSpellsDB()
-    end
-
-    -- If still missing, return empty results
-    if not DM.dmspellsdb then
-      DM:DatabaseDebug("Failed to load dmspellsdb")
-      return grouped
-    end
-  end
-
   -- Get current player class
   local currentClass = select(2, UnitClass("player"))
 
-  -- Check if database is empty
+  -- Get current spec profile
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DatabaseDebug("Could not access current spec profile")
+    return grouped
+  end
+
+  -- Check if the spells table exists
+  if not currentProfile.spells then
+    DM:DatabaseDebug("Current spec profile has no spells table")
+    return grouped
+  end
+
+  -- Check if spells table is empty
   local isEmpty = true
-  for _ in pairs(DM.dmspellsdb) do
+  for _ in pairs(currentProfile.spells) do
     isEmpty = false
     break
   end
 
   if isEmpty then
-    DM:DatabaseDebug("dmspellsdb is empty")
+    DM:DatabaseDebug("Current spec profile's spells table is empty")
     return grouped
   end
 
   local count = 0
-  for idStr, data in pairs(DM.dmspellsdb) do
-    -- Only include tracked spells (using tonumber for robustness) AND only for current class
+  for idStr, data in pairs(currentProfile.spells) do
+    -- Only include tracked spells (using tonumber for robustness)
     local tracked = tonumber(data.tracked)
-    if tracked == 1 and (data.wowclass == currentClass or data.wowclass == "UNKNOWN") then
+    if tracked == 1 then
       -- Convert string ID to number if needed
       local id = tonumber(idStr)
       count = count + 1
 
       if not id then
-        DM:DatabaseDebug(string.format("WARNING: Invalid spell ID in dmspellsdb: %s", tostring(idStr)))
+        DM:DatabaseDebug(string.format("WARNING: Invalid spell ID in current spec's spells: %s", tostring(idStr)))
         -- Skip this entry
       else
-        local className = data.wowclass or "UNKNOWN"
+        local className = data.wowclass or currentClass or "UNKNOWN"
         local specName = data.wowspec or "General"
 
         -- Initialize class in the table if needed
@@ -327,7 +324,7 @@ function GUI:GetGroupedTrackedSpells()
     end
   end
 
-  DM:DatabaseDebug("GetGroupedTrackedSpells processed " .. count .. " tracked entries")
+  DM:DatabaseDebug("GetGroupedTrackedSpells processed " .. count .. " tracked entries from current spec")
   return grouped
 end
 
@@ -341,13 +338,21 @@ function GUI:RefreshTrackedSpellTabList()
     return
   end
 
-  -- Debug the database state
-  if not DM.dmspellsdb then
-    DM:DatabaseDebug("ERROR: dmspellsdb is nil when refreshing Tracked Spells tab")
+  -- Get current spec profile
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile then
+    DM:DatabaseDebug("ERROR: Could not access current spec profile when refreshing Tracked Spells tab")
+    return
+  end
+
+  -- Debug the current spec's spells state
+  if not currentProfile.spells then
+    DM:DatabaseDebug("ERROR: Current spec has no spells table when refreshing Tracked Spells tab")
+    currentProfile.spells = {} -- Initialize it
   else
     local count = 0
     local trackedCount = 0
-    for spellID, data in pairs(DM.dmspellsdb) do
+    for spellID, data in pairs(currentProfile.spells) do
       count = count + 1
       if data.tracked == 1 then
         trackedCount = trackedCount + 1
@@ -358,7 +363,7 @@ function GUI:RefreshTrackedSpellTabList()
         end
       end
     end
-    DM:DatabaseDebug(string.format("Database has %d spells, %d are tracked", count, trackedCount))
+    DM:DatabaseDebug(string.format("Current spec has %d spells, %d are tracked", count, trackedCount))
   end
 
   -- Clear existing content completely
@@ -395,7 +400,7 @@ function GUI:RefreshTrackedSpellTabList()
       scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       scrollChild.friendlyMessage:SetPoint("TOP", scrollChild, "TOP", 0, -50)
       scrollChild.friendlyMessage:SetText(
-        "No spells are currently being tracked.\\nUse the 'Add from Database' button to start tracking spells.")
+        "No spells are currently being tracked.\nUse the 'Add from Database' button to start tracking spells.")
       scrollChild.friendlyMessage:SetJustifyH("CENTER")
       scrollChild.friendlyMessage:SetTextColor(0.7, 0.7, 0.7)
     else
@@ -804,14 +809,21 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
   local currentLeftAnchor = spellFrame
   local currentLeftOffset = padding
 
+  -- Get current spec profile
+  local currentProfile = DM:GetCurrentSpecProfile()
+  if not currentProfile or not currentProfile.spells then
+    DM:DatabaseDebug("ERROR: Cannot access current spec profile in CreateTrackedSpellRow")
+    return spellFrame -- Return empty frame to avoid errors
+  end
+
   -- 1. Enabled Checkbox
   local enabledCheckbox = CreateFrame("CheckButton", nil, spellFrame, "UICheckButtonTemplate")
   enabledCheckbox:SetSize(checkboxWidth, checkboxWidth)
   enabledCheckbox:SetPoint("LEFT", currentLeftAnchor, "LEFT", currentLeftOffset, 0)
-  if spellData.enabled == nil then DM.dmspellsdb[spellID].enabled = 1 end
-  enabledCheckbox:SetChecked(DM.dmspellsdb[spellID].enabled == 1)
+  if currentProfile.spells[spellID].enabled == nil then currentProfile.spells[spellID].enabled = 1 end
+  enabledCheckbox:SetChecked(currentProfile.spells[spellID].enabled == 1)
   enabledCheckbox:SetScript("OnClick", function(self)
-    DM.dmspellsdb[spellID].enabled = self:GetChecked() and 1 or 0
+    currentProfile.spells[spellID].enabled = self:GetChecked() and 1 or 0
     DM:SaveDMSpellsDB()
 
     -- Update Plater with the new settings
@@ -844,7 +856,7 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
   untrackButton:SetPoint("RIGHT", rightMostPlacedElement, "RIGHT", offsetToTheLeft, 0)
   untrackButton:SetText("Untrack")
   untrackButton:SetScript("OnClick", function()
-    DM.dmspellsdb[spellID].tracked = 0
+    currentProfile.spells[spellID].tracked = 0
     DM:SaveDMSpellsDB()
     GUI:RefreshTrackedSpellTabList()
     if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
@@ -876,17 +888,28 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
   rightMostPlacedElement = downArrow                      -- Next element will be to the left of this one
   offsetToTheLeft = -5                                    -- Gap between Down Arrow and Color Swatch
 
-  -- Arrow Click Logic (Same as before)
+  -- Arrow Click Logic (using current spec's spells array)
   downArrow:SetScript("OnClick", function()
     if rowIndexInSpec < #spellsInThisSpecSorted then
       local nextSpellEntry = spellsInThisSpecSorted[rowIndexInSpec + 1]
-      if DM.dmspellsdb[spellID] and DM.dmspellsdb[nextSpellEntry.id] then
-        local currentPriority = DM.dmspellsdb[spellID].priority
-        local nextPriority = DM.dmspellsdb[nextSpellEntry.id].priority
-        DM.dmspellsdb[spellID].priority = nextPriority
-        DM.dmspellsdb[nextSpellEntry.id].priority = currentPriority
-        DM:SaveDMSpellsDB()
+      if DM.currentProfile and DM.currentProfile.spells and DM.currentProfile.spells[spellID] and DM.currentProfile.spells[nextSpellEntry.id] then
+        local currentPriority = DM.currentProfile.spells[spellID].priority
+        local nextPriority = DM.currentProfile.spells[nextSpellEntry.id].priority
+        DM.currentProfile.spells[spellID].priority = nextPriority
+        DM.currentProfile.spells[nextSpellEntry.id].priority = currentPriority
+
+        DM:DebugMsg("DownArrowClick: Priorities swapped in DM.currentProfile.spells. Count: " ..
+          DM:TableCount(DM.currentProfile.spells))
+
+        -- Directly call the main save and Plater push
+        if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+          DM.ClassSpec:SaveCurrentSettings() -- This saves DM.currentProfile and pushes to Plater
+        else
+          DM:DebugMsg("ERROR: SaveCurrentSettings not found!")
+        end
         GUI:RefreshTrackedSpellTabList()
+      else
+        DM:DebugMsg("DownArrowClick: Error accessing currentProfile or spell entries.")
       end
     end
   end)
@@ -894,13 +917,24 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
   upArrow:SetScript("OnClick", function()
     if rowIndexInSpec > 1 then
       local prevSpellEntry = spellsInThisSpecSorted[rowIndexInSpec - 1]
-      if DM.dmspellsdb[spellID] and DM.dmspellsdb[prevSpellEntry.id] then
-        local currentPriority = DM.dmspellsdb[spellID].priority
-        local prevPriority = DM.dmspellsdb[prevSpellEntry.id].priority
-        DM.dmspellsdb[spellID].priority = prevPriority
-        DM.dmspellsdb[prevSpellEntry.id].priority = currentPriority
-        DM:SaveDMSpellsDB()
+      if DM.currentProfile and DM.currentProfile.spells and DM.currentProfile.spells[spellID] and DM.currentProfile.spells[prevSpellEntry.id] then
+        local currentPriority = DM.currentProfile.spells[spellID].priority
+        local prevPriority = DM.currentProfile.spells[prevSpellEntry.id].priority
+        DM.currentProfile.spells[spellID].priority = prevPriority
+        DM.currentProfile.spells[prevSpellEntry.id].priority = currentPriority
+
+        DM:DebugMsg("UpArrowClick: Priorities swapped in DM.currentProfile.spells. Count: " ..
+          DM:TableCount(DM.currentProfile.spells))
+
+        -- Directly call the main save and Plater push
+        if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+          DM.ClassSpec:SaveCurrentSettings() -- This saves DM.currentProfile and pushes to Plater
+        else
+          DM:DebugMsg("ERROR: SaveCurrentSettings not found!")
+        end
         GUI:RefreshTrackedSpellTabList()
+      else
+        DM:DebugMsg("UpArrowClick: Error accessing currentProfile or spell entries.")
       end
     end
   end)
@@ -954,8 +988,8 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
         newR, newG, newB = ColorPickerFrame:GetColorRGB()
       end
       texture:SetColorTexture(newR, newG, newB, 1); r, g, b = newR, newG, newB
-      if DM.dmspellsdb[spellID] then
-        DM.dmspellsdb[spellID].color = { newR, newG, newB }; DM:SaveDMSpellsDB()
+      if currentProfile.spells[spellID] then
+        currentProfile.spells[spellID].color = { newR, newG, newB }; DM:SaveDMSpellsDB()
         if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
           C_Timer.After(0.1,
             function() DM.ClassSpec:PushConfigToPlater() end)

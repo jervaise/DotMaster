@@ -25,6 +25,94 @@ function DM:DatabaseDebug(message)
   -- Debug messages disabled
 end
 
+-- Initialize current profile function - this is crucial for data persistence
+function DM:InitializeCurrentProfile()
+  -- First make sure DotMasterDB exists
+  if not DotMasterDB then
+    DotMasterDB = {}
+    self:DebugMsg("Created new DotMasterDB during initialization")
+  end
+
+  -- Make sure the class profiles structure exists
+  if not DotMasterDB.classProfiles then
+    DotMasterDB.classProfiles = {}
+    self:DebugMsg("Created classProfiles table")
+  end
+
+  -- Get current class and spec
+  local currentClass, currentSpecID
+  if self.ClassSpec and self.ClassSpec.GetCurrentClassAndSpec then
+    currentClass, currentSpecID = self.ClassSpec:GetCurrentClassAndSpec()
+  else
+    -- Fallback if ClassSpec not yet loaded
+    currentClass = select(2, UnitClass("player"))
+    local currentSpec = GetSpecialization()
+    currentSpecID = currentSpec and GetSpecializationInfo(currentSpec) or 0
+  end
+
+  self:DebugMsg("Initializing profile for " .. currentClass .. " spec #" .. currentSpecID)
+
+  -- Initialize class entry
+  if not DotMasterDB.classProfiles[currentClass] then
+    DotMasterDB.classProfiles[currentClass] = {}
+  end
+
+  -- Ensure spec entry exists with proper structure
+  if not DotMasterDB.classProfiles[currentClass][currentSpecID] then
+    DotMasterDB.classProfiles[currentClass][currentSpecID] = {
+      settings = {},
+      spells = {},
+      combinations = {
+        data = {},
+        settings = {
+          enabled = true,
+          priorityOverIndividual = true
+        }
+      }
+    }
+    self:DebugMsg("Created new profile for " .. currentClass .. " spec #" .. currentSpecID)
+  else
+    -- Ensure all required fields exist
+    local profile = DotMasterDB.classProfiles[currentClass][currentSpecID]
+
+    if not profile.settings then profile.settings = {} end
+    if not profile.spells then profile.spells = {} end
+    if not profile.combinations then
+      profile.combinations = {
+        data = {},
+        settings = {
+          enabled = true,
+          priorityOverIndividual = true
+        }
+      }
+    else
+      -- Ensure combinations subfields exist
+      if not profile.combinations.data then profile.combinations.data = {} end
+      if not profile.combinations.settings then
+        profile.combinations.settings = {
+          enabled = true,
+          priorityOverIndividual = true
+        }
+      end
+    end
+  end
+
+  -- Store a direct reference to the current profile
+  self.currentProfile = DotMasterDB.classProfiles[currentClass][currentSpecID]
+
+  -- For backwards compatibility, set up legacy references
+  self.dmspellsdb = self.currentProfile.spells or {}
+  self.combinations = self.currentProfile.combinations or { data = {}, settings = {} }
+
+  local spellCount = self.currentProfile.spells and self:TableCount(self.currentProfile.spells) or 0
+  local comboCount = self.currentProfile.combinations and self.currentProfile.combinations.data and
+      self:TableCount(self.currentProfile.combinations.data) or 0
+
+  self:DebugMsg("Profile initialized with " .. spellCount .. " spells and " .. comboCount .. " combinations")
+
+  return self.currentProfile
+end
+
 -- Define minimal constants and defaults
 DM.addonName = "DotMaster"
 DM.pendingInitialization = true
@@ -46,11 +134,19 @@ DM:RegisterEvent("ADDON_LOADED")
 DM:RegisterEvent("PLAYER_LOGIN")
 DM:RegisterEvent("PLAYER_ENTERING_WORLD")
 DM:RegisterEvent("PLAYER_LOGOUT")
+DM:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
 -- Master initialization event handler
 DM:SetScript("OnEvent", function(self, event, arg1, ...)
   if event == "ADDON_LOADED" and arg1 == DM.addonName then
     -- This is the critical point where SavedVariables become available
+
+    -- Initialize the current profile first - this is crucial
+    if DM.InitializeCurrentProfile then
+      local profile = DM:InitializeCurrentProfile()
+      DM:DebugMsg("Initialized current profile during ADDON_LOADED")
+    end
+
     -- Load legacy databases
     if DM.LoadSpellDatabase then DM:LoadSpellDatabase() end
     if DM.LoadDMSpellsDB then DM:LoadDMSpellsDB() end
@@ -116,6 +212,11 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     if DM.InitializeMinimapIcon then
       DM:InitializeMinimapIcon()
     end
+
+    -- Load correct spec profile on login
+    if DM.ClassSpec and DM.ClassSpec.SwitchSpecProfile then
+      DM.ClassSpec:SwitchSpecProfile()
+    end
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
 
@@ -164,7 +265,7 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
         DM:InstallPlaterMod()
         -- DM:PrintMessage("Reinstalled DotMaster Integration mod with latest code.")
 
-        -- Force push config with test spell
+        -- Force push configuration
         C_Timer.After(0.5, function()
           if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
             DM.ClassSpec:PushConfigToPlater()
@@ -193,6 +294,21 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
     -- Save settings on logout
     if DM.SaveSettings then
       DM:SaveSettings()
+    end
+
+    -- Explicitly save the current profile
+    if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
+      DM.ClassSpec:SaveCurrentSettings()
+    end
+
+    -- Also explicitly save combinations
+    if DM.SaveCombinationsDB then
+      DM:SaveCombinationsDB()
+    end
+  elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+    -- Switch to the correct profile for the new spec
+    if DM.ClassSpec and DM.ClassSpec.SwitchSpecProfile then
+      DM.ClassSpec:SwitchSpecProfile()
     end
   end
 end)

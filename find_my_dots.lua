@@ -614,19 +614,43 @@ function DM:ShowDotsConfirmationDialog(dots)
         end
       end
 
-      -- Then add all spells in one batch
+      -- Get current spec profile
+      local currentProfile = self:GetCurrentSpecProfile()
+      if not currentProfile then
+        DM:PrintMessage("Error: Could not access current spec profile. Dots not added.")
+        return
+      end
+
+      -- Ensure spells table exists
+      if not currentProfile.spells then
+        currentProfile.spells = {}
+      end
+
+      -- Then add all spells to current spec's spells array
       for id, dotInfo in pairs(spellsToAdd) do
         DM:DebugMsg(string.format("Processing Dot - ID: %d, Name: %s", id, dotInfo.name))
         local spellIcon = DM:GetSpellIcon(id)
         local className, specName = self:GetPlayerClassAndSpec()
 
-        -- Add to database with all properties in one call
-        DM:AddSpellToDMSpellsDB(id, dotInfo.name, spellIcon, className, specName)
+        -- Add to current spec's database
+        currentProfile.spells[tonumber(id)] = {
+          spellname = dotInfo.name,
+          spellicon = spellIcon or "Interface\\Icons\\INV_Misc_QuestionMark",
+          wowclass = className or "UNKNOWN",
+          wowspec = specName or "General",
+          color = { r = 1, g = 0, b = 0, a = 1 }, -- Red
+          priority = 50,
+          tracked = 1,
+          enabled = 1
+        }
+
         added = added + 1
       end
 
-      -- Force an immediate database save
-      DM:SaveDMSpellsDB()
+      -- Push updated configuration to Plater
+      if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+        DM.ClassSpec:PushConfigToPlater()
+      end
 
       -- Add a small delay before refreshing UI to ensure database changes are complete
       C_Timer.After(0.1, function()
@@ -963,4 +987,157 @@ function DM:GetSpellIcon(spellID)
   -- Fallback to default if all methods fail
   DM:DebugMsg(string.format("No icon found for spell %d, using default", spellID))
   return defaultIcon
+end
+
+-- Get the current spec's profile
+function DM:GetCurrentSpecProfile()
+  if not DM.ClassSpec then return nil end
+
+  local currentClass, currentSpecID = DM.ClassSpec:GetCurrentClassAndSpec()
+
+  if not DotMasterDB or not DotMasterDB.classProfiles or
+      not DotMasterDB.classProfiles[currentClass] or
+      not DotMasterDB.classProfiles[currentClass][currentSpecID] then
+    return nil
+  end
+
+  return DotMasterDB.classProfiles[currentClass][currentSpecID]
+end
+
+-- Check if a spell exists in the current spec's database
+function DM:SpellExists(spellID)
+  if not spellID then return false end
+
+  -- Convert to number
+  local numericID = tonumber(spellID)
+  if not numericID then return false end
+
+  -- Get current spec profile
+  local currentProfile = self:GetCurrentSpecProfile()
+  if not currentProfile or not currentProfile.spells then return false end
+
+  -- Check if spell exists in current spec's spells
+  return currentProfile.spells[numericID] ~= nil
+end
+
+-- Remove problematic "Unknown (1)" entry from all class profiles
+function DM:RemoveUnknownSpellID1()
+  DM:DatabaseDebug("Attempting to remove Unknown (1) spell from all class profiles...")
+
+  if not DotMasterDB or not DotMasterDB.classProfiles then
+    DM:DatabaseDebug("No class profiles found to clean")
+    return
+  end
+
+  local count = 0
+
+  -- Loop through all class profiles
+  for className, classData in pairs(DotMasterDB.classProfiles) do
+    -- Loop through all specs within each class
+    for specID, specData in pairs(classData) do
+      -- Check if spells table exists
+      if specData.spells then
+        -- Check for numeric key 1
+        if specData.spells[1] then
+          DM:DatabaseDebug(string.format("Removing Unknown (1) from %s spec %s (numeric key)", className, specID))
+          specData.spells[1] = nil
+          count = count + 1
+        end
+
+        -- Check for string key "1"
+        if specData.spells["1"] then
+          DM:DatabaseDebug(string.format("Removing Unknown (1) from %s spec %s (string key)", className, specID))
+          specData.spells["1"] = nil
+          count = count + 1
+        end
+
+        -- Special check for any spell with name "Unknown" and ID close to 1
+        for spellID, spellData in pairs(specData.spells) do
+          -- Convert to number safely
+          local numID = tonumber(spellID)
+          -- Check if ID is 1 or close to 1, or if the spell name contains "Unknown"
+          if (numID and numID < 10) or
+              (spellData.spellname and spellData.spellname:find("Unknown")) then
+            DM:DatabaseDebug(string.format("Removing suspicious spell %s from %s spec %s",
+              tostring(spellID), className, specID))
+            specData.spells[spellID] = nil
+            count = count + 1
+          end
+        end
+      end
+    end
+  end
+
+  -- Also clean from legacy data structure if it exists
+  if DM.dmspellsdb then
+    -- Check for numeric key 1
+    if DM.dmspellsdb[1] then
+      DM.dmspellsdb[1] = nil
+      count = count + 1
+      DM:DatabaseDebug("Removed Unknown (1) from legacy database (numeric key)")
+    end
+
+    -- Check for string key "1"
+    if DM.dmspellsdb["1"] then
+      DM.dmspellsdb["1"] = nil
+      count = count + 1
+      DM:DatabaseDebug("Removed Unknown (1) from legacy database (string key)")
+    end
+
+    -- Clean any suspicious spell entries
+    for spellID, spellData in pairs(DM.dmspellsdb) do
+      local numID = tonumber(spellID)
+      if (numID and numID < 10) or
+          (spellData.spellname and spellData.spellname:find("Unknown")) then
+        DM.dmspellsdb[spellID] = nil
+        count = count + 1
+        DM:DatabaseDebug(string.format("Removed suspicious spell %s from legacy database", tostring(spellID)))
+      end
+    end
+  end
+
+  -- Specifically target the Death Knight Unholy spec based on the screenshot
+  if DotMasterDB.classProfiles["DEATHKNIGHT"] then
+    for specID, specData in pairs(DotMasterDB.classProfiles["DEATHKNIGHT"]) do
+      if specData.spells then
+        -- Look for any spell with Unknown in the name
+        for spellID, spellData in pairs(specData.spells) do
+          if spellData.spellname and spellData.spellname:find("Unknown") then
+            DM:DatabaseDebug(string.format("Removing Unknown spell %s from Death Knight spec %s",
+              tostring(spellID), specID))
+            specData.spells[spellID] = nil
+            count = count + 1
+          end
+        end
+      end
+    end
+  end
+
+  -- Push changes to Plater if we removed any instances
+  if count > 0 and DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+    DM.ClassSpec:PushConfigToPlater()
+    DM:DatabaseDebug(string.format("Removed problematic spells from %d locations and pushed changes to Plater", count))
+
+    -- Refresh UI
+    if DM.GUI then
+      if DM.GUI.RefreshDatabaseTabList then
+        DM.GUI:RefreshDatabaseTabList()
+      end
+      if DM.GUI.RefreshTrackedSpellTabList then
+        DM.GUI:RefreshTrackedSpellTabList()
+      end
+    end
+  end
+end
+
+-- Call the function to remove Unknown (1) on initialization
+C_Timer.After(2, function()
+  DM:RemoveUnknownSpellID1()
+end)
+
+-- Add a function that can be called from slash commands to force cleanup
+function DM:CleanupUnknownSpells()
+  DM:PrintMessage("Cleaning up problematic Unknown spells...")
+  DM:RemoveUnknownSpellID1()
+  DM:PrintMessage("Cleanup complete. UI refreshed.")
 end

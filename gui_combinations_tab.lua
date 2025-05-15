@@ -8,7 +8,7 @@ local DM = DotMaster
 -- Function to force refresh of all combination colors
 function DM:RefreshCombinationColors()
   -- Ensure we have access to the combinations UI
-  if not self.GUI or not self.combinations or not self.combinations.data then
+  if not self.GUI or not self.GUI.frame then
     return false
   end
 
@@ -18,9 +18,15 @@ function DM:RefreshCombinationColors()
     allRows = self.GUI.frame.allRows
   end
 
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not currentCombinations or not currentCombinations.data then
+    return false
+  end
+
   -- Update colors for all rows
   local updatedCount = 0
-  for id, combo in pairs(self.combinations.data) do
+  for id, combo in pairs(currentCombinations.data) do
     for _, row in ipairs(allRows or {}) do
       if row.comboID == id and row.rowBg and row.nameText and combo.color then
         -- Get color components
@@ -358,16 +364,21 @@ function DM:CreateCombinationsTab(parent)
     local sortedCombos = {}
     local currentClass = select(2, UnitClass("player"))
 
-    if DM.combinations and DM.combinations.data then
-      for id, data in pairs(DM.combinations.data) do
+    -- Get the current spec's combinations
+    local currentCombinations = DM:GetCurrentSpecCombinations()
+
+    if currentCombinations and currentCombinations.data then
+      for id, data in pairs(currentCombinations.data) do
         -- Check if this combination should be shown for the current class
         local showCombo = true
 
         -- If the combination has spells, check if any are from another class
         if data.spells and #data.spells > 0 then
           for _, spellID in ipairs(data.spells) do
-            if DM.dmspellsdb and DM.dmspellsdb[spellID] then
-              local spellData = DM.dmspellsdb[spellID]
+            -- Get the spell from the current spec profile
+            local currentProfile = DM:GetCurrentSpecProfile()
+            if currentProfile and currentProfile.spells and currentProfile.spells[spellID] then
+              local spellData = currentProfile.spells[spellID]
               -- If spell is from another class (not current and not UNKNOWN), don't show this combo
               if spellData.wowclass and spellData.wowclass ~= currentClass and spellData.wowclass ~= "UNKNOWN" then
                 showCombo = false
@@ -398,15 +409,21 @@ function DM:CreateCombinationsTab(parent)
 
     -- Normalize priorities to ensure sequential ordering
     local prioritiesChanged = false
-    for i, combo in ipairs(sortedCombos) do
-      -- Ensure every combination has a valid priority
-      if not combo.data.priority then
-        DM.combinations.data[combo.id].priority = i
-        prioritiesChanged = true
-        -- Check if priority needs reassignment to maintain consecutive order
-      elseif combo.data.priority ~= i then
-        DM.combinations.data[combo.id].priority = i
-        prioritiesChanged = true
+
+    -- Get the current spec's combinations
+    currentCombinations = DM:GetCurrentSpecCombinations()
+
+    if currentCombinations and currentCombinations.data then
+      for i, combo in ipairs(sortedCombos) do
+        -- Ensure every combination has a valid priority
+        if not combo.data.priority then
+          currentCombinations.data[combo.id].priority = i
+          prioritiesChanged = true
+          -- Check if priority needs reassignment to maintain consecutive order
+        elseif combo.data.priority ~= i then
+          currentCombinations.data[combo.id].priority = i
+          prioritiesChanged = true
+        end
       end
     end
 
@@ -501,9 +518,14 @@ function DM:CreateCombinationsTab(parent)
         colorSwatch:SetScript("OnClick", function()
           -- Store the combo ID for reference
           local comboID = row.comboID
-          if not comboID or not DM.combinations.data[comboID] then return end
 
-          local combo = DM.combinations.data[comboID]
+          -- Get the current spec's combinations
+          local currentCombinations = DM:GetCurrentSpecCombinations()
+          if not currentCombinations or not currentCombinations.data or not currentCombinations.data[comboID] then
+            return
+          end
+
+          local combo = currentCombinations.data[comboID]
           local currentColor = combo.color or { r = 1, g = 0, b = 0, a = 1 }
           -- Convert array-style color to r,g,b,a if needed
           local r = currentColor.r or currentColor[1] or 1
@@ -539,22 +561,26 @@ function DM:CreateCombinationsTab(parent)
                   newA = ColorPickerFrame.opacity
                 end
 
-                -- Update color in database
-                DM.combinations.data[comboID].color = {
-                  r = newR, g = newG, b = newB, a = newA
-                }
+                -- Get the current spec's combinations again to ensure we have the latest data
+                local currentCombinations = DM:GetCurrentSpecCombinations()
+                if currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
+                  -- Update color in database
+                  currentCombinations.data[comboID].color = {
+                    r = newR, g = newG, b = newB, a = newA
+                  }
 
-                -- Save the updated combinations data
-                DM:SaveCombinationsDB()
+                  -- Save the updated combinations data
+                  DM:SaveCombinationsDB()
 
-                -- Apply immediate color updates to this row
-                row.colorTexture:SetColorTexture(newR, newG, newB, newA)
-                row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
-                row.nameText:SetTextColor(newR, newG, newB)
+                  -- Apply immediate color updates to this row
+                  row.colorTexture:SetColorTexture(newR, newG, newB, newA)
+                  row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
+                  row.nameText:SetTextColor(newR, newG, newB)
 
-                -- Use our refresh function to update all instances of this combo
-                if DM.RefreshCombinationColors then
-                  DM:RefreshCombinationColors()
+                  -- Use our refresh function to update all instances of this combo
+                  if DM.RefreshCombinationColors then
+                    DM:RefreshCombinationColors()
+                  end
                 end
               end,
 
@@ -597,6 +623,98 @@ function DM:CreateCombinationsTab(parent)
           end
         end)
 
+        -- Edit button - positioned at ACTIONS column
+        local editButton = CreateFrame("Button", nil, row)
+        editButton:SetSize(24, 24)
+        editButton:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.ACTIONS, 0)
+        editButton:SetFrameLevel(row:GetFrameLevel() + 5)
+
+        -- Add edit icon texture
+        local editIcon = editButton:CreateTexture(nil, "ARTWORK")
+        editIcon:SetAllPoints()
+        editIcon:SetTexture("Interface\\Buttons\\UI-OptionsButton")
+        editButton:SetNormalTexture(editIcon)
+
+        -- Add highlight texture
+        local editHighlight = editButton:CreateTexture(nil, "HIGHLIGHT")
+        editHighlight:SetAllPoints()
+        editHighlight:SetTexture("Interface\\Buttons\\UI-OptionsButton")
+        editHighlight:SetBlendMode("ADD")
+        editButton:SetHighlightTexture(editHighlight)
+
+        row.editButton = editButton
+
+        -- Add click handler for edit button
+        editButton:SetScript("OnClick", function()
+          -- Open edit dialog with the combo ID
+          DM:ShowCombinationDialog(row.comboID)
+        end)
+
+        -- Delete button - positioned right after edit button
+        local deleteButton = CreateFrame("Button", nil, row)
+        deleteButton:SetSize(24, 24)
+        deleteButton:SetPoint("LEFT", editButton, "RIGHT", 8, 0)
+        deleteButton:SetFrameLevel(row:GetFrameLevel() + 5)
+
+        -- Add delete icon texture
+        local deleteIcon = deleteButton:CreateTexture(nil, "ARTWORK")
+        deleteIcon:SetAllPoints()
+        deleteIcon:SetTexture("Interface\\Buttons\\UI-StopButton")
+        deleteButton:SetNormalTexture(deleteIcon)
+
+        -- Add highlight texture
+        local deleteHighlight = deleteButton:CreateTexture(nil, "HIGHLIGHT")
+        deleteHighlight:SetAllPoints()
+        deleteHighlight:SetTexture("Interface\\Buttons\\UI-StopButton")
+        deleteHighlight:SetBlendMode("ADD")
+        deleteButton:SetHighlightTexture(deleteHighlight)
+
+        row.deleteButton = deleteButton
+
+        -- Add click handler for delete button
+        deleteButton:SetScript("OnClick", function()
+          local comboID = row.comboID
+          if not comboID then return end
+
+          -- Get the current spec's combinations to get the combo name
+          local currentCombinations = DM:GetCurrentSpecCombinations()
+          if not currentCombinations or not currentCombinations.data or not currentCombinations.data[comboID] then
+            return
+          end
+
+          local comboName = currentCombinations.data[comboID].name or "Unnamed"
+
+          -- Ask for confirmation first
+          StaticPopupDialogs["DOTMASTER_DELETE_COMBINATION"] = {
+            text = "Delete combination '" .. comboName .. "'?",
+            button1 = "Yes",
+            button2 = "No",
+            OnAccept = function()
+              -- First clean up any spell frames for this combination
+              if scrollContent then
+                for _, child in pairs({ scrollContent:GetChildren() }) do
+                  if child.combinationID and child.combinationID == comboID then
+                    child:Hide()
+                    child:SetParent(nil)
+                  end
+                end
+              end
+
+              -- Delete the combination
+              if DM.DeleteCombination then
+                DM:DeleteCombination(comboID)
+                -- Refresh the list
+                UpdateCombinationsList()
+              end
+            end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+            preferredIndex = 3,
+          }
+          StaticPopup_Show("DOTMASTER_DELETE_COMBINATION")
+        end)
+
         -- Order buttons - positioned at ORDER column
         -- First DOWN arrow at ORDER position, then UP arrow (same as tracked spells tab)
         local downArrow = CreateFrame("Button", nil, row)
@@ -623,17 +741,23 @@ function DM:CreateCombinationsTab(parent)
             local currentComboID = comboInfo.id
             local nextComboID = nextComboInfo.id
 
+            -- Get the current spec's combinations
+            local currentCombinations = DM:GetCurrentSpecCombinations()
+            if not currentCombinations or not currentCombinations.data then
+              return
+            end
+
             -- Get current priorities
-            local currentPriority = DM.combinations.data[currentComboID].priority
-            local nextPriority = DM.combinations.data[nextComboID].priority
+            local currentPriority = currentCombinations.data[currentComboID].priority
+            local nextPriority = currentCombinations.data[nextComboID].priority
 
             -- Swap priorities
-            DM.combinations.data[currentComboID].priority = nextPriority
-            DM.combinations.data[nextComboID].priority = currentPriority
+            currentCombinations.data[currentComboID].priority = nextPriority
+            currentCombinations.data[nextComboID].priority = currentPriority
 
             -- Save changes to database
             DM:SaveCombinationsDB()
-            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+            DM:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
               currentComboID, nextPriority, nextComboID, currentPriority))
 
             -- Refresh the combinations list
@@ -666,17 +790,23 @@ function DM:CreateCombinationsTab(parent)
             local currentComboID = comboInfo.id
             local prevComboID = prevComboInfo.id
 
+            -- Get the current spec's combinations
+            local currentCombinations = DM:GetCurrentSpecCombinations()
+            if not currentCombinations or not currentCombinations.data then
+              return
+            end
+
             -- Get current priorities
-            local currentPriority = DM.combinations.data[currentComboID].priority
-            local prevPriority = DM.combinations.data[prevComboID].priority
+            local currentPriority = currentCombinations.data[currentComboID].priority
+            local prevPriority = currentCombinations.data[prevComboID].priority
 
             -- Swap priorities
-            DM.combinations.data[currentComboID].priority = prevPriority
-            DM.combinations.data[prevComboID].priority = currentPriority
+            currentCombinations.data[currentComboID].priority = prevPriority
+            currentCombinations.data[prevComboID].priority = currentPriority
 
             -- Save changes to database
             DM:SaveCombinationsDB()
-            self:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
+            DM:DebugMsg(string.format("Swapped priority for combination %s (now %d) and %s (now %d)",
               currentComboID, prevPriority, prevComboID, currentPriority))
 
             -- Refresh the combinations list
@@ -684,43 +814,48 @@ function DM:CreateCombinationsTab(parent)
           end
         end)
 
-        -- Action buttons - positioned at ACTIONS column
-        -- Edit button positioned at ACTIONS column
-        local editButton = CreateFrame("Button", nil, row)
-        editButton:SetSize(20, 20)
-        editButton:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.ACTIONS, 0) -- Align with ACTIONS header
-        editButton:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
-        editButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        editButton:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-        row.editButton = editButton
+        -- Add click handler for the entire row for expansion/collapse
+        row:SetScript("OnClick", function(self, button)
+          if button == "LeftButton" then
+            -- Toggle expanded state
+            self.isExpanded = not self.isExpanded
 
-        -- Add tooltip to edit button
-        editButton:SetScript("OnEnter", function(self)
-          GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-          GameTooltip:SetText("Edit Combination")
-          GameTooltip:Show()
-        end)
-        editButton:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end)
+            -- Get the current spec's combinations to update the database
+            local currentCombinations = DM:GetCurrentSpecCombinations()
+            if currentCombinations and currentCombinations.data and currentCombinations.data[self.comboID] then
+              -- Update the isExpanded state in the database
+              currentCombinations.data[self.comboID].isExpanded = self.isExpanded
 
-        -- Delete button - positioned after edit button
-        local deleteButton = CreateFrame("Button", nil, row)
-        deleteButton:SetSize(20, 20)
-        deleteButton:SetPoint("LEFT", editButton, "RIGHT", 5, 0) -- Position relative to edit button
-        deleteButton:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
-        deleteButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-        deleteButton:SetFrameLevel(row:GetFrameLevel() + 5) -- Increase frame level to appear above row
-        row.deleteButton = deleteButton
+              -- Debug expansion state
+              DM:DebugMsg("Combo '" .. currentCombinations.data[self.comboID].name ..
+                "' expanded state changed to: " .. tostring(self.isExpanded))
 
-        -- Add tooltip to delete button
-        deleteButton:SetScript("OnEnter", function(self)
-          GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-          GameTooltip:SetText("Delete Combination")
-          GameTooltip:Show()
-        end)
-        deleteButton:SetScript("OnLeave", function()
-          GameTooltip:Hide()
+              -- Save the change to database
+              DM:SaveCombinationsDB()
+            end
+
+            -- Update indicator texture
+            if self.isExpanded then
+              self.indicator:SetTexture("Interface\\Buttons\\UI-MinusButton-Up")
+            else
+              self.indicator:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
+            end
+
+            -- Update visibility of spell frames
+            for _, spellFrame in ipairs(self.spellFrames or {}) do
+              if self.isExpanded then
+                spellFrame:Show()
+              else
+                spellFrame:Hide()
+              end
+            end
+
+            -- Recalculate layout
+            UpdateCombinationsLayout()
+          elseif button == "RightButton" then
+            -- Right-click also calls the edit function
+            DM:ShowCombinationDialog(self.comboID)
+          end
         end)
 
         combinationRows[index] = row
@@ -781,29 +916,34 @@ function DM:CreateCombinationsTab(parent)
           row.colorTexture:SetColorTexture(0.7, 0.7, 0.7, 1)
         end
 
-        -- Button handlers
-        row.editButton:SetScript("OnClick", function()
-          DM:ShowCombinationDialog(id)
-        end)
+        -- Button handlers - replaced with comment to avoid duplicate click handlers
+        --row.editButton:SetScript("OnClick", function()
+        --  DM:ShowCombinationDialog(id)
+        --end)
 
-        -- Delete button click handler
+        -- Delete button click handler - REMOVE THIS DUPLICATE SECTION
         row.deleteButton:SetScript("OnClick", function()
-          -- Create confirmation dialog
+          local comboID = row.comboID
+          if not comboID then return end
+
+          -- Get the current spec's combinations to get the combo name
+          local currentCombinations = DM:GetCurrentSpecCombinations()
+          if not currentCombinations or not currentCombinations.data or not currentCombinations.data[comboID] then
+            return
+          end
+
+          local comboName = currentCombinations.data[comboID].name or "Unnamed"
+
+          -- Ask for confirmation first
           StaticPopupDialogs["DOTMASTER_DELETE_COMBINATION"] = {
-            text = "Are you sure you want to delete the combination '" .. combo.name .. "'?",
+            text = "Delete combination '" .. comboName .. "'?",
             button1 = "Yes",
             button2 = "No",
             OnAccept = function()
-              -- Save the combination ID for cleanup
-              local combinationToDelete = comboInfo.id
-
               -- First clean up any spell frames for this combination
               if scrollContent then
-                -- Get all children without creating a temporary table
-                for _, child in pairs(scrollContent.GetChildren and { scrollContent:GetChildren() } or {}) do
-                  -- If this is a spell frame (no buttons) or has the correct combinationID
-                  if (child.combinationID and child.combinationID == combinationToDelete) or
-                      (not child.deleteButton and not child.editButton) then
+                for _, child in pairs({ scrollContent:GetChildren() }) do
+                  if child.combinationID and child.combinationID == comboID then
                     child:Hide()
                     child:SetParent(nil)
                   end
@@ -812,11 +952,10 @@ function DM:CreateCombinationsTab(parent)
 
               -- Delete the combination
               if DM.DeleteCombination then
-                DM:DeleteCombination(combinationToDelete)
+                DM:DeleteCombination(comboID)
+                -- Refresh the list
+                UpdateCombinationsList()
               end
-
-              -- Update the list
-              UpdateCombinationsList()
             end,
             timeout = 0,
             whileDead = true,
@@ -837,8 +976,12 @@ function DM:CreateCombinationsTab(parent)
             DM:DebugMsg("Toggling expand state for " ..
               combo.name .. " to: " .. tostring(self.isExpanded) .. ", spellFrames count: " .. #self.spellFrames)
 
-            -- Update the database to remember expanded state
-            DM.combinations.data[id].isExpanded = self.isExpanded
+            -- Get the current spec's combinations to update the database
+            local currentCombinations = DM:GetCurrentSpecCombinations()
+            if currentCombinations and currentCombinations.data and currentCombinations.data[id] then
+              -- Update the isExpanded state in the database
+              currentCombinations.data[id].isExpanded = self.isExpanded
+            end
 
             -- Update indicator
             if self.isExpanded then
@@ -908,55 +1051,49 @@ function DM:CreateCombinationsTab(parent)
             end
 
             -- Set alternating background
-            local spellBg = spellFrame:CreateTexture(nil, "BACKGROUND")
-            spellBg:SetAllPoints()
-            if (i % 2 == 0) then
-              spellBg:SetColorTexture(0, 0, 0, 0.3)
+            local bg = spellFrame:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            -- Slightly darker shade for odd, lighter for even (for contrast)
+            if i % 2 == 0 then
+              bg:SetColorTexture(0.1, 0.1, 0.1, 0.7)    -- Darker
             else
-              spellBg:SetColorTexture(0, 0, 0, 0.2)
+              bg:SetColorTexture(0.17, 0.17, 0.17, 0.7) -- Lighter
             end
 
-            -- Try different ways to look up the spell info
-            local spellName, spellIcon
+            -- Spell icon - position indented from main row
+            local icon = spellFrame:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(spellRowHeight - 6, spellRowHeight - 6) -- Slightly smaller than row
+            icon:SetPoint("LEFT", spellFrame, "LEFT", 25, 0)     -- Indented by 25px
 
-            -- Method 1: Look up by number directly
-            if DM.dmspellsdb and DM.dmspellsdb[spellID] then
-              local spellData = DM.dmspellsdb[spellID]
-              spellName = spellData.spellname
-              spellIcon = spellData.spellicon
-              -- Method 2: Look up by string ID
-            elseif DM.dmspellsdb and DM.dmspellsdb[tostring(spellID)] then
-              local spellData = DM.dmspellsdb[tostring(spellID)]
-              spellName = spellData.spellname
-              spellIcon = spellData.spellicon
-              -- Method 3: Use WoW API as fallback
+            -- Get spell info and icon from current spec's profile
+            local currentProfile = DM:GetCurrentSpecProfile()
+            local spellName = "Unknown"
+            local spellIcon = 134400 -- Default question mark
+
+            -- Try to get data from current spec profile
+            if currentProfile and currentProfile.spells and currentProfile.spells[spellID] then
+              local spellData = currentProfile.spells[spellID]
+              spellName = spellData.spellname or spellName
+              spellIcon = spellData.spellicon or spellIcon
             else
+              -- Fallback to API if not in profile
               local spellInfo = C_Spell.GetSpellInfo(spellID)
               if spellInfo then
-                spellName = spellInfo.name
-                spellIcon = spellInfo.iconFileID
-              else
-                spellName = "Unknown Spell"
-                spellIcon = 134400 -- question mark
+                spellName = spellInfo.name or spellName
+                spellIcon = spellInfo.iconFileID or spellIcon
               end
             end
 
-            -- Add indent to indicate this is a child item
-            local indent = 10 -- Use fixed small indentation instead of aligning with name column
+            icon:SetTexture(spellIcon)
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim border
 
-            -- Spell Icon
-            local icon = spellFrame:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(20, 20)
-            icon:SetPoint("LEFT", spellFrame, "LEFT", indent, 0)
-            icon:SetTexture(spellIcon or 134400)     -- Default to question mark if no icon
-            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim icon borders
-
-            -- Spell Name & ID
-            local name = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-            name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
-            name:SetWidth(spellFrame:GetWidth() - indent - 30)
-            name:SetText(string.format("%s (%d)", spellName or "Unknown", spellID))
-            name:SetJustifyH("LEFT")
+            -- Spell name text
+            local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+            nameText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+            nameText:SetPoint("RIGHT", spellFrame, "RIGHT", -5, 0)
+            nameText:SetJustifyH("LEFT")
+            nameText:SetText(spellName .. " (" .. spellID .. ")")
+            -- No spell action buttons needed in the collapsed view
           end
         end
       end
@@ -1022,9 +1159,10 @@ function DM:CreateCombinationsTab(parent)
 
       -- Add a third refresh specifically for fixing color issues
       C_Timer.After(0.5, function()
-        if DM.combinations and DM.combinations.data and next(DM.combinations.data) then
+        local currentCombinations = DM:GetCurrentSpecCombinations()
+        if currentCombinations and currentCombinations.data and next(currentCombinations.data) then
           -- Force the update of each row's colors if it exists
-          for id, combo in pairs(DM.combinations.data) do
+          for id, combo in pairs(currentCombinations.data) do
             for _, row in ipairs(allRows or {}) do
               if row.comboID == id and row.rowBg and row.nameText and combo.color then
                 -- Get color components
@@ -1348,8 +1486,10 @@ function DM:ShowCombinationDialog(comboID)
 
       -- Check for duplicate name
       local isDuplicate = false
-      if DM.combinations and DM.combinations.data then
-        for id, combo in pairs(DM.combinations.data) do
+      -- Get the current spec's combinations
+      local currentCombinations = DM:GetCurrentSpecCombinations()
+      if currentCombinations and currentCombinations.data then
+        for id, combo in pairs(currentCombinations.data) do
           -- Skip the current combo when editing
           if id ~= dialog.comboID and combo.name and combo.name:lower() == name:lower() then
             isDuplicate = true
@@ -1385,12 +1525,13 @@ function DM:ShowCombinationDialog(comboID)
           dialog.comboID .. ", isExpanded state preserved as: " .. tostring(dialog.isExpanded))
       else
         -- Create new
-        local newID = DM.API:CreateCombination(name, color, spells)
+        local newID = DM:CreateCombination(name, spells, color)
         self:DebugMsg("Created new combination with ID: " .. tostring(newID) .. ", isExpanded set to false by default")
 
         -- Force immediate flag setting in case the UI refreshes before database is saved
-        if DM.combinations and DM.combinations.data and DM.combinations.data[newID] then
-          DM.combinations.data[newID].isExpanded = false
+        local currentCombinations = DM:GetCurrentSpecCombinations()
+        if currentCombinations and currentCombinations.data and currentCombinations.data[newID] then
+          currentCombinations.data[newID].isExpanded = false
           self:DebugMsg("Explicitly set isExpanded=false for new combination")
         end
       end
@@ -1434,8 +1575,9 @@ function DM:ShowCombinationDialog(comboID)
   end
 
   -- If editing existing combo, load data
-  if comboID and DM.combinations and DM.combinations.data[comboID] then
-    local combo = DM.combinations.data[comboID]
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if comboID and currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
+    local combo = currentCombinations.data[comboID]
 
     dialog.title:SetText("Edit Combination")
     dialog.comboID = comboID
@@ -1562,18 +1704,14 @@ function DM:UpdateCombinationSpellList(dialog)
     local spellName = "Unknown"
     local spellIcon = 134400 -- Default question mark icon
 
-    -- Try to get data from spell database
-    if DM.dmspellsdb and DM.dmspellsdb[spellID] then
-      local spellData = DM.dmspellsdb[spellID]
+    -- Try to get data from current spec profile
+    local currentProfile = DM:GetCurrentSpecProfile()
+    if currentProfile and currentProfile.spells and currentProfile.spells[spellID] then
+      local spellData = currentProfile.spells[spellID]
       spellName = spellData.spellname or spellName
       spellIcon = spellData.spellicon or spellIcon
-      -- Or try string ID
-    elseif DM.dmspellsdb and DM.dmspellsdb[tostring(spellID)] then
-      local spellData = DM.dmspellsdb[tostring(spellID)]
-      spellName = spellData.spellname or spellName
-      spellIcon = spellData.spellicon or spellIcon
-      -- Fallback to API
     else
+      -- Fallback to API
       local spellInfo = C_Spell.GetSpellInfo(spellID)
       if spellInfo then
         spellName = spellInfo.name or spellName
@@ -1621,11 +1759,13 @@ end
 
 -- Function to show delete confirmation
 function DM:ShowDeleteConfirmation(comboID, callback)
-  if not comboID or not DM.combinations or not DM.combinations.data[comboID] then
+  -- Get the current spec's combinations
+  local currentCombinations = DM:GetCurrentSpecCombinations()
+  if not comboID or not currentCombinations or not currentCombinations.data or not currentCombinations.data[comboID] then
     return
   end
 
-  local combo = DM.combinations.data[comboID]
+  local combo = currentCombinations.data[comboID]
 
   -- Use the built-in confirmation dialog
   StaticPopupDialogs["DOTMASTER_DELETE_COMBO"] = {
@@ -1700,11 +1840,12 @@ function DM:ShowSpellSelectionForCombo(parent)
       child:Hide()
     end
 
-    -- If spell database isn't available, show error
-    if not DM.dmspellsdb then
+    -- If current spec profile isn't available, show error
+    local currentProfile = DM:GetCurrentSpecProfile()
+    if not currentProfile or not currentProfile.spells then
       local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       errorText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
-      errorText:SetText("Spell database not available")
+      errorText:SetText("Current specialization spells not available")
       errorText:SetTextColor(1, 0.3, 0.3)
       return
     end
@@ -1724,15 +1865,16 @@ function DM:ShowSpellSelectionForCombo(parent)
     -- Filter spells based on player class and exclude already added spells
     local filteredSpells = {}
 
-    for spellIDStr, spellData in pairs(DM.dmspellsdb) do
-      local numericID = tonumber(spellIDStr)
-      -- Class match check (player class or ALL) AND tracked=1 AND not already in combination
-      if numericID and spellData.wowclass and
-          (spellData.wowclass == playerClass or spellData.wowclass == "ALL") and
-          spellData.tracked == 1 and
-          not existingSpells[numericID] then
-        -- Add to filtered list
-        table.insert(filteredSpells, { id = numericID, data = spellData })
+    -- Get the current spec profile instead of using DM.dmspellsdb
+    local currentProfile = DM:GetCurrentSpecProfile()
+    if currentProfile and currentProfile.spells then
+      for spellIDStr, spellData in pairs(currentProfile.spells) do
+        local numericID = tonumber(spellIDStr)
+        -- Check if tracked and not already in combination
+        if numericID and spellData.tracked == 1 and not existingSpells[numericID] then
+          -- Add to filtered list
+          table.insert(filteredSpells, { id = numericID, data = spellData })
+        end
       end
     end
 
@@ -1759,7 +1901,7 @@ function DM:ShowSpellSelectionForCombo(parent)
       helpText:SetPoint("TOP", helpFrame, "TOP", 0, 0)
       helpText:SetWidth(scrollContent:GetWidth() - 40)
       helpText:SetText(
-        "No additional spells available.\n\nYou've added all available tracked spells or need to mark more spells as 'tracked' in the Database tab.")
+        "No additional spells available.\n\nYou need to mark spells as 'tracked' for your current specialization in the Database tab.")
       helpText:SetTextColor(1, 0.82, 0)
       helpText:SetJustifyH("CENTER")
       helpText:SetJustifyV("TOP")
@@ -1799,8 +1941,8 @@ function DM:ShowSpellSelectionForCombo(parent)
 
       -- Get spell icon
       local spellIcon = 134400 -- Default to question mark
-      if DM.dmspellsdb and DM.dmspellsdb[spellID] and DM.dmspellsdb[spellID].spellicon then
-        spellIcon = DM.dmspellsdb[spellID].spellicon
+      if currentProfile and currentProfile.spells and currentProfile.spells[spellID] and currentProfile.spells[spellID].spellicon then
+        spellIcon = currentProfile.spells[spellID].spellicon
       end
       icon:SetTexture(spellIcon)
 
@@ -1876,7 +2018,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     -- Title - centered at top with more space
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", frame, "TOP", 0, -20)
-    title:SetText("Tracked Spells Available")
+    title:SetText("Current Spec Tracked Spells")
     title:SetWidth(frame:GetWidth() - 40)
     title:SetJustifyH("CENTER")
 
