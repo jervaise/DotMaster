@@ -214,14 +214,14 @@ function DM:CreateGeneralTab(parent)
   end
 
   -- Helper function to create styled checkboxes
-  local function CreateStyledCheckbox(name, parent, anchorFrame, offsetY, label)
+  local function CreateStyledCheckbox(name, parent, relativeTo, yOffset, label)
     local checkbox = CreateFrame("CheckButton", name, parent, "UICheckButtonTemplate")
-    checkbox:SetSize(26, 26)
+    checkbox:SetSize(20, 20)
 
-    if anchorFrame then
-      checkbox:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, offsetY)
+    if relativeTo then
+      checkbox:SetPoint("TOPLEFT", relativeTo, "BOTTOMLEFT", 0, yOffset or -5)
     else
-      checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+      checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
     end
 
     -- Hide the default template text
@@ -236,6 +236,21 @@ function DM:CreateGeneralTab(parent)
 
     -- Store the text element reference
     checkbox.labelText = text
+
+    -- Add tooltip functionality
+    checkbox.tooltipText = ""
+    checkbox:SetScript("OnEnter", function(self)
+      if self.tooltipText and self.tooltipText ~= "" then
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(label, 1, 1, 1)
+        GameTooltip:AddLine(self.tooltipText, 1, 0.82, 0, true)
+        GameTooltip:Show()
+      end
+    end)
+
+    checkbox:SetScript("OnLeave", function(self)
+      GameTooltip:Hide()
+    end)
 
     return checkbox
   end
@@ -262,6 +277,7 @@ function DM:CreateGeneralTab(parent)
   local enableCheckbox = CreateStyledCheckbox("DotMasterEnableCheckbox",
     rightColumn, generalHeaderContainer, -3, "Enable DotMaster")
   enableCheckbox:SetChecked(settings.enabled)
+  enableCheckbox.tooltipText = "Turn DotMaster on or off. When disabled, DotMaster will not track any DoTs."
   enableCheckbox:SetScript("OnClick", function(self)
     local enabled = self:GetChecked()
 
@@ -283,6 +299,8 @@ function DM:CreateGeneralTab(parent)
   local minimapCheckbox = CreateStyledCheckbox("DotMasterMinimapCheckbox",
     rightColumn, enableCheckbox, -3, "Show Minimap Icon")
   minimapCheckbox:SetChecked(not (settings.minimapIcon and settings.minimapIcon.hide))
+  minimapCheckbox.tooltipText =
+  "Show or hide the DotMaster icon on the minimap. You can still access DotMaster through slash commands when hidden."
   minimapCheckbox:SetScript("OnClick", function(self)
     local showIcon = self:GetChecked()
     if not settings.minimapIcon then settings.minimapIcon = {} end
@@ -307,6 +325,8 @@ function DM:CreateGeneralTab(parent)
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
     rightColumn, minimapCheckbox, -3, "Force Threat Color")
   forceColorCheckbox:SetChecked(settings.forceColor)
+  forceColorCheckbox.tooltipText =
+  "Override Plater's color settings to always use threat colors, even when other features might change them."
   forceColorCheckbox:SetScript("OnClick", function(self)
     local forceColor = self:GetChecked()
 
@@ -333,6 +353,8 @@ function DM:CreateGeneralTab(parent)
   local flashingCheckbox = CreateStyledCheckbox("DotMasterFlashingCheckbox",
     rightColumn, forceColorCheckbox, -3, "Expiry Flash")
   flashingCheckbox:SetChecked(settings.flashExpiring)
+  flashingCheckbox.tooltipText =
+  "Flash nameplate borders when your DoTs are about to expire. Adjust the warning time with the controls to the right."
 
   -- Seconds control
   local secondsContainer = CreateFrame("Frame", nil, rightColumn)
@@ -443,11 +465,15 @@ function DM:CreateGeneralTab(parent)
   local extendColorsCheckbox = CreateStyledCheckbox("DotMasterExtendColorsCheckbox",
     rightColumn, borderHeaderContainer, -3, "Extend Plater Colors to Borders")
   extendColorsCheckbox:SetChecked(settings.extendPlaterColors)
+  extendColorsCheckbox.tooltipText =
+  "Apply Plater's color scheme to nameplate borders. Cannot be used with 'Use Borders for DoT Tracking'."
 
   -- Create a checkbox for border-only mode
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
     rightColumn, extendColorsCheckbox, -3, "Use Borders for DoT Tracking")
   borderOnlyCheckbox:SetChecked(settings.borderOnly)
+  borderOnlyCheckbox.tooltipText =
+  "Use only the border color to indicate DoT status. Keeps Plater's original health bar colors. Cannot be used with 'Extend Plater Colors'."
 
   -- Set up click handlers for mutual exclusivity
   extendColorsCheckbox:SetScript("OnClick", function(self)
