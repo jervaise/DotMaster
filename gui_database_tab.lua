@@ -535,8 +535,6 @@ function GUI:RefreshDatabaseTabList(query)
 
           -- Set spec icon based on specID
           local iconPath = "Interface\\Icons\\INV_Misc_QuestionMark" -- Default icon
-          local usesDefaultWowIcon = true                            -- Flag to track if we are using a default WoW icon or a custom TGA
-          local originalSpecNameFromDB = specData.specName
           local numericSpecID = tonumber(specID)
 
           if not numericSpecID then
@@ -560,58 +558,73 @@ function GUI:RefreshDatabaseTabList(query)
             end
           end
 
+          -- Fixed spec icon paths - removed problematic timestamp references
           local specIconPaths = {
-            [250] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_blood.tga",
-            [251] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_frost.tga",
-            [252] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_unholy.tga",
-            [577] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_havoc.tga",
-            [581] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_vengeance.tga",
-            [102] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\balance__2025_05_14_06_35_06_UTC_.tga",
-            [103] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\feral__2025_05_14_06_35_06_UTC_.tga",
-            [104] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\guardian__2025_05_14_06_35_06_UTC_.tga",
-            [105] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid\\restoration__2025_05_14_06_35_06_UTC_.tga",
-            [1467] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_devestation.tga",
-            [1468] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_preservation.tga",
-            [1473] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_augmentation.tga",
-            [253] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_bm.tga",
-            [254] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_mm.tga",
-            [255] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_survival.tga",
-            [62] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_arcane.tga",
-            [63] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_fire.tga",
-            [64] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_frost.tga",
-            [268] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_brewmaster.tga",
-            [269] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_ww.tga",
-            [270] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_mistweaver.tga",
-            [65] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_holy.tga",
-            [66] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_protection.tga",
-            [70] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_ret.tga",
-            [256] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_disc.tga",
-            [257] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_holy.tga",
-            [258] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_shadow.tga",
-            [259] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_assa.tga",
-            [260] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_outlaw.tga",
-            [261] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_sub.tga",
-            [262] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_elem.tga",
-            [263] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_enhancement.tga",
-            [264] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_resto.tga",
-            [265] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_affli.tga",
-            [266] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_demono.tga",
-            [267] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_destru.tga",
-            [71] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_arms.tga",
-            [72] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_fury.tga",
-            [73] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_prot.tga",
+            [250] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_blood",
+            [251] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_frost",
+            [252] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dk_unholy",
+            [577] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_havoc",
+            [581] = "Interface\\AddOns\\DotMaster\\Media\\spec\\dh_vengeance",
+            [102] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid_balance",
+            [103] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid_feral",
+            [104] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid_guardian",
+            [105] = "Interface\\AddOns\\DotMaster\\Media\\spec\\druid_resto",
+            [1467] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_devestation",
+            [1468] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_preservation",
+            [1473] = "Interface\\AddOns\\DotMaster\\Media\\spec\\evoker_augmentation",
+            [253] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_bm",
+            [254] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_mm",
+            [255] = "Interface\\AddOns\\DotMaster\\Media\\spec\\hunter_survival",
+            [62] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_arcane",
+            [63] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_fire",
+            [64] = "Interface\\AddOns\\DotMaster\\Media\\spec\\mage_frost",
+            [268] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_brewmaster",
+            [269] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_ww",
+            [270] = "Interface\\AddOns\\DotMaster\\Media\\spec\\monk_mistweaver",
+            [65] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_holy",
+            [66] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_protection",
+            [70] = "Interface\\AddOns\\DotMaster\\Media\\spec\\paladin_ret",
+            [256] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_disc",
+            [257] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_holy",
+            [258] = "Interface\\AddOns\\DotMaster\\Media\\spec\\priest_shadow",
+            [259] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_assa",
+            [260] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_outlaw",
+            [261] = "Interface\\AddOns\\DotMaster\\Media\\spec\\rogue_sub",
+            [262] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_elem",
+            [263] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_enhancement",
+            [264] = "Interface\\AddOns\\DotMaster\\Media\\spec\\shaman_resto",
+            [265] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_affli",
+            [266] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_demono",
+            [267] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warlock_destru",
+            [71] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_arms",
+            [72] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_fury",
+            [73] = "Interface\\AddOns\\DotMaster\\Media\\spec\\warrior_prot",
           }
 
+          -- More reliable icon setting with error handling
           if numericSpecID and specIconPaths[numericSpecID] then
-            iconPath = specIconPaths[numericSpecID]
-            usesDefaultWowIcon = false
-          end
+            -- Check if the icon path exists with .tga extension
+            local basePath = specIconPaths[numericSpecID]
+            local tgaPath = basePath .. ".tga"
 
-          icon:SetTexture(iconPath)
+            -- Set placeholder icon first and then try loading the actual one
+            icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
-          -- Set proper texture coordinates for WoW icons (not needed for TGA files)
-          if usesDefaultWowIcon then
-            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            -- Try to use pcall to safely load the icon to avoid errors if file is missing
+            local success = pcall(function()
+              icon:SetTexture(tgaPath)
+            end)
+
+            -- If TGA failed, try BLP format
+            if not success then
+              pcall(function()
+                icon:SetTexture(basePath .. ".blp")
+              end)
+            end
+          else
+            -- Default WoW icon if spec not found
+            icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Clean up icon borders
           end
 
           local specText = specFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -855,74 +868,107 @@ function GUI:UpdateDatabaseLayout()
   scrollChild:SetHeight(math.max(yOffset + 10, 200))
 end
 
--- Updated reset function that clears all class profiles
+-- Updated reset function that performs a complete database wipe and fresh state initialization
 function DM:ResetDMSpellsDB()
-  -- Clear all spells from all class profiles
-  if DotMasterDB and DotMasterDB.classProfiles then
-    for className, classData in pairs(DotMasterDB.classProfiles) do
-      for specID, specData in pairs(classData) do
-        -- Clear spells and combinations for this spec
-        specData.spells = {}
-        specData.combinations = {}
-      end
-    end
-    DM:PrintMessage("Database has been reset - all spells removed.")
-  end
-
-  -- For legacy compatibility
+  -- First clear legacy database structures for complete cleanup
   DM.dmspellsdb = {}
 
-  -- SPECIAL HANDLING: Explicitly remove any problematic spell with ID=1
-  -- Try to access the specific Death Knight Unholy profile that shows in the screenshot
-  if DotMasterDB and DotMasterDB.classProfiles and DotMasterDB.classProfiles["DEATHKNIGHT"] then
-    for specID, specData in pairs(DotMasterDB.classProfiles["DEATHKNIGHT"]) do
-      -- Check if this is the Unholy spec (252)
-      if specID == "252" and specData.spells then
-        -- Additional debug output
-        for spellID, spellData in pairs(specData.spells) do
-          DM:PrintMessage(string.format("Found spell in DK Unholy: ID=%s, Name=%s",
-            tostring(spellID), spellData.spellname or "Unknown"))
+  if DotMasterDB then
+    -- Remove legacy data structures completely
+    DotMasterDB.dmspellsdb = nil
+    DotMasterDB.spellConfig = nil
+    DotMasterDB.combinations = nil
+
+    -- Completely reset all class profiles
+    if DotMasterDB.classProfiles then
+      DM:PrintMessage("Performing complete database reset...")
+
+      -- Save existing classes to reinitialize them
+      local existingClasses = {}
+      for className, _ in pairs(DotMasterDB.classProfiles) do
+        existingClasses[className] = true
+      end
+
+      -- Clear all class profiles completely
+      DotMasterDB.classProfiles = {}
+
+      -- Reinitialize empty profiles for all classes that existed before
+      for className, _ in pairs(existingClasses) do
+        DotMasterDB.classProfiles[className] = {}
+
+        -- For each class, initialize standard spec IDs with empty data
+        local specIDs = {}
+        if className == "WARRIOR" then
+          specIDs = { 71, 72, 73 }
+        elseif className == "PALADIN" then
+          specIDs = { 65, 66, 70 }
+        elseif className == "HUNTER" then
+          specIDs = { 253, 254, 255 }
+        elseif className == "ROGUE" then
+          specIDs = { 259, 260, 261 }
+        elseif className == "PRIEST" then
+          specIDs = { 256, 257, 258 }
+        elseif className == "DEATHKNIGHT" then
+          specIDs = { 250, 251, 252 }
+        elseif className == "SHAMAN" then
+          specIDs = { 262, 263, 264 }
+        elseif className == "MAGE" then
+          specIDs = { 62, 63, 64 }
+        elseif className == "WARLOCK" then
+          specIDs = { 265, 266, 267 }
+        elseif className == "MONK" then
+          specIDs = { 268, 269, 270 }
+        elseif className == "DRUID" then
+          specIDs = { 102, 103, 104, 105 }
+        elseif className == "DEMONHUNTER" then
+          specIDs = { 577, 581 }
+        elseif className == "EVOKER" then
+          specIDs = { 1467, 1468, 1473 }
         end
-        -- Remove any Unknown or ID=1 spell directly
-        specData.spells[1] = nil
-        specData.spells["1"] = nil
-        -- Look for anything with "Unknown" in name
-        for spellID, spellData in pairs(specData.spells) do
-          if spellData.spellname and spellData.spellname:find("Unknown") then
-            DM:PrintMessage(string.format("Removed problematic spell: %s (%s)",
-              spellData.spellname, tostring(spellID)))
-            specData.spells[spellID] = nil
-          end
+
+        -- Initialize empty structures for each spec
+        for _, specID in ipairs(specIDs) do
+          DotMasterDB.classProfiles[className][tostring(specID)] = {
+            settings = {},
+            spells = {},
+            combinations = {}
+          }
         end
       end
     end
+
+    -- Reset current profile reference
+    if DM.currentProfile then
+      DM.currentProfile = {
+        spells = {},
+        combinations = { data = {}, settings = {} }
+      }
+    end
   end
 
-  -- CUSTOM FIX: Direct deep-cleaning of the saved variables table
-  DM:PrintMessage("Performing deep database cleanup")
+  -- Reinitialize the current profile to ensure it's clean
+  if DM.ClassSpec then
+    -- Force initialization of proper structure for current class/spec
+    DM.ClassSpec:InitializeClassSpecProfiles()
 
-  -- 1. Clean the legacy database structure completely
-  if DotMasterDB then
-    DotMasterDB.dmspellsdb = nil
-    DotMasterDB.spellConfig = nil
-  end
+    -- Get current class and spec for targeted message
+    local currentClass, currentSpecID = DM.ClassSpec:GetCurrentClassAndSpec()
+    local classDisplayName = DM:GetClassDisplayName(currentClass) or currentClass
+    local specName = "Unknown"
 
-  -- 2. Extra removal step: force rebuild Death Knight profiles from scratch
-  if DotMasterDB and DotMasterDB.classProfiles and DotMasterDB.classProfiles["DEATHKNIGHT"] then
-    DM:PrintMessage("Rebuilding Death Knight profiles")
-    DotMasterDB.classProfiles["DEATHKNIGHT"] = {}
+    -- Try to get proper spec name
+    for i = 1, GetNumSpecializations() do
+      local id, name = GetSpecializationInfo(i)
+      if id == currentSpecID then
+        specName = name
+        break
+      end
+    end
 
-    -- Initialize a clean Unholy spec structure
-    DotMasterDB.classProfiles["DEATHKNIGHT"]["252"] = {
-      settings = {},
-      spells = {},
-      combinations = {}
-    }
-  end
+    DM:PrintMessage(string.format("Reset complete. Current profile: %s - %s", classDisplayName, specName))
 
-  -- Push changes to Plater
-  if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
-    DM.ClassSpec:PushConfigToPlater()
+    -- Push empty config to Plater
+    DM.ClassSpec:PushConfigToPlater(true)
   end
 
   -- Force UI refresh
@@ -932,4 +978,6 @@ function DM:ResetDMSpellsDB()
   if GUI and GUI.RefreshTrackedSpellTabList then
     GUI:RefreshTrackedSpellTabList()
   end
+
+  DM:PrintMessage("Database has been completely reset and reinitialized.")
 end

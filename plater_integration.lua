@@ -337,9 +337,35 @@ function(self, unitId, unitFrame, envTable, modTable)
     end
   end
 
-  local spells = envTable.DM_SPELLS or {}; local combos = envTable.DM_COMBOS or {}
+  -- Get and sort spells/combos by priority (lower number = higher priority)
+  local spells = envTable.DM_SPELLS or {}
+  local combos = envTable.DM_COMBOS or {}
 
+  -- Create local copies that we can sort
+  local sortedCombos = {}
   for i, combo in ipairs(combos) do
+    sortedCombos[i] = combo
+  end
+
+  local sortedSpells = {}
+  for i, spell in ipairs(spells) do
+    sortedSpells[i] = spell
+  end
+
+  -- Sort combos by priority (lower number = higher priority)
+  table.sort(sortedCombos, function(a, b)
+    -- Use numerical comparison for priority (default to 999 if nil)
+    return (tonumber(a.priority) or 999) < (tonumber(b.priority) or 999)
+  end)
+
+  -- Sort spells by priority (lower number = higher priority)
+  table.sort(sortedSpells, function(a, b)
+    -- Use numerical comparison for priority (default to 999 if nil)
+    return (tonumber(a.priority) or 999) < (tonumber(b.priority) or 999)
+  end)
+
+  -- Process sorted combinations (higher priority ones first)
+  for i, combo in ipairs(sortedCombos) do
     if combo.enabled then
       local allSpellsPresent = true
       local minRemainingTime = 9999 -- Initialize with a very high number
@@ -373,7 +399,8 @@ function(self, unitId, unitFrame, envTable, modTable)
     end
   end
 
-  for i, spell in ipairs(spells) do
+  -- Process sorted individual spells (higher priority ones first)
+  for i, spell in ipairs(sortedSpells) do
     if spell.enabled and spell.spellID and Plater.NameplateHasAura(unitFrame, spell.spellID, true) then
       local spellIDToQuery = spell.spellID
       local sName, _, _, _, sDuration, sExpirationTime = Plater.GetAura(unitFrame.namePlateUnitToken, spellIDToQuery, true)
@@ -397,6 +424,9 @@ function(self, unitId, unitFrame, envTable, modTable)
     -- Check if nameplate has a non-default color
     local isCustomColored = unitFrame.UsingCustomColor or unitFrame.PlateFrame.customColor or unitFrame.isForced
     if r and g and b and isCustomColored then
+      -- Set the custom colored flag to prevent color reset during combat
+      self.dm_has_been_custom_colored = true
+
       -- Apply the nameplate color to the border
       unitFrame.healthBar.border:SetVertexColor(r, g, b, a or 1)
       unitFrame.customBorderColor = {r, g, b, a or 1}
@@ -431,6 +461,34 @@ function(self, unitId, unitFrame, envTable, modTable)
     -- Optionally, completely remove the text element
     -- unitFrame.DM_Text:SetParent(nil)
     -- unitFrame.DM_Text = nil
+  end
+
+  -- Add a timer to ensure extended colors persist in combat
+  if envTable.DM_EXTEND_PLATER_COLORS then
+    -- Check if we need to set up a timer for this unit frame
+    if not self.dm_extendColorTimer or (self.dm_extendColorLastCheck and (GetTime() - self.dm_extendColorLastCheck) > 5) then
+      self.dm_extendColorLastCheck = GetTime()
+
+      -- Only create the timer if it doesn't exist and unit is in combat
+      if unitFrame.InCombat and unitFrame.healthBar.border then
+        -- This will make sure colors are refreshed periodically during combat
+        self.dm_extendColorTimer = C_Timer.NewTimer(5, function()
+          -- Clear the timer reference
+          self.dm_extendColorTimer = nil
+
+          -- This will trigger the colors to be rechecked on the next update
+          if unitFrame and unitFrame.healthBar and unitFrame.healthBar.border then
+            -- Force a refresh on this specific nameplate
+            if Plater.ForceRefreshNameplateColor then
+              Plater.ForceRefreshNameplateColor(unitFrame.PlateFrame)
+            else
+              -- Fallback to standard refresh if the force function is not available
+              Plater.RefreshNameplateColor(unitFrame)
+            end
+          end
+        end)
+      end
+    end
   end
 end
 ]]

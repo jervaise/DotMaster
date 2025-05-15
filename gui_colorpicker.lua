@@ -109,10 +109,15 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
         end
       end
 
+      -- Safety checks to ensure all values are numbers
+      newR = tonumber(newR) or currentR
+      newG = tonumber(newG) or currentG
+      newB = tonumber(newB) or currentB
+
       -- Apply color to swatch
       DM:ColorPickerDebug("Setting texture color to: " ..
         tostring(newR) .. ", " .. tostring(newG) .. ", " .. tostring(newB))
-      texture:SetColorTexture(newR, newG, newB)
+      texture:SetColorTexture(newR, newG, newB, 1)
 
       -- Update color reference values
       r, g, b = newR, newG, newB
@@ -172,7 +177,10 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback)
 
   swatch.GetColor = function() return r, g, b end
   swatch.SetColor = function(_, newR, newG, newB)
-    r, g, b = newR, newG, newB
+    -- Safety checks to ensure all values are numbers
+    r = tonumber(newR) or r
+    g = tonumber(newG) or g
+    b = tonumber(newB) or b
     texture:SetColorTexture(r, g, b, 1)
   end
 
