@@ -5,22 +5,36 @@ local DM = DotMaster
 
 -- Save settings to saved variables
 function DM:SaveSettings()
-  if not DotMasterDB then DotMasterDB = {} end
-  if not DotMasterDB.settings then DotMasterDB.settings = {} end
+  if not DotMasterDB then
+    DotMasterDB = {}
+  end
 
-  -- Make sure the enabled state is properly saved
-  DotMasterDB.enabled = DM.enabled
+  -- Save version
+  DotMasterDB.version = "2.1.1"
+
+  -- Get settings from API
+  local settings = DM.API:GetSettings()
+
+  -- Update main enabled state
+  DotMasterDB.enabled = settings.enabled
+
+  -- Create settings table if it doesn't exist
+  if not DotMasterDB.settings then
+    DotMasterDB.settings = {}
+  end
+
+  -- Save settings
+  DotMasterDB.settings.forceColor = settings.forceColor
+  DotMasterDB.settings.borderOnly = settings.borderOnly
 
   -- Ensure all settings are in the right format before saving
-  DotMasterDB.settings.forceColor = DM.API:GetSettings().forceColor and true or false
-  DotMasterDB.settings.borderOnly = DM.API:GetSettings().borderOnly and true or false
-  DotMasterDB.settings.borderThickness = DM.API:GetSettings().borderThickness
-  DotMasterDB.settings.flashExpiring = DM.API:GetSettings().flashExpiring and true or false
-  DotMasterDB.settings.flashThresholdSeconds = DM.API:GetSettings().flashThresholdSeconds
+  DotMasterDB.settings.borderThickness = settings.borderThickness
+  DotMasterDB.settings.flashExpiring = settings.flashExpiring and true or false
+  DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
 
   -- Save the minimap icon state
   DotMasterDB.minimap = DotMasterDB.minimap or {}
-  DotMasterDB.minimap.hide = DM.API:GetSettings().minimapIcon.hide
+  DotMasterDB.minimap.hide = settings.minimapIcon.hide
 
   -- Save current settings to class/spec profile
   if DM.ClassSpec and DM.ClassSpec.SaveCurrentSettings then
