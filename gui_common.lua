@@ -173,6 +173,51 @@ function DM:CreateGUI()
   closeButton:SetPoint("TOPRIGHT", -3, -3)
   closeButton:SetSize(26, 26)
 
+  -- Function to close all child windows
+  function DM.GUI:CloseAllChildWindows()
+    -- Close the help window if it exists and is shown
+    if DM.GUI.helpWindow and DM.GUI.helpWindow:IsShown() then
+      DM.GUI.helpWindow:Hide()
+    end
+
+    -- Close combination dialog if it exists and is shown
+    if DM.GUI.combinationDialog and DM.GUI.combinationDialog:IsShown() then
+      DM.GUI.combinationDialog:Hide()
+    end
+
+    -- Close spell selection window for combinations if it exists and is shown
+    if DM.GUI.comboSpellSelectionFrame and DM.GUI.comboSpellSelectionFrame:IsShown() then
+      DM.GUI.comboSpellSelectionFrame:Hide()
+    end
+
+    -- Close spell selection dialog if it exists and is shown
+    if DM.spellSelectionFrame and DM.spellSelectionFrame:IsShown() then
+      DM.spellSelectionFrame:Hide()
+    end
+
+    -- Close help popup if it exists and is shown
+    if DM.GUI.HelpPopupFrame and DM.GUI.HelpPopupFrame:IsShown() then
+      DM.GUI.HelpPopupFrame:Hide()
+    end
+
+    -- Close Find My Dots recording frame if it exists and is shown
+    if DM.recordingFrame and DM.recordingFrame:IsShown() then
+      DM:StopFindMyDots(false)
+    end
+
+    -- Close Dots Confirmation frame if it exists and is shown
+    if DM.dotsConfirmFrame and DM.dotsConfirmFrame:IsShown() then
+      DM.dotsConfirmFrame:Hide()
+    end
+
+    -- Close any static popups that belong to DotMaster
+    for name, _ in pairs(StaticPopupDialogs) do
+      if name:find("DOTMASTER_") then
+        StaticPopup_Hide(name)
+      end
+    end
+  end
+
   -- Help Button (Question Mark)
   local helpButton = CreateFrame("Button", nil, frame)
   helpButton:SetSize(20, 20)
@@ -418,21 +463,23 @@ function DM:CreateGUI()
   end
 
   -- Create the help window when the button is clicked
-  local helpWindow = nil
   helpButton:SetScript("OnClick", function()
-    if not helpWindow then
-      helpWindow = CreateHelpWindow()
+    if not DM.GUI.helpWindow then
+      DM.GUI.helpWindow = CreateHelpWindow()
     end
 
-    if helpWindow:IsShown() then
-      helpWindow:Hide()
+    if DM.GUI.helpWindow:IsShown() then
+      DM.GUI.helpWindow:Hide()
     else
-      helpWindow:Show()
+      DM.GUI.helpWindow:Show()
     end
   end)
 
   -- Add force push on close
   closeButton:HookScript("OnClick", function()
+    -- Close all child windows
+    DM.GUI:CloseAllChildWindows()
+
     -- Force push settings to DotMaster Integration when closing
     if not DM.disablePush then
       if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
@@ -443,6 +490,9 @@ function DM:CreateGUI()
 
   -- Also hook the escape key closing
   frame:HookScript("OnHide", function()
+    -- Close all child windows
+    DM.GUI:CloseAllChildWindows()
+
     -- Get current settings from both DotMasterDB and API
     local settings = DM.API:GetSettings()
 
