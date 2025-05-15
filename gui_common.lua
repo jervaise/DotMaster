@@ -632,36 +632,7 @@ function DM:CreateGUI()
     -- Store ID and script
     tabButton.id = i
     tabButton:SetScript("OnClick", function(self)
-      -- Hide all frames and deselect all tabs
-      for j, tabFrame in ipairs(tabFrames) do
-        tabFrame:Hide()
-        local otherTab = _G["DotMasterTab" .. j]
-        if otherTab and otherTab.normalTexture then
-          -- Set to inactive color
-          otherTab.normalTexture:SetColorTexture(0, 0, 0, 0.7)
-        end
-      end
-
-      -- Show selected frame and highlight tab
-      tabFrames[self.id]:Show()
-      if self.normalTexture then
-        -- Set to active color
-        self.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-      end
-      activeTab = self.id
-
-      -- Refresh appropriate tab content when clicked
-      if self.id == 2 then -- Tracked Spells tab
-        -- Refresh tracked spells tab
-        if DM.GUI.RefreshTrackedSpellTabList then
-          DM.GUI:RefreshTrackedSpellTabList("")
-        end
-      elseif self.id == 4 then -- Database tab (now index 4 instead of 3)
-        -- Refresh database tab
-        if DM.GUI.RefreshDatabaseTabList then
-          DM.GUI:RefreshDatabaseTabList("")
-        end
-      end
+      DM.GUI:SelectTab(self.id)
     end)
 
     -- Position tabs side by side with appropriate spacing
@@ -915,15 +886,56 @@ function DM.GUI:SelectTab(tabID)
     DM.GUI.frame.numTabs = #DM.GUI.tabs
   end
 
+  -- Set the tab with WoW's built-in system
   PanelTemplates_SetTab(DM.GUI.frame, tabID)
-  for i, tab in ipairs(DM.GUI.tabs) do
-    if i == tabID then
-      tab.content:Show()
-      if tab.OnShow then tab.OnShow() end -- Call OnShow for the selected tab if it exists
-    else
-      tab.content:Hide()
+
+  -- Handle the custom tab frames (DotMasterTabFrame1, etc.)
+  for i = 1, 4 do
+    local tabFrame = _G["DotMasterTabFrame" .. i]
+    if tabFrame then
+      if i == tabID then
+        tabFrame:Show()
+      else
+        tabFrame:Hide()
+      end
     end
   end
+
+  -- Handle the template-based tab content
+  for i, tab in ipairs(DM.GUI.tabs) do
+    if i == tabID then
+      if tab.content then tab.content:Show() end
+      if tab.OnShow then tab.OnShow() end
+    else
+      if tab.content then tab.content:Hide() end
+    end
+  end
+
+  -- Force a visual refresh of tab button appearance
+  for i = 1, 4 do
+    local tabButton = _G["DotMasterTab" .. i]
+    if tabButton and tabButton.normalTexture then
+      if i == tabID then
+        -- Active tab
+        tabButton.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+      else
+        -- Inactive tab
+        tabButton.normalTexture:SetColorTexture(0, 0, 0, 0.7)
+      end
+    end
+  end
+
+  -- Refresh appropriate tab content when clicked
+  if tabID == 2 then -- Tracked Spells tab
+    if DM.GUI.RefreshTrackedSpellTabList then
+      DM.GUI:RefreshTrackedSpellTabList("")
+    end
+  elseif tabID == 4 then -- Database tab
+    if DM.GUI.RefreshDatabaseTabList then
+      DM.GUI:RefreshDatabaseTabList("")
+    end
+  end
+
   PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
 end
 

@@ -18,6 +18,17 @@ end
 DM.settings = DM.settings or {}
 DM.enabled = true
 
+-- Get version from TOC with proper API
+local function GetVersion()
+  if C_AddOns and C_AddOns.GetAddOnMetadata then
+    return C_AddOns.GetAddOnMetadata("DotMaster", "Version")
+  elseif GetAddOnMetadata then
+    return GetAddOnMetadata("DotMaster", "Version")
+  else
+    return "2.1.3" -- Hardcoded fallback
+  end
+end
+
 -- Set up basic defaults
 DM.defaults = DM.defaults or {
   enabled = true,
@@ -26,7 +37,7 @@ DM.defaults = DM.defaults or {
   borderThickness = 2,
   flashExpiring = false,
   flashThresholdSeconds = 3.0,
-  version = "2.1.2",
+  version = GetVersion() or "Unknown",
   trackSwapBuffs = true
 }
 

@@ -22,7 +22,16 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "2.1.1"
+  -- Use C_AddOns API for Dragonflight+ with fallback to legacy API
+  local version
+  if C_AddOns and C_AddOns.GetAddOnMetadata then
+    version = C_AddOns.GetAddOnMetadata("DotMaster", "Version")
+  elseif GetAddOnMetadata then
+    version = GetAddOnMetadata("DotMaster", "Version")
+  else
+    version = "2.1.3" -- Hardcoded fallback version
+  end
+  return version or "Unknown"
 end
 
 -- Debug function to print out DotMasterDB contents
