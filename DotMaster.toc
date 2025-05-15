@@ -2,7 +2,7 @@
 ## Title: DotMaster
 ## Notes: Tracks your DoTs and Auras and displays them on nameplates via Plater Integration. |cFFFFD100Discord:|r |cFF7289DAdiscord.gg/jpjJd8W|r
 ## Author: Jervaise
-## Version: 2.1
+## Version: 2.2-dev
 ## SavedVariables: DotMasterDB
 ## OptionalDeps: Plater
 ## X-Curse-Project-ID: 123456

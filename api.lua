@@ -22,7 +22,7 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "2.1"
+  return "2.2-dev"
 end
 
 -- Debug function to print out DotMasterDB contents

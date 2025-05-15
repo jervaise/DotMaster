@@ -1,6 +1,6 @@
 # DotMaster
 
-## Version 2.1
+## Version 2.2-dev (Development)
 
 DotMaster is a World of Warcraft addon that works with Plater Nameplates to enhance DoT (Damage over Time) tracking.
 
