@@ -466,7 +466,7 @@ function DM:CreateGeneralTab(parent)
     rightColumn, borderHeaderContainer, -3, "Extend Plater Colors to Borders")
   extendColorsCheckbox:SetChecked(settings.extendPlaterColors)
   extendColorsCheckbox.tooltipText =
-  "Apply Plater's color scheme to nameplate borders. Cannot be used with 'Use Borders for DoT Tracking'."
+  "Preserve Plater profile colors for caster/important mobs in borders while tracking DoTs. Exclusive with 'Use Borders for DoT Tracking'."
 
   -- Create a checkbox for border-only mode
   local borderOnlyCheckbox = CreateStyledCheckbox("DotMasterBorderOnlyCheckbox",
