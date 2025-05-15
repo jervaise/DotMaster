@@ -9,8 +9,16 @@ function DM:SaveSettings()
     DotMasterDB = {}
   end
 
-  -- Save version
-  DotMasterDB.version = "2.1.3"
+  -- Save version (use C_AddOns API with fallback)
+  local version
+  if C_AddOns and C_AddOns.GetAddOnMetadata then
+    version = C_AddOns.GetAddOnMetadata("DotMaster", "Version")
+  elseif GetAddOnMetadata then
+    version = GetAddOnMetadata("DotMaster", "Version")
+  else
+    version = "2.1.3" -- Hardcoded fallback
+  end
+  DotMasterDB.version = version or "Unknown"
 
   -- Get settings from API
   local settings = DM.API:GetSettings()
@@ -288,7 +296,7 @@ function DM:ForcePushToDotMasterIntegration()
     -- Use the main InstallPlaterMod function to push current settings
     DM:InstallPlaterMod(true) -- Pass true to indicate a force push
   else
-    DM:PrintMessage("Error: DotMaster Integration installation function not found")
+    DM:PrintMessage("Could not connect to Plater. Please try reloading your UI.")
   end
 end
 

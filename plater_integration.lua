@@ -552,7 +552,7 @@ end
     -- If the 'DotMaster Integration' mod was NOT found, print an error and do nothing else
     if not self.dotMasterIntegrationNotFoundErrorShown then
       DM:PrintMessage(
-        "|cFFFF0000Error: Plater mod 'DotMaster Integration' not found. Please add it manually via Plater options and ensure the name is exactly 'DotMaster Integration'.|r")
+        "|cFFFF0000Plater connection not found. Please click the 'Install Plater Integration' button in the DotMaster window.|r")
       self.dotMasterIntegrationNotFoundErrorShown = true
     end
   end

@@ -416,8 +416,7 @@ function DM:CreateGUI()
         CreateText("• When adjusting border thickness, you'll need to reload your UI for the changes to apply fully",
           yOffset)
     yOffset = yOffset -
-        CreateText(
-          "• If DotMaster Integration is not found in Plater, use the integration button at the bottom of the window",
+        CreateText("• If Plater integration is missing, use the 'Install Plater Integration' button in the window",
           yOffset)
 
     -- Additional Resources
@@ -763,30 +762,27 @@ function DM:CreateGUI()
         if _G["Plater"] then
           if type(_G["Plater"].ImportScriptString) == "function" then
             DM:PrintMessage(
-              "Attempting to import DotMaster Integration mod into Plater using Plater.ImportScriptString...")
+              "Setting up DotMaster colors with Plater...")
             local success, importedObject, wasEnabled = _G["Plater"].ImportScriptString(modString, true, false, true,
               false)
 
             if success and importedObject then
-              DM:PrintMessage("DotMaster Integration mod import reported success by Plater. Imported object name: " ..
-                (importedObject.Name or "Unknown Name"))
+              DM:PrintMessage("Connection with Plater established successfully!")
 
               if not importedObject.Enabled then
                 if type(_G["Plater"].EnableHook) == "function" then
                   _G["Plater"].EnableHook(importedObject)
-                  DM:PrintMessage("Attempted to enable the imported Plater mod as it was not enabled.")
+                  DM:PrintMessage("Enabling Plater integration...")
                   if type(_G["Plater"].CompileHook) == "function" then
                     _G["Plater"].CompileHook(importedObject)
-                    DM:PrintMessage("Attempted to recompile the Plater mod.")
                   elseif type(_G["Plater"].CompileAllHooksAndScripts) == "function" then
                     _G["Plater"].CompileAllHooksAndScripts()
-                    DM:PrintMessage("Attempted to recompile all Plater hooks and scripts.")
                   end
                 else
-                  DM:PrintMessage("Imported mod is not enabled, and Plater.EnableHook function not found.")
+                  DM:PrintMessage("Plater integration could not be enabled automatically.")
                 end
               else
-                DM:PrintMessage("Imported Plater mod is already enabled.")
+                DM:PrintMessage("Plater integration is active.")
               end
 
               DM.GUI:UpdatePlaterOverlayStatus() -- Update overlay status immediately
@@ -794,11 +790,11 @@ function DM:CreateGUI()
               C_Timer.After(0.5, function()
                 if DM.InstallPlaterMod then
                   DM:PrintMessage(
-                    "DotMaster: Delay finished. Running InstallPlaterMod to sync settings with the Plater mod.")
+                    "Applying DotMaster colors to Plater nameplates...")
                   DM:InstallPlaterMod()
                   DM.GUI:UpdatePlaterOverlayStatus() -- Refresh overlay status again after InstallPlaterMod
                 else
-                  DM:PrintMessage("DotMaster: DM.InstallPlaterMod function not found. Cannot sync settings after delay.")
+                  DM:PrintMessage("Could not apply color settings to Plater.")
                   DM.GUI:UpdatePlaterOverlayStatus() -- Still refresh overlay
                 end
               end)

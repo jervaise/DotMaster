@@ -128,7 +128,8 @@ function DM.ClassSpec:PushConfigToPlater(forcePush)
   if not dotMasterIntegrationIndex then
     -- Add a static flag to prevent showing the error message multiple times
     if not self.errorMessageShown then
-      DM:PrintMessage("Error: 'DotMaster Integration' mod not found in Plater. Please ensure it's installed correctly.")
+      DM:PrintMessage(
+      "Plater connection not found. Click the 'Install Plater Integration' button in the DotMaster window.")
       self.errorMessageShown = true
     end
     return
