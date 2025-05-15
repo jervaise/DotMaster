@@ -1,6 +1,12 @@
 # DotMaster Changelog
 
 ## [2.1.2] - 2024-07-05
+### Fixed
+- Fixed "for limit must be a number" error when using Find My Dots feature
+- Added safety checks for numTabs property to prevent errors
+- Improved error handling in tab switching functionality
+- Enhanced Find My Dots section with additional safety checks
+
 ### Added
 - UI Enhancement: Close all child windows when main DotMaster window is closed
   - Improves user experience by ensuring all dialog windows close together

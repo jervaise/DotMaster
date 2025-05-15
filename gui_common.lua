@@ -910,6 +910,11 @@ end
 
 -- Function to select a tab
 function DM.GUI:SelectTab(tabID)
+  -- Safety check: ensure frame.numTabs is properly set
+  if not DM.GUI.frame.numTabs then
+    DM.GUI.frame.numTabs = #DM.GUI.tabs
+  end
+
   PanelTemplates_SetTab(DM.GUI.frame, tabID)
   for i, tab in ipairs(DM.GUI.tabs) do
     if i == tabID then

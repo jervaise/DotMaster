@@ -10,7 +10,7 @@ function DM:SaveSettings()
   end
 
   -- Save version
-  DotMasterDB.version = "2.1.1"
+  DotMasterDB.version = "2.1.2"
 
   -- Get settings from API
   local settings = DM.API:GetSettings()

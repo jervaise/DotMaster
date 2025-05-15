@@ -1,6 +1,6 @@
 # DotMaster
 
-## Version 2.1.1 (Stable Release)
+## Version 2.1.2 (Stable Release)
 
 DotMaster is a World of Warcraft addon that enhances your DoT/HoT management experience through integration with the Plater Nameplates addon. It provides clear, customizable visualization of your damage-over-time and healing-over-time effects directly on enemy nameplates.
 
@@ -12,7 +12,12 @@ DotMaster is a World of Warcraft addon that enhances your DoT/HoT management exp
 - Import/Export system for sharing configurations
 - Compatible with all classes
 
-### New in 2.1.1
+### New in 2.1.2
+- Fixed "for limit must be a number" error when using Find My Dots feature
+- Added safety checks for numTabs property to prevent errors
+- Improved error handling in tab switching functionality
+
+### Previous Updates (2.1.1)
 - Fixed combinations persistence issue across UI reloads
 - Added backward compatibility for legacy data structures
 - Improved database handling and stability
@@ -58,6 +63,7 @@ If you encounter issues or have suggestions:
 - Join our [Discord server](https://discord.gg/yourserver)
 
 ## Version History
+- **2.1.2**: Fixed "for limit must be a number" error, added safety checks, improved error handling
 - **2.1.1**: Fixed combinations persistence, backward compatibility, stability improvements
 - **2.1**: Type conversion fixes, enhanced Plater integration, combinations support
 - **2.0**: Complete rewrite with enhanced features and UI
@@ -96,6 +102,16 @@ If you encounter issues or have suggestions:
 - `/dm reload` - Reload UI
 
 ## Recent Changes
+
+### Version 2.1.2 (Stable Release)
+- Fixed "for limit must be a number" error when using Find My Dots feature
+- Added safety checks for numTabs property to prevent errors
+- Improved error handling in tab switching functionality
+
+### Version 2.1.1 (Stable Release)
+- Fixed combinations persistence issue across UI reloads
+- Added backward compatibility for legacy data structures
+- Improved database handling and stability for combinations
 
 ### Version 2.1 (Stable Release)
 - Fixed spell priority sorting in Plater integration (lower number = higher priority)

@@ -87,13 +87,11 @@ function DM:StopFindMyDots(automatic, finished)
     -- Show main GUI and select Database tab if no dots found or cancelled early
     if DM.GUI and DM.GUI.frame then
       DM.GUI.frame:Show()
-
-      -- Ensure the frame has numTabs set before trying to select a tab
-      if DM.GUI.frame.numTabs == nil and DM.GUI.tabs then
-        DM.GUI.frame.numTabs = #DM.GUI.tabs
-      end
-
       if DM.GUI.SelectTab then
+        -- Ensure frame.numTabs is properly set before selecting tab
+        if not DM.GUI.frame.numTabs and DM.GUI.tabs then
+          DM.GUI.frame.numTabs = #DM.GUI.tabs
+        end
         DM.GUI:SelectTab(4) -- Database tab is ID 4
       end
     end
@@ -571,13 +569,11 @@ function DM:ShowDotsConfirmationDialog(dots)
       -- Show main GUI and select Database tab when closing confirmation
       if DM.GUI and DM.GUI.frame then
         DM.GUI.frame:Show()
-
-        -- Ensure the frame has numTabs set before trying to select a tab
-        if DM.GUI.frame.numTabs == nil and DM.GUI.tabs then
-          DM.GUI.frame.numTabs = #DM.GUI.tabs
-        end
-
         if DM.GUI.SelectTab then
+          -- Ensure frame.numTabs is properly set before selecting tab
+          if not DM.GUI.frame.numTabs and DM.GUI.tabs then
+            DM.GUI.frame.numTabs = #DM.GUI.tabs
+          end
           DM.GUI:SelectTab(4) -- Database tab is ID 4
         end
       end
@@ -604,6 +600,10 @@ function DM:ShowDotsConfirmationDialog(dots)
         if DM.GUI and DM.GUI.frame then
           DM.GUI.frame:Show()
           if DM.GUI.SelectTab then
+            -- Ensure frame.numTabs is properly set before selecting tab
+            if not DM.GUI.frame.numTabs and DM.GUI.tabs then
+              DM.GUI.frame.numTabs = #DM.GUI.tabs
+            end
             DM.GUI:SelectTab(4) -- Database tab is ID 4
           end
         end
@@ -689,13 +689,11 @@ function DM:ShowDotsConfirmationDialog(dots)
       -- Show main GUI and select Database tab
       if DM.GUI and DM.GUI.frame then
         DM.GUI.frame:Show()
-
-        -- Ensure the frame has numTabs set before trying to select a tab
-        if DM.GUI.frame.numTabs == nil and DM.GUI.tabs then
-          DM.GUI.frame.numTabs = #DM.GUI.tabs
-        end
-
         if DM.GUI.SelectTab then
+          -- Ensure frame.numTabs is properly set before selecting tab
+          if not DM.GUI.frame.numTabs and DM.GUI.tabs then
+            DM.GUI.frame.numTabs = #DM.GUI.tabs
+          end
           DM.GUI:SelectTab(4) -- Database tab is ID 4
         end
       end
