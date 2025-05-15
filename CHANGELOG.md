@@ -1,5 +1,19 @@
 # DotMaster Changelog
 
+## [2.1.4] - 2024-07-25
+### Added
+- Added tooltips to all checkboxes in the General tab UI for better usability
+- Improved minimap icon click handling for consistent behavior
+- Updated tooltip for "Extend Plater Colors to Borders" option to better explain M+ functionality
+
+### Changed
+- Updated documentation for a more comprehensive overview of features
+- Updated TOC file with compatibility information for WoW 11.1.5 and 11.1.7
+- Improved user-facing messages in Plater integration for better clarity
+
+### Fixed
+- Fixed click handling on minimap icon for more consistent behavior
+
 ## [2.1.3] - 2024-07-05
 ### Fixed
 - Fixed "for limit must be a number" error when using Find My Dots feature
