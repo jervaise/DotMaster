@@ -79,24 +79,19 @@ function DM:InitializeMinimapIcon()
     text = "DotMaster",
     icon = iconPath,
     OnClick = function(_, button)
-      if button == "LeftButton" then
-        -- Toggle main interface
-        if DM.GUI and DM.GUI.frame then
-          if DM.GUI.frame:IsShown() then
-            DM.GUI.frame:Hide()
-          else
-            DM.GUI.frame:Show()
-          end
+      -- Toggle main interface for both left and right clicks
+      if DM.GUI and DM.GUI.frame then
+        if DM.GUI.frame:IsShown() then
+          DM.GUI.frame:Hide()
+        else
+          DM.GUI.frame:Show()
         end
-      elseif button == "RightButton" then
-        DM:PrintMessage("Right-click functionality is currently disabled")
       end
     end,
     OnTooltipShow = function(tooltip)
       if not tooltip or not tooltip.AddLine then return end
       tooltip:AddLine("DotMaster")
-      tooltip:AddLine("|cFFFFFFFFLeft-Click:|r Open Main Interface", 1, 1, 1)
-      tooltip:AddLine("|cFFFFFFFFRight-Click:|r Currently disabled", 1, 1, 1)
+      tooltip:AddLine("|cFFFFFFFFClick:|r Open DotMaster Interface", 1, 1, 1)
     end
   })
 
