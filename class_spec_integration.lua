@@ -254,7 +254,7 @@ function DM.ClassSpec:SaveCurrentSettings()
   -- Use the direct references from DM.currentProfile for spells and combinations
   DotMasterDB.classProfiles[currentClass][currentSpecID] = {
     spells = DM.currentProfile.spells or {},
-    combos = DM.currentProfile.combinations or { data = {}, settings = {} },
+    combinations = DM.currentProfile.combinations or { data = {}, settings = {} },
     settings = classSpecSettings
   }
 

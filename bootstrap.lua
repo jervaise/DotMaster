@@ -77,14 +77,24 @@ function DM:InitializeCurrentProfile()
 
     if not profile.settings then profile.settings = {} end
     if not profile.spells then profile.spells = {} end
+
+    -- Handle both 'combinations' and legacy 'combos' fields for backward compatibility
     if not profile.combinations then
-      profile.combinations = {
-        data = {},
-        settings = {
-          enabled = true,
-          priorityOverIndividual = true
+      -- Check if there's a legacy 'combos' field
+      if profile.combos then
+        -- Migrate data from 'combos' to 'combinations'
+        profile.combinations = profile.combos
+        profile.combos = nil -- Remove legacy field after migration
+        self:DebugMsg("Migrated legacy 'combos' field to 'combinations'")
+      else
+        profile.combinations = {
+          data = {},
+          settings = {
+            enabled = true,
+            priorityOverIndividual = true
+          }
         }
-      }
+      end
     else
       -- Ensure combinations subfields exist
       if not profile.combinations.data then profile.combinations.data = {} end

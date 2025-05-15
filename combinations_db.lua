@@ -122,16 +122,25 @@ function DM:GetCurrentSpecCombinations()
     return nil
   end
 
+  -- First check for the standard 'combinations' field
   if not currentProfile.combinations then
-    -- Initialize combinations structure if it doesn't exist
-    currentProfile.combinations = {
-      data = {},
-      settings = {
-        enabled = true,
-        priorityOverIndividual = true,
+    -- Check for legacy 'combos' field
+    if currentProfile.combos then
+      -- Migrate data from 'combos' to 'combinations'
+      currentProfile.combinations = currentProfile.combos
+      currentProfile.combos = nil -- Remove legacy field after migration
+      DM:DebugMsg("GetCurrentSpecCombinations migrated legacy 'combos' field to 'combinations'")
+    else
+      -- Initialize combinations structure if it doesn't exist
+      currentProfile.combinations = {
+        data = {},
+        settings = {
+          enabled = true,
+          priorityOverIndividual = true,
+        }
       }
-    }
-    DM:DebugMsg("Created initial combinations structure in current spec profile")
+      DM:DebugMsg("Created initial combinations structure in current spec profile")
+    end
   end
 
   return currentProfile.combinations
