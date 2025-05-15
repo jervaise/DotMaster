@@ -1,5 +1,19 @@
 # DotMaster Changelog
 
+## [2.0.2] - 2023-12-15
+### Added
+- Show spec icons next to spec names in the database tab
+- Updated tracked spells tab to only load and modify data from the current specialization's array
+- Updated combinations tab to work with the current specialization's array
+- Resolved an issue where the "save combination" button in the New Combination dialog would delete the entire spell database
+- Fixed a critical bug where clicking reorder arrows would cause all spells to disappear
+- Improved error handling and debug messages throughout
+
+## [2.0.1] - YYYY-MM-DD
+### Fixed
+- Resolved an issue where the border color on nameplates would not correctly revert to Plater's default when "Use Borders for DoT Tracking" was enabled and a tracked DoT/combination expired. This involved ensuring DotMaster explicitly set the border to opaque black before Plater's refresh to clear any lingering color states.
+- Corrected a UI bug in the main settings panel where previously selected tabs would not visually unhighlight (return to their inactive color) when a new tab was clicked. This was fixed by properly targeting the tab's background texture for color changes.
+
 ## [2.0.0] - 2023-11-22
 ### Added
 - Major version release with complete feature set

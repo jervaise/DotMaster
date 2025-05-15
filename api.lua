@@ -22,7 +22,7 @@ end
 
 -- Version info
 function DM.API:GetVersion()
-  return "2.0.0"
+  return "2.0.2"
 end
 
 -- Debug function to print out DotMasterDB contents
@@ -148,6 +148,7 @@ function DM.API:GetCombinations()
           priority = combo.priority,
           name = combo.name,
           enabled = true,
+          spec = combo.spec or 0, -- Include spec field with fallback
         })
       end
     end
