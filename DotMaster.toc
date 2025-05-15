@@ -1,7 +1,7 @@
 ## Interface: 100200
 ## Title: DotMaster
 ## Notes: Advanced DoT tracking for Plater
-## Version: 2.1.2
+## Version: 2.1.3
 ## Author: Jervaise
 ## OptionalDeps: Plater
 ## SavedVariables: DotMasterDB
