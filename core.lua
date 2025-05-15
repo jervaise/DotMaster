@@ -1,6 +1,12 @@
 -- DotMaster core.lua
 -- Core structures and minimal initialization
 
+-- Register DotMaster global object if not already done
+if not DotMaster then
+  DotMaster = CreateFrame("Frame", "DotMaster", UIParent)
+end
+
+-- Create a shorthand reference
 local DM = DotMaster
 
 -- Skip duplicate initialization if bootstrap has already handled it
@@ -20,7 +26,7 @@ DM.defaults = DM.defaults or {
   borderThickness = 2,
   flashExpiring = false,
   flashThresholdSeconds = 3.0,
-  version = "2.2-dev",
+  version = "2.1.1",
   trackSwapBuffs = true
 }
 

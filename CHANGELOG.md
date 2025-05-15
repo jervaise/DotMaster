@@ -1,5 +1,11 @@
 # DotMaster Changelog
 
+## [2.1.1] - 2023-10-08
+### Fixed
+- Fixed combinations persistence issue across UI reloads
+- Added backward compatibility for legacy data structures where combinations were saved as 'combos'
+- Improved database handling and stability for combinations
+
 ## [2.1] - 2024-06-20
 ### Added
 - Enhanced database reset functionality with complete wipe and fresh state initialization
@@ -86,4 +92,16 @@
 ### Fixes:
 - Fixed issue where border thickness changes weren't properly saved
 - Fixed potential issue with settings not being pushed to DotMaster Integration
-- Ensured thickness changes are properly detected and applied 
+- Ensured thickness changes are properly detected and applied
+
+## 2.1 (Stable Release - 2023-10-05)
+
+### Added
+- Support for combination colors (track multiple DoTs and show a unique color when all are present)
+- New UI for creating and managing combinations
+- Added proper type conversion for enabled/disabled and tracked/untracked status
+
+### Fixed
+- Fixed critical issue with reorder arrows causing spells to disappear
+- Enhanced Plater integration reliability
+- Fixed issues with the coloration of DoTs in Plater 

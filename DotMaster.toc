@@ -1,16 +1,15 @@
-## Interface: 100207
+## Interface: 100200
 ## Title: DotMaster
-## Notes: Tracks your DoTs and Auras and displays them on nameplates via Plater Integration. |cFFFFD100Discord:|r |cFF7289DAdiscord.gg/jpjJd8W|r
+## Notes: Advanced DoT tracking for Plater
+## Version: 2.1.1
 ## Author: Jervaise
-## Version: 2.2-dev
-## SavedVariables: DotMasterDB
 ## OptionalDeps: Plater
-## X-Curse-Project-ID: 123456
-## X-Wago-ID: 123456
+## SavedVariables: DotMasterDB
+## X-Category: Interface Enhancements
+## X-Curse-Project-ID: 101530
+## X-Wago-ID: 8N25aBN3
 ## X-WoWI-ID: 123456
 ## X-DotMaster-Debug: false
-## X-Category: Combat
-## X-License: All Rights Reserved
 ## IconTexture: Interface\AddOns\DotMaster\Media\dotmaster-icon.tga
 
 #@no-lib-strip@

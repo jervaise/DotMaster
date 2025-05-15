@@ -1,8 +1,70 @@
 # DotMaster
 
-## Version 2.2-dev (Development)
+## Version 2.1.1 (Stable Release)
 
-DotMaster is a World of Warcraft addon that works with Plater Nameplates to enhance DoT (Damage over Time) tracking.
+DotMaster is a World of Warcraft addon that enhances your DoT/HoT management experience through integration with the Plater Nameplates addon. It provides clear, customizable visualization of your damage-over-time and healing-over-time effects directly on enemy nameplates.
+
+### Key Features
+- Track DoTs and other auras on nameplates with customizable colors
+- Create combinations of spells with unique colors
+- Customize border thickness and opacity
+- Per-class and per-specialization settings
+- Import/Export system for sharing configurations
+- Compatible with all classes
+
+### New in 2.1.1
+- Fixed combinations persistence issue across UI reloads
+- Added backward compatibility for legacy data structures
+- Improved database handling and stability
+
+### Previous Updates (2.1)
+- Added proper type conversion for enabled/disabled and tracked/untracked status
+- Fixed issue with reorder arrows causing spells to disappear
+- Enhanced Plater integration reliability
+- Added support for border-only mode for cleaner nameplates
+- Added color flashing for expiring DoTs
+- Added combination support for advanced aura tracking
+- User interface improvements and bug fixes
+
+## Installation
+1. Download the addon
+2. Extract to your World of Warcraft\_retail_\Interface\AddOns folder
+3. Make sure Plater addon is installed and enabled
+4. Restart WoW or reload your UI (/reload)
+
+## Usage
+Access the main interface by typing '/dm' or '/dotmaster' in chat or click the minimap icon.
+
+### Adding Spells to Track
+1. Cast a spell you want to track
+2. Open DotMaster (/dm)
+3. Click on "Add New" in the "Tracked Spells" tab
+4. Select your spell from the list
+5. Customize its color
+
+### Creating Combinations
+1. Go to the "Combinations" tab
+2. Click "New Combination"
+3. Select which spells should be part of the combination
+4. Choose a color for when all selected spells are active
+
+## Requirements
+- World of Warcraft (Retail)
+- [Plater Nameplates](https://www.curseforge.com/wow/addons/plater-nameplates)
+
+## Support
+If you encounter issues or have suggestions:
+- Report issues on [GitHub](https://github.com/yourusername/DotMaster/issues)
+- Join our [Discord server](https://discord.gg/yourserver)
+
+## Version History
+- **2.1.1**: Fixed combinations persistence, backward compatibility, stability improvements
+- **2.1**: Type conversion fixes, enhanced Plater integration, combinations support
+- **2.0**: Complete rewrite with enhanced features and UI
+- **1.0.4**: Update with version 1.0.4 changes
+
+## Credits
+- Created by Jervaise
 
 ## Features
 
