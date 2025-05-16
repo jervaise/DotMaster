@@ -492,23 +492,16 @@ function DM:CreateGUI()
     -- Close all child windows when the main window is closed
     DM.GUI:CloseAllChildWindows()
 
-    -- Print debug message whenever the window is closed
-    print("DotMaster: Window closed - checking for border settings changes")
-
     -- Update settings if needed
     if DM:GetSaveNeeded() then
-      print("DotMaster: Settings needed saving, auto-saving now")
       DM:AutoSave()
     end
 
     -- Get current settings
     local settings = DM.API:GetSettings()
-    print("DotMaster: Current border thickness: " .. (settings.borderThickness or "nil"))
-    print("DotMaster: Current border only: " .. (settings.borderOnly and "true" or "false"))
 
     -- Ensure sessionStartSettings exists
     if not DM.sessionStartSettings then
-      print("DotMaster: Creating sessionStartSettings table")
       DM.sessionStartSettings = {
         borderThickness = nil,
         borderOnly = nil
@@ -521,10 +514,6 @@ function DM:CreateGUI()
       end
     end
 
-    -- Get session start settings for comparison
-    print("DotMaster: Session start border thickness: " .. (DM.sessionStartSettings.borderThickness or "nil"))
-    print("DotMaster: Session start border only: " .. (DM.sessionStartSettings.borderOnly and "true" or "false"))
-
     -- Check for changes by direct comparison with SESSION start values
     local settingsChanged = false
     local changedSettings = {}
@@ -532,10 +521,7 @@ function DM:CreateGUI()
     -- Compare border thickness with session start value (convert to numbers for proper comparison)
     if tonumber(settings.borderThickness) ~= tonumber(DM.sessionStartSettings.borderThickness) then
       settingsChanged = true
-      print("DotMaster: Border thickness changed since session start!")
-      table.insert(changedSettings,
-        "Border Thickness: " ..
-        (DM.sessionStartSettings.borderThickness or "default") .. " → " .. settings.borderThickness)
+      table.insert(changedSettings, "Border Thickness")
     end
 
     -- Compare border only mode with session start value (convert to boolean for proper comparison)
@@ -543,10 +529,7 @@ function DM:CreateGUI()
     local sessionStartBorderOnly = DM.sessionStartSettings.borderOnly and true or false
     if currentBorderOnly ~= sessionStartBorderOnly then
       settingsChanged = true
-      print("DotMaster: Border only mode changed since session start!")
-      local oldValue = sessionStartBorderOnly and "On" or "Off"
-      local newValue = currentBorderOnly and "On" or "Off"
-      table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
+      table.insert(changedSettings, "Border Only Mode")
     end
 
     -- Update saved settings in DB
@@ -566,27 +549,21 @@ function DM:CreateGUI()
 
     -- Show reload UI prompt if settings changed
     if settingsChanged then
-      print("DotMaster: Settings changed, showing reload UI prompt!")
-
       -- First hide any existing dialog
       StaticPopup_Hide("DOTMASTER_RELOAD_NEEDED")
 
-      -- Use the same approach that works with the test button
+      -- Simplified reload dialog
       StaticPopupDialogs["DOTMASTER_RELOAD_NEEDED"] = {
-        text = "The following settings require a UI reload to take full effect:\n\n• " ..
-            table.concat(changedSettings, "\n• ") ..
-            "\n\nWould you like to reload now?",
+        text = "You need to reload your UI to apply border settings changes.",
         button1 = "Reload Now",
         button2 = "Later",
         OnAccept = function()
-          print("DotMaster: Reloading UI...")
           -- Update session start values before reload
           DM.sessionStartSettings.borderThickness = settings.borderThickness
           DM.sessionStartSettings.borderOnly = settings.borderOnly
           ReloadUI()
         end,
         OnCancel = function()
-          print("DotMaster: Reload canceled")
           -- Update session start values to avoid repeated prompts
           DM.sessionStartSettings.borderThickness = settings.borderThickness
           DM.sessionStartSettings.borderOnly = settings.borderOnly
@@ -599,15 +576,11 @@ function DM:CreateGUI()
         showAlert = true,
       }
 
-      print("DotMaster: Showing dialog DOTMASTER_RELOAD_NEEDED")
-
       -- Give a small delay before showing the dialog
       C_Timer.After(0.1, function()
         -- Force a specific dialog at a global level
         _G["StaticPopup_Show"]("DOTMASTER_RELOAD_NEEDED")
       end)
-    else
-      print("DotMaster: No border settings changes detected since session start")
     end
   end)
 
@@ -682,35 +655,6 @@ function DM:CreateGUI()
   local tabHeight = 30
   local tabFrames = {}
   local activeTab = 1
-
-  -- Add TEST button for forcing the reload UI prompt
-  local testReloadButton = CreateFrame("Button", "DotMasterTestReloadButton", frame, "UIPanelButtonTemplate")
-  testReloadButton:SetSize(200, 24)
-  testReloadButton:SetPoint("BOTTOM", 0, 60)
-  testReloadButton:SetText("TEST Reload UI Prompt")
-  testReloadButton:SetScript("OnClick", function()
-    print("DotMaster: TEST button clicked, showing reload UI prompt")
-
-    -- Force create and show the reload dialog
-    StaticPopupDialogs["DOTMASTER_TEST_RELOAD"] = {
-      text = "This is a TEST reload UI prompt.\n\nWould you like to reload now?",
-      button1 = "Reload Now",
-      button2 = "Later",
-      OnAccept = function()
-        ReloadUI()
-      end,
-      OnCancel = function()
-        print("DotMaster: Test reload UI prompt canceled")
-      end,
-      timeout = 0,
-      whileDead = true,
-      hideOnEscape = true,
-      preferredIndex = 3,
-      showAlert = true,
-    }
-
-    StaticPopup_Show("DOTMASTER_TEST_RELOAD")
-  end)
 
   -- Tab background
   local tabBg = frame:CreateTexture(nil, "BACKGROUND")
@@ -952,7 +896,6 @@ function DM:CreateGUI()
 
     -- Ensure sessionStartSettings exists
     if not DM.sessionStartSettings then
-      print("DotMaster: Creating sessionStartSettings table on window show")
       DM.sessionStartSettings = {
         borderThickness = nil,
         borderOnly = nil
