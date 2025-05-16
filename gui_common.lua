@@ -506,6 +506,21 @@ function DM:CreateGUI()
     print("DotMaster: Current border thickness: " .. (settings.borderThickness or "nil"))
     print("DotMaster: Current border only: " .. (settings.borderOnly and "true" or "false"))
 
+    -- Ensure sessionStartSettings exists
+    if not DM.sessionStartSettings then
+      print("DotMaster: Creating sessionStartSettings table")
+      DM.sessionStartSettings = {
+        borderThickness = nil,
+        borderOnly = nil
+      }
+
+      -- Initialize with current settings
+      if DotMasterDB and DotMasterDB.settings then
+        DM.sessionStartSettings.borderThickness = DotMasterDB.settings.borderThickness
+        DM.sessionStartSettings.borderOnly = DotMasterDB.settings.borderOnly
+      end
+    end
+
     -- Get session start settings for comparison
     print("DotMaster: Session start border thickness: " .. (DM.sessionStartSettings.borderThickness or "nil"))
     print("DotMaster: Session start border only: " .. (DM.sessionStartSettings.borderOnly and "true" or "false"))
@@ -926,6 +941,22 @@ function DM:CreateGUI()
   frame:SetScript("OnShow", function(self)
     -- Original OnShow logic if any (e.g., from LibAdvancedOptionsPanel-1.0)
     if self.OnShow_Original then self:OnShow_Original() end
+
+    -- Ensure sessionStartSettings exists
+    if not DM.sessionStartSettings then
+      print("DotMaster: Creating sessionStartSettings table on window show")
+      DM.sessionStartSettings = {
+        borderThickness = nil,
+        borderOnly = nil
+      }
+
+      -- Initialize with current settings to avoid false positives on first window open/close
+      if DotMasterDB and DotMasterDB.settings then
+        local settings = DM.API:GetSettings()
+        DM.sessionStartSettings.borderThickness = settings.borderThickness
+        DM.sessionStartSettings.borderOnly = settings.borderOnly
+      end
+    end
 
     DM.GUI:UpdatePlaterOverlayStatus()
   end)
