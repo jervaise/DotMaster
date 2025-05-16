@@ -493,7 +493,7 @@ function DM:CreateGUI()
     DM.GUI:CloseAllChildWindows()
 
     -- Update settings if needed
-    if DM.API:GetSaveNeeded() then
+    if DM:GetSaveNeeded() then
       -- Apply settings on close
       DM:AutoSave()
     end
