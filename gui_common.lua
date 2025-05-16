@@ -498,15 +498,43 @@ function DM:CreateGUI()
       DM:AutoSave()
     end
 
-    -- Force reload of DotMasterDB settings just to double-check
+    -- Get current settings
     local settings = DM.API:GetSettings()
 
-    -- Store border thickness back in DotMasterDB
-    if DotMasterDB and DotMasterDB.settings then
-      DotMasterDB.settings.borderThickness = settings.borderThickness
+    -- Get saved settings from DotMasterDB for comparison
+    local savedBorderThickness = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness
+    local savedBorderOnly = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly
+
+    -- Check for changes by direct comparison
+    local settingsChanged = false
+    local changedSettings = {}
+
+    -- Compare border thickness (convert to numbers for proper comparison)
+    if tonumber(settings.borderThickness) ~= tonumber(savedBorderThickness) then
+      settingsChanged = true
+      table.insert(changedSettings,
+        "Border Thickness: " .. (savedBorderThickness or "default") .. " → " .. settings.borderThickness)
+      -- Update the saved value
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.borderThickness = settings.borderThickness
+      end
     end
 
-    -- Force push to DotMaster Integration with current settings when window is closed by any means
+    -- Compare border only mode (convert to boolean for proper comparison)
+    local currentBorderOnly = settings.borderOnly and true or false
+    local previousBorderOnly = savedBorderOnly and true or false
+    if currentBorderOnly ~= previousBorderOnly then
+      settingsChanged = true
+      local oldValue = previousBorderOnly and "On" or "Off"
+      local newValue = currentBorderOnly and "On" or "Off"
+      table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
+      -- Update the saved value
+      if DotMasterDB and DotMasterDB.settings then
+        DotMasterDB.settings.borderOnly = currentBorderOnly
+      end
+    end
+
+    -- Force push to DotMaster Integration with current settings
     if DM.InstallPlaterMod then
       DM:InstallPlaterMod()
     end
@@ -515,30 +543,18 @@ function DM:CreateGUI()
       DM:UpdatePlaterStatusFooter()
     end
 
-    -- Simple direct check for border settings changes
-    local settingsChanged = false
-    local changedSettings = {}
-
-    -- Check if border thickness changed
-    if DM.GUI.originalBorderThickness ~= nil and tonumber(settings.borderThickness) ~= tonumber(DM.GUI.originalBorderThickness) then
-      settingsChanged = true
-      table.insert(changedSettings,
-        "Border Thickness: " .. DM.GUI.originalBorderThickness .. " → " .. settings.borderThickness)
-    end
-
-    -- Check if border only mode changed
-    if DM.GUI.originalBorderOnly ~= nil and (settings.borderOnly and true or false) ~= (DM.GUI.originalBorderOnly and true or false) then
-      settingsChanged = true
-      local oldValue = DM.GUI.originalBorderOnly and "On" or "Off"
-      local newValue = settings.borderOnly and "On" or "Off"
-      table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
-    end
-
     -- Show reload UI prompt if settings changed
     if settingsChanged then
-      StaticPopupDialogs["DOTMASTER_BORDER_RELOAD_CONFIRM"] = {
+      -- Clear any existing dialog with this key
+      if StaticPopupDialogs["DOTMASTER_BORDER_RELOAD"] then
+        StaticPopup_Hide("DOTMASTER_BORDER_RELOAD")
+      end
+
+      -- Create a new dialog definition
+      StaticPopupDialogs["DOTMASTER_BORDER_RELOAD"] = {
         text = "The following settings require a UI reload to take full effect:\n\n• " ..
-            table.concat(changedSettings, "\n• ") .. "\n\nDo you want to reload now?",
+            table.concat(changedSettings, "\n• ") ..
+            "\n\nWould you like to reload now?",
         button1 = "Reload Now",
         button2 = "Later",
         OnAccept = function()
@@ -554,7 +570,11 @@ function DM:CreateGUI()
         showAlert = true,
       }
 
-      StaticPopup_Show("DOTMASTER_BORDER_RELOAD_CONFIRM")
+      -- Show the dialog
+      StaticPopup_Show("DOTMASTER_BORDER_RELOAD")
+
+      -- Print a debug message to help with troubleshooting
+      print("DotMaster: Border settings changed, showing reload UI prompt")
     end
   end)
 
@@ -868,14 +888,8 @@ function DM:CreateGUI()
     -- Original OnShow logic if any (e.g., from LibAdvancedOptionsPanel-1.0)
     if self.OnShow_Original then self:OnShow_Original() end
 
-    -- Capture original border settings when window is opened for comparison when window is closed
-    local settings = DM.API:GetSettings()
-    DM.GUI.originalBorderThickness = settings and settings.borderThickness or nil
-    DM.GUI.originalBorderOnly = settings and settings.borderOnly or nil
-
     DM.GUI:UpdatePlaterOverlayStatus()
   end)
-  -- DM.GUI:UpdatePlaterOverlayStatus() -- Initial check when GUI is created (if frame is already shown, OnShow will handle)
 
   -- Initialize Tabs
   local tabInfo = {
