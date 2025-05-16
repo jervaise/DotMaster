@@ -211,10 +211,31 @@ function DM:TrackCriticalSettingsChange()
     return false
   end
 
-  -- Check for changes
-  local thicknessChanged = tonumber(DM.originalCriticalSettings.borderThickness) ~= tonumber(settings.borderThickness)
-  local extendColorsChanged = DM.originalCriticalSettings.extendPlaterColors ~= settings.extendPlaterColors
-  local borderOnlyChanged = DM.originalCriticalSettings.borderOnly ~= settings.borderOnly
+  -- Check for changes - ensure we're comparing the same types
+  local origThickness = tonumber(DM.originalCriticalSettings.borderThickness)
+  local currThickness = tonumber(settings.borderThickness)
+  local thicknessChanged = origThickness ~= currThickness
+
+  -- Convert to boolean to ensure consistent comparison
+  local origExtendColors = DM.originalCriticalSettings.extendPlaterColors and true or false
+  local currExtendColors = settings.extendPlaterColors and true or false
+  local extendColorsChanged = origExtendColors ~= currExtendColors
+
+  -- Convert to boolean to ensure consistent comparison
+  local origBorderOnly = DM.originalCriticalSettings.borderOnly and true or false
+  local currBorderOnly = settings.borderOnly and true or false
+  local borderOnlyChanged = origBorderOnly ~= currBorderOnly
+
+  -- Debug output to help diagnose issues
+  if thicknessChanged or extendColorsChanged or borderOnlyChanged then
+    -- print("DotMaster: Critical settings changed!")
+    -- print(string.format("Border thickness: %s -> %s (Changed: %s)",
+    --    tostring(origThickness), tostring(currThickness), tostring(thicknessChanged)))
+    -- print(string.format("Border only: %s -> %s (Changed: %s)",
+    --    tostring(origBorderOnly), tostring(currBorderOnly), tostring(borderOnlyChanged)))
+    -- print(string.format("Extend Plater colors: %s -> %s (Changed: %s)",
+    --    tostring(origExtendColors), tostring(currExtendColors), tostring(extendColorsChanged)))
+  end
 
   return thicknessChanged or extendColorsChanged or borderOnlyChanged
 end
@@ -237,12 +258,16 @@ function DM:ShowReloadUIPopupForCriticalChanges()
     return false
   end
 
+  -- Get numeric values for border thickness comparison
   local currentBorderThickness = tonumber(settings.borderThickness)
   local originalBorderThickness = tonumber(DM.originalCriticalSettings.borderThickness)
-  local currentExtendColors = settings.extendPlaterColors
-  local originalExtendColors = DM.originalCriticalSettings.extendPlaterColors
-  local currentBorderOnly = settings.borderOnly
-  local originalBorderOnly = DM.originalCriticalSettings.borderOnly
+
+  -- Ensure we're comparing boolean values for consistent results
+  local currentExtendColors = settings.extendPlaterColors and true or false
+  local originalExtendColors = DM.originalCriticalSettings.extendPlaterColors and true or false
+
+  local currentBorderOnly = settings.borderOnly and true or false
+  local originalBorderOnly = DM.originalCriticalSettings.borderOnly and true or false
 
   local thicknessChanged = originalBorderThickness ~= currentBorderThickness
   local extendColorsChanged = originalExtendColors ~= currentExtendColors
@@ -252,9 +277,14 @@ function DM:ShowReloadUIPopupForCriticalChanges()
     return false -- No actual changes detected
   end
 
+  -- Create the static popup dialog if it doesn't exist
   if not StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"] then
     StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"] = {
-      text = "You have to reload UI to apply these changes.",
+      text = "You have changed settings that require a UI reload to take full effect:\n\n" ..
+          (thicknessChanged and "• Border Thickness: " .. originalBorderThickness .. " → " .. currentBorderThickness .. "\n" or "") ..
+          (borderOnlyChanged and "• Border Only Mode: " .. (originalBorderOnly and "On" or "Off") .. " → " .. (currentBorderOnly and "On" or "Off") .. "\n" or "") ..
+          (extendColorsChanged and "• Extend Plater Colors: " .. (originalExtendColors and "On" or "Off") .. " → " .. (currentExtendColors and "On" or "Off") .. "\n" or "") ..
+          "\nDo you want to reload your UI now?",
       button1 = "Reload Now",
       button2 = "Later",
       OnAccept = function()
@@ -272,17 +302,22 @@ function DM:ShowReloadUIPopupForCriticalChanges()
       whileDead = true,
       hideOnEscape = true,
       preferredIndex = 3,
+      showAlert = true, -- Make the dialog more noticeable
     }
+  else
+    -- Update text to reflect current changes
+    StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"].text =
+        "You have changed settings that require a UI reload to take full effect:\n\n" ..
+        (thicknessChanged and "• Border Thickness: " .. originalBorderThickness .. " → " .. currentBorderThickness .. "\n" or "") ..
+        (borderOnlyChanged and "• Border Only Mode: " .. (originalBorderOnly and "On" or "Off") .. " → " .. (currentBorderOnly and "On" or "Off") .. "\n" or "") ..
+        (extendColorsChanged and "• Extend Plater Colors: " .. (originalExtendColors and "On" or "Off") .. " → " .. (currentExtendColors and "On" or "Off") .. "\n" or "") ..
+        "\nDo you want to reload your UI now?"
   end
 
-  -- Construct a more dynamic message if desired, or keep it generic
-  -- Example for a more dynamic message (optional):
-  -- local changedItems = {}
-  -- if thicknessChanged then table.insert(changedItems, string.format("Border Thickness (%s -> %s)", originalBorderThickness, currentBorderThickness)) end
-  -- if extendColorsChanged then table.insert(changedItems, "Extend Plater Colors") end
-  -- if borderOnlyChanged then table.insert(changedItems, "Use Borders for DoT Tracking") end
-  -- StaticPopupDialogs["DOTMASTER_CRITICAL_RELOAD_CONFIRM"].text = "The following Plater appearance settings have changed:\\n - " .. table.concat(changedItems, "\\n - ") .. "\\n\\nReload UI to fully apply these changes?"
+  -- Force close any existing prompt to avoid stacking them
+  StaticPopup_Hide("DOTMASTER_CRITICAL_RELOAD_CONFIRM")
 
+  -- Show the popup with the current changes
   StaticPopup_Show("DOTMASTER_CRITICAL_RELOAD_CONFIRM")
   return true
 end
