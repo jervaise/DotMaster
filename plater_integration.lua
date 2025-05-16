@@ -90,6 +90,16 @@ function DM:InstallPlaterMod()
     settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
   end
 
+  -- Ensure flashFrequency reflects the latest from DB if available just before injection
+  if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.flashFrequency ~= nil then
+    settings.flashFrequency = DotMasterDB.settings.flashFrequency
+  end
+
+  -- Ensure flashBrightness reflects the latest from DB if available just before injection
+  if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.flashBrightness ~= nil then
+    settings.flashBrightness = DotMasterDB.settings.flashBrightness
+  end
+
   -- Determine effective extendPlaterColors based on borderOnly setting
   local effectiveExtendPlaterColors = settings.extendPlaterColors
   if settings.borderOnly then
