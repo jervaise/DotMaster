@@ -1,5 +1,17 @@
 # DotMaster Changelog
 
+## [2.1.5] - 2024-07-28
+### Fixed
+- Fixed flashing issues in Plater integration by optimizing color handling to prevent flickering
+- Improved color memory system to ensure consistent display on nameplates
+- Fixed reload UI prompt for border thickness and border only mode changes
+- Added prompt to reload UI when critical Plater settings are changed
+
+### Changed
+- Optimized nameplate color updates to only refresh when actually needed
+- Added per-session tracking for border settings changes
+- Improved cleanup of stale state when colors are no longer applied
+
 ## [2.1.4] - 2024-07-25
 ### Added
 - Added tooltips to all checkboxes in the General tab UI for better usability
