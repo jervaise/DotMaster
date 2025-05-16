@@ -223,6 +223,7 @@ end]],
     settings.flashThresholdSeconds or 3.0,
     GetTime())
 
+  -- OPTIMIZED: Rewritten update code to fix flashing issues
   local updateCode = [[
 function(self, unitId, unitFrame, envTable, modTable)
   if not (_G['DotMaster'] and _G['DotMaster'].enabled) then
@@ -234,51 +235,63 @@ function(self, unitId, unitFrame, envTable, modTable)
   end
 
   local unitName = unitFrame.namePlateUnitName or unitId or "Unknown"
+  local shouldRefreshColor = false
+  local colorApplied = false
 
   -- Apply color function with integrated flashing logic
   local function applyColor(r, g, b, a, isThreatColor, remainingTimeParam)
     a = a or 1
-
-    self.dm_has_been_custom_colored = true
+    colorApplied = true
 
     local finalR, finalG, finalB, finalA = r, g, b, a
     local actualRemainingTime = remainingTimeParam or 999
 
-    if envTable.DM_FLASH_EXPIRING and actualRemainingTime < (envTable.DM_FLASH_THRESHOLD or 3.0) then
-      self.dm_colFlash_Timer = (self.dm_colFlash_Timer or 0) + (GetTime() - (self.dm_colFlash_LastTick or GetTime()))
-      self.dm_colFlash_LastTick = GetTime()
+    -- Store original color in unitFrame for consistency
+    unitFrame.DotMaster_Color = {r = r, g = g, b = b, a = a}
 
-      if self.dm_colFlash_Timer >= 0.5 then
-        self.dm_colFlash_Timer = 0
-        self.dm_colFlash_IsLighterPhase = not self.dm_colFlash_IsLighterPhase
+    if envTable.DM_FLASH_EXPIRING and actualRemainingTime < (envTable.DM_FLASH_THRESHOLD or 3.0) then
+      -- OPTIMIZATION: Store flash state on unitFrame instead of on script context
+      if not unitFrame.DM_colFlash_Timer then
+        unitFrame.DM_colFlash_Timer = 0
+        unitFrame.DM_colFlash_LastTick = GetTime()
+        unitFrame.DM_colFlash_IsLighterPhase = false
+      else
+        unitFrame.DM_colFlash_Timer = unitFrame.DM_colFlash_Timer + (GetTime() - unitFrame.DM_colFlash_LastTick)
+        unitFrame.DM_colFlash_LastTick = GetTime()
       end
 
-      if self.dm_colFlash_IsLighterPhase then
+      if unitFrame.DM_colFlash_Timer >= 0.5 then
+        unitFrame.DM_colFlash_Timer = 0
+        unitFrame.DM_colFlash_IsLighterPhase = not unitFrame.DM_colFlash_IsLighterPhase
+      end
+
+      if unitFrame.DM_colFlash_IsLighterPhase then
         finalR = math.min(1, r + 0.3)
         finalG = math.min(1, g + 0.3)
         finalB = math.min(1, b + 0.3)
       end
     else
-      self.dm_colFlash_IsLighterPhase = false
+      -- Clean up flash state when no longer needed
+      unitFrame.DM_colFlash_IsLighterPhase = false
     end
 
     if isThreatColor then
       Plater.SetNameplateColor(unitFrame, finalR, finalG, finalB, finalA)
     elseif envTable.DM_BORDER_ONLY then
       if unitFrame.healthBar.border then
-        unitFrame.healthBar.border:SetVertexColor(finalR, finalG, finalB, finalA)
-        unitFrame.customBorderColor = {finalR, finalG, finalB, finalA}
+        -- OPTIMIZATION: Only set color if it's actually different
+        if not unitFrame.DotMaster_BorderColor or
+           unitFrame.DotMaster_BorderColor.r ~= finalR or
+           unitFrame.DotMaster_BorderColor.g ~= finalG or
+           unitFrame.DotMaster_BorderColor.b ~= finalB or
+           unitFrame.DotMaster_BorderColor.a ~= finalA then
 
-        if envTable.DM_EXTEND_PLATER_COLORS then
-          if Plater.db and Plater.db.profile then
-            Plater.db.profile.border_color_r = finalR
-            Plater.db.profile.border_color_g = finalG
-            Plater.db.profile.border_color_b = finalB
-            Plater.db.profile.border_color_a = finalA
-          end
+          unitFrame.healthBar.border:SetVertexColor(finalR, finalG, finalB, finalA)
+          unitFrame.customBorderColor = {finalR, finalG, finalB, finalA}
+          unitFrame.DotMaster_BorderColor = {r = finalR, g = finalG, b = finalB, a = finalA}
+          shouldRefreshColor = true
         end
 
-        Plater.RefreshNameplateColor(unitFrame)
         unitFrame.healthBar.border:Show()
       end
     else
@@ -355,6 +368,9 @@ function(self, unitId, unitFrame, envTable, modTable)
 
       if allSpellsPresent then
         applyColor(combo.color[1], combo.color[2], combo.color[3], combo.color[4] or 1, false, minRemainingTime)
+        if shouldRefreshColor then
+          Plater.RefreshNameplateColor(unitFrame)
+        end
         return
       end
     end
@@ -368,61 +384,55 @@ function(self, unitId, unitFrame, envTable, modTable)
       local remainingTime = 999
       if sExpirationTime and sExpirationTime > 0 then remainingTime = math.max(0, sExpirationTime - GetTime()) end
       applyColor(spell.color[1], spell.color[2], spell.color[3], spell.color[4] or 1, false, remainingTime)
+      if shouldRefreshColor then
+        Plater.RefreshNameplateColor(unitFrame)
+      end
       return
     end
   end
 
-  if self.dm_has_been_custom_colored then
-      Plater.RefreshNameplateColor(unitFrame)
-      if envTable.DM_FLASH_EXPIRING then self.dm_colFlash_IsLighterPhase = false end
+  -- If we didn't apply any colors this time but previously had colors
+  if not colorApplied and unitFrame.DotMaster_Color then
+    -- OPTIMIZATION: Clean up after ourselves instead of leaving stale state
+    unitFrame.DotMaster_Color = nil
+    unitFrame.DotMaster_BorderColor = nil
+
+    -- Reset flash state
+    unitFrame.DM_colFlash_Timer = nil
+    unitFrame.DM_colFlash_LastTick = nil
+    unitFrame.DM_colFlash_IsLighterPhase = nil
+
+    if envTable.DM_BORDER_ONLY then
+      if unitFrame.healthBar.border then
+        -- Allow Plater to handle the border reset naturally
+        unitFrame.customBorderColor = nil
+        shouldRefreshColor = true
+      end
+    else
+      shouldRefreshColor = true
+    end
   end
-  self.dm_has_been_custom_colored = false
 
   -- Extend Plater Colors to Borders if enabled
-  if envTable.DM_EXTEND_PLATER_COLORS and unitFrame.healthBar.border then
+  if envTable.DM_EXTEND_PLATER_COLORS and unitFrame.healthBar.border and not colorApplied then
     local r, g, b, a = unitFrame.healthBar:GetStatusBarColor()
     local isCustomColored = unitFrame.UsingCustomColor or unitFrame.PlateFrame.customColor or unitFrame.isForced
     if r and g and b and isCustomColored then
-      self.dm_has_been_custom_colored = true
+      -- OPTIMIZATION: Only modify border color, don't change Plater profiles
       unitFrame.healthBar.border:SetVertexColor(r, g, b, a or 1)
       unitFrame.customBorderColor = {r, g, b, a or 1}
       unitFrame.healthBar.border:Show()
+      shouldRefreshColor = true
     end
   end
 
-  if envTable.DM_BORDER_ONLY then
-    if unitFrame.healthBar.border then
-        unitFrame.customBorderColor = nil
-        unitFrame.healthBar.border:SetVertexColor(0,0,0,1)
-        Plater.RefreshNameplateColor(unitFrame)
-    end
-  else
+  -- OPTIMIZATION: Only refresh the color if something actually changed
+  if shouldRefreshColor then
     Plater.RefreshNameplateColor(unitFrame)
-    if unitFrame.healthBar.border then unitFrame.customBorderColor = nil end
   end
 
   if unitFrame.DM_Text then
     unitFrame.DM_Text:Hide()
-  end
-
-  if envTable.DM_EXTEND_PLATER_COLORS then
-    if not self.dm_extendColorTimer or (self.dm_extendColorLastCheck and (GetTime() - self.dm_extendColorLastCheck) > 5) then
-      self.dm_extendColorLastCheck = GetTime()
-
-      if unitFrame.InCombat and unitFrame.healthBar.border then
-        self.dm_extendColorTimer = C_Timer.NewTimer(5, function()
-          self.dm_extendColorTimer = nil
-
-          if unitFrame and unitFrame.healthBar and unitFrame.healthBar.border then
-            if Plater.ForceRefreshNameplateColor then
-              Plater.ForceRefreshNameplateColor(unitFrame.PlateFrame)
-            else
-              Plater.RefreshNameplateColor(unitFrame)
-            end
-          end
-        end)
-      end
-    end
   end
 end
 ]]
@@ -447,6 +457,7 @@ function(self, unitId, unitFrame, envTable, modTable)
         if unitFrame.healthBar.border then
           unitFrame.healthBar.border:SetVertexColor(r, g, b, a)
           unitFrame.customBorderColor = {r, g, b, a}
+          unitFrame.DotMaster_BorderColor = {r = r, g = g, b = b, a = a}
           Plater.RefreshNameplateColor(unitFrame)
           unitFrame.healthBar.border:Show()
         end
