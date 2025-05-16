@@ -492,18 +492,25 @@ function DM:CreateGUI()
     -- Close all child windows when the main window is closed
     DM.GUI:CloseAllChildWindows()
 
+    -- Print debug message whenever the window is closed
+    print("DotMaster: Window closed - checking for border settings changes")
+
     -- Update settings if needed
     if DM:GetSaveNeeded() then
-      -- Apply settings on close
+      print("DotMaster: Settings needed saving, auto-saving now")
       DM:AutoSave()
     end
 
     -- Get current settings
     local settings = DM.API:GetSettings()
+    print("DotMaster: Current border thickness: " .. (settings.borderThickness or "nil"))
+    print("DotMaster: Current border only: " .. (settings.borderOnly and "true" or "false"))
 
     -- Get saved settings from DotMasterDB for comparison
     local savedBorderThickness = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness
     local savedBorderOnly = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly
+    print("DotMaster: Saved border thickness: " .. (savedBorderThickness or "nil"))
+    print("DotMaster: Saved border only: " .. (savedBorderOnly and "true" or "false"))
 
     -- Check for changes by direct comparison
     local settingsChanged = false
@@ -512,10 +519,13 @@ function DM:CreateGUI()
     -- Compare border thickness (convert to numbers for proper comparison)
     if tonumber(settings.borderThickness) ~= tonumber(savedBorderThickness) then
       settingsChanged = true
+      print("DotMaster: Border thickness changed!")
       table.insert(changedSettings,
         "Border Thickness: " .. (savedBorderThickness or "default") .. " → " .. settings.borderThickness)
+
       -- Update the saved value
       if DotMasterDB and DotMasterDB.settings then
+        print("DotMaster: Updating saved border thickness to: " .. settings.borderThickness)
         DotMasterDB.settings.borderThickness = settings.borderThickness
       end
     end
@@ -525,11 +535,14 @@ function DM:CreateGUI()
     local previousBorderOnly = savedBorderOnly and true or false
     if currentBorderOnly ~= previousBorderOnly then
       settingsChanged = true
+      print("DotMaster: Border only mode changed!")
       local oldValue = previousBorderOnly and "On" or "Off"
       local newValue = currentBorderOnly and "On" or "Off"
       table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
+
       -- Update the saved value
       if DotMasterDB and DotMasterDB.settings then
+        print("DotMaster: Updating saved border only to: " .. tostring(currentBorderOnly))
         DotMasterDB.settings.borderOnly = currentBorderOnly
       end
     end
@@ -545,22 +558,21 @@ function DM:CreateGUI()
 
     -- Show reload UI prompt if settings changed
     if settingsChanged then
-      -- Clear any existing dialog with this key
-      if StaticPopupDialogs["DOTMASTER_BORDER_RELOAD"] then
-        StaticPopup_Hide("DOTMASTER_BORDER_RELOAD")
-      end
+      print("DotMaster: Settings changed, showing reload UI prompt!")
 
-      -- Create a new dialog definition
-      StaticPopupDialogs["DOTMASTER_BORDER_RELOAD"] = {
+      -- Define dialog directly here (no need for separate popup hiding)
+      StaticPopupDialogs["DOTMASTER_RELOAD_NEEDED"] = {
         text = "The following settings require a UI reload to take full effect:\n\n• " ..
             table.concat(changedSettings, "\n• ") ..
             "\n\nWould you like to reload now?",
         button1 = "Reload Now",
         button2 = "Later",
         OnAccept = function()
+          print("DotMaster: Reloading UI...")
           ReloadUI()
         end,
         OnCancel = function()
+          print("DotMaster: Reload canceled")
           DM:PrintMessage("Remember to reload your UI to fully apply border settings changes.")
         end,
         timeout = 0,
@@ -570,11 +582,10 @@ function DM:CreateGUI()
         showAlert = true,
       }
 
-      -- Show the dialog
-      StaticPopup_Show("DOTMASTER_BORDER_RELOAD")
-
-      -- Print a debug message to help with troubleshooting
-      print("DotMaster: Border settings changed, showing reload UI prompt")
+      print("DotMaster: Showing dialog DOTMASTER_RELOAD_NEEDED")
+      StaticPopup_Show("DOTMASTER_RELOAD_NEEDED")
+    else
+      print("DotMaster: No border settings changes detected")
     end
   end)
 
@@ -649,6 +660,35 @@ function DM:CreateGUI()
   local tabHeight = 30
   local tabFrames = {}
   local activeTab = 1
+
+  -- Add TEST button for forcing the reload UI prompt
+  local testReloadButton = CreateFrame("Button", "DotMasterTestReloadButton", frame, "UIPanelButtonTemplate")
+  testReloadButton:SetSize(200, 24)
+  testReloadButton:SetPoint("BOTTOM", 0, 60)
+  testReloadButton:SetText("TEST Reload UI Prompt")
+  testReloadButton:SetScript("OnClick", function()
+    print("DotMaster: TEST button clicked, showing reload UI prompt")
+
+    -- Force create and show the reload dialog
+    StaticPopupDialogs["DOTMASTER_TEST_RELOAD"] = {
+      text = "This is a TEST reload UI prompt.\n\nWould you like to reload now?",
+      button1 = "Reload Now",
+      button2 = "Later",
+      OnAccept = function()
+        ReloadUI()
+      end,
+      OnCancel = function()
+        print("DotMaster: Test reload UI prompt canceled")
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+      showAlert = true,
+    }
+
+    StaticPopup_Show("DOTMASTER_TEST_RELOAD")
+  end)
 
   -- Tab background
   local tabBg = frame:CreateTexture(nil, "BACKGROUND")
