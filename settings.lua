@@ -40,6 +40,10 @@ function DM:SaveSettings()
   DotMasterDB.settings.flashExpiring = settings.flashExpiring and true or false
   DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
 
+  -- Save new flash customization settings
+  DotMasterDB.settings.flashFrequency = settings.flashFrequency
+  DotMasterDB.settings.flashBrightness = settings.flashBrightness
+
   -- Save the minimap icon state
   DotMasterDB.minimap = DotMasterDB.minimap or {}
   DotMasterDB.minimap.hide = settings.minimapIcon.hide
@@ -122,6 +126,8 @@ function DM:LoadSettings()
   settings.borderThickness = 2
   settings.flashExpiring = false
   settings.flashThresholdSeconds = 3.0
+  settings.flashFrequency = 0.5  -- Default 0.5 seconds (2 flashes per second)
+  settings.flashBrightness = 0.3 -- Default 30% brighter
   settings.extendPlaterColors = false
   settings.minimapIcon = { hide = false }
 
@@ -150,6 +156,14 @@ function DM:LoadSettings()
 
     if DotMasterDB.settings.flashThresholdSeconds ~= nil then
       settings.flashThresholdSeconds = DotMasterDB.settings.flashThresholdSeconds
+    end
+
+    if DotMasterDB.settings.flashFrequency ~= nil then
+      settings.flashFrequency = DotMasterDB.settings.flashFrequency
+    end
+
+    if DotMasterDB.settings.flashBrightness ~= nil then
+      settings.flashBrightness = DotMasterDB.settings.flashBrightness
     end
 
     if DotMasterDB.settings.extendPlaterColors ~= nil then

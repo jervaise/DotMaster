@@ -197,6 +197,11 @@ function(self, unitId, unitFrame, envTable, modTable)
 
   envTable.DM_FLASH_EXPIRING = %s
   envTable.DM_FLASH_THRESHOLD = %s
+
+  -- Flash customization settings
+  envTable.DM_FLASH_FREQUENCY = %s -- Time in seconds for each flash cycle
+  envTable.DM_FLASH_BRIGHTNESS = %s -- Brightness increase (0.2 to 1.0)
+
   envTable.lastBuildTime = %s
 
   -- Set border thickness in Plater
@@ -221,6 +226,8 @@ end]],
     settings.borderThickness or 2,
     settings.flashExpiring and "true" or "false",
     settings.flashThresholdSeconds or 3.0,
+    settings.flashFrequency or 0.5,
+    settings.flashBrightness or 0.3,
     GetTime())
 
   -- OPTIMIZED: Rewritten update code to fix flashing issues
@@ -260,15 +267,21 @@ function(self, unitId, unitFrame, envTable, modTable)
         unitFrame.DM_colFlash_LastTick = GetTime()
       end
 
-      if unitFrame.DM_colFlash_Timer >= 0.5 then
+      -- Use configurable flash frequency (defaulting to 0.5 if missing)
+      local flashFrequency = envTable.DM_FLASH_FREQUENCY or 0.5
+
+      if unitFrame.DM_colFlash_Timer >= flashFrequency then
         unitFrame.DM_colFlash_Timer = 0
         unitFrame.DM_colFlash_IsLighterPhase = not unitFrame.DM_colFlash_IsLighterPhase
       end
 
       if unitFrame.DM_colFlash_IsLighterPhase then
-        finalR = math.min(1, r + 0.3)
-        finalG = math.min(1, g + 0.3)
-        finalB = math.min(1, b + 0.3)
+        -- Use configurable brightness (defaulting to 0.3 if missing)
+        local flashBrightness = envTable.DM_FLASH_BRIGHTNESS or 0.3
+
+        finalR = math.min(1, r + flashBrightness)
+        finalG = math.min(1, g + flashBrightness)
+        finalB = math.min(1, b + flashBrightness)
       end
     else
       -- Clean up flash state when no longer needed
