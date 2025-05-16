@@ -439,115 +439,14 @@ function DM:CreateGeneralTab(parent)
       end
     end
 
-    -- Show/hide flash customization sliders
-    if flashFrequencySlider and flashBrightnessSlider then
-      if flashExpiring then
-        flashFrequencySlider:Show()
-        flashBrightnessSlider:Show()
-      else
-        flashFrequencySlider:Hide()
-        flashBrightnessSlider:Hide()
-      end
-    end
-
     -- AutoSave for serialization
     DM:AutoSave()
   end)
 
-  -- Create Flash Frequency Slider
-  local flashFrequencySlider = CreateFrame("Slider", "DotMasterFlashFrequencySlider", rightColumn,
-    "OptionsSliderTemplate")
-  flashFrequencySlider:SetWidth(180)
-  flashFrequencySlider:SetHeight(16)
-  flashFrequencySlider:SetPoint("TOPLEFT", flashingCheckbox, "BOTTOMLEFT", 20, -10)
-  flashFrequencySlider:SetOrientation("HORIZONTAL")
-  flashFrequencySlider:SetMinMaxValues(0.1, 1.0)
-  flashFrequencySlider:SetValueStep(0.1)
-  flashFrequencySlider:SetObeyStepOnDrag(true)
-  flashFrequencySlider:SetValue(settings.flashFrequency or 0.5)
-
-  -- Set slider text
-  _G[flashFrequencySlider:GetName() .. "Text"]:SetText("Flash Speed")
-  _G[flashFrequencySlider:GetName() .. "Low"]:SetText("Fast")
-  _G[flashFrequencySlider:GetName() .. "High"]:SetText("Slow")
-
-  -- Create value text
-  local flashFrequencyValue = flashFrequencySlider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  flashFrequencyValue:SetPoint("TOP", flashFrequencySlider, "BOTTOM", 0, 0)
-  flashFrequencyValue:SetText(string.format("%.1f s", settings.flashFrequency or 0.5))
-
-  -- Handle slider changes
-  flashFrequencySlider:SetScript("OnValueChanged", function(self, value)
-    -- Round to nearest 0.1
-    value = math.floor(value * 10 + 0.5) / 10
-
-    -- Update value text
-    flashFrequencyValue:SetText(string.format("%.1f s", value))
-
-    -- Update settings
-    settings.flashFrequency = value
-
-    -- Update database
-    if DotMasterDB and DotMasterDB.settings then
-      DotMasterDB.settings.flashFrequency = value
-    end
-
-    -- Save settings
-    DM:AutoSave()
-  end)
-
-  -- Create Flash Brightness Slider
-  local flashBrightnessSlider = CreateFrame("Slider", "DotMasterFlashBrightnessSlider", rightColumn,
-    "OptionsSliderTemplate")
-  flashBrightnessSlider:SetWidth(180)
-  flashBrightnessSlider:SetHeight(16)
-  flashBrightnessSlider:SetPoint("TOPLEFT", flashFrequencySlider, "BOTTOMLEFT", 0, -20)
-  flashBrightnessSlider:SetOrientation("HORIZONTAL")
-  flashBrightnessSlider:SetMinMaxValues(0.2, 1.0)
-  flashBrightnessSlider:SetValueStep(0.1)
-  flashBrightnessSlider:SetObeyStepOnDrag(true)
-  flashBrightnessSlider:SetValue(settings.flashBrightness or 0.3)
-
-  -- Set slider text
-  _G[flashBrightnessSlider:GetName() .. "Text"]:SetText("Flash Brightness")
-  _G[flashBrightnessSlider:GetName() .. "Low"]:SetText("Subtle")
-  _G[flashBrightnessSlider:GetName() .. "High"]:SetText("Bright")
-
-  -- Create value text
-  local flashBrightnessValue = flashBrightnessSlider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  flashBrightnessValue:SetPoint("TOP", flashBrightnessSlider, "BOTTOM", 0, 0)
-  flashBrightnessValue:SetText(string.format("%d%%", math.floor((settings.flashBrightness or 0.3) * 100)))
-
-  -- Handle slider changes
-  flashBrightnessSlider:SetScript("OnValueChanged", function(self, value)
-    -- Round to nearest 0.1
-    value = math.floor(value * 10 + 0.5) / 10
-
-    -- Update value text
-    flashBrightnessValue:SetText(string.format("%d%%", math.floor(value * 100)))
-
-    -- Update settings
-    settings.flashBrightness = value
-
-    -- Update database
-    if DotMasterDB and DotMasterDB.settings then
-      DotMasterDB.settings.flashBrightness = value
-    end
-
-    -- Save settings
-    DM:AutoSave()
-  end)
-
-  -- Initially hide sliders if flash expiring is disabled
-  if not settings.flashExpiring then
-    flashFrequencySlider:Hide()
-    flashBrightnessSlider:Hide()
-  end
-
   -- Add Border Logic header/separator
   local borderHeaderContainer = CreateFrame("Frame", nil, rightColumn)
   borderHeaderContainer:SetSize(240, 24)
-  borderHeaderContainer:SetPoint("TOPLEFT", flashBrightnessSlider, "BOTTOMLEFT", -20, -8)
+  borderHeaderContainer:SetPoint("TOPLEFT", flashingCheckbox, "BOTTOMLEFT", 0, -40)
 
   -- Create border header text
   local borderHeaderText = borderHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
