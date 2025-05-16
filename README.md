@@ -1,8 +1,8 @@
 # DotMaster
 
-## Version 2.1.6
+## Version 2.1.7
 
-DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking and management through seamless integration with Plater Nameplates. It offers a fully customizable system for visualizing your damage-over-time and healing-over-time effects directly on enemy nameplates.
+DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking through seamless integration with Plater Nameplates. It provides a fully customizable visual system for tracking your damage-over-time and healing-over-time effects directly on enemy nameplates.
 
 ![DotMaster Main Interface](Media/dotmaster-main-icon.tga)
 
@@ -10,25 +10,25 @@ DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking a
 
 ### Core Functionality
 - **Advanced DoT Tracking**: Visually track all DoTs and HoTs on enemy nameplates with custom colors
-- **Specialized for All Classes**: Class and specialization-specific profiles for all WoW classes
-- **Combinations Tracking**: Create custom spell combinations with unique colors when multiple DoTs are active
+- **Class & Spec Awareness**: Automatically adapts to your current specialization with unique settings per spec
+- **Combinations Tracking**: Create custom spell combinations with unique colors when multiple specific DoTs are active
 - **Smart Border System**: Choose between full nameplate coloring or border-only mode for cleaner UI
-- **Expiry Warnings**: Configurable flashing borders when DoTs are about to expire
+- **Enhanced Expiry Warnings**: Configurable flashing with adjustable threshold, interval, and brightness
 
 ### Visual Customization
 - **Border Thickness Control**: Adjust nameplate border thickness to your preference
 - **Priority System**: Set display priority between multiple active DoTs
-- **M+ Profile Integration**: Preserves important M+ mob indicators when using Quazii/Jervaise Plater profiles
+- **M+ Profile Integration**: Preserves important Mythic+ mob indicators when using custom Plater profiles
 
 ### User Experience
-- **Find My DoTs**: Quickly locate all your active DoTs on targets in the current combat encounter
+- **Find My DoTs**: Quickly detect and add all your active DoTs on targets in combat
 - **Drag & Drop Priority**: Easily rearrange spells with drag-and-drop priority system
 - **Minimap Access**: Convenient minimap button with customizable position
-- **Import/Export**: Share your configurations between characters or with other players
+- **Per-Character Settings**: Maintain different configurations for different characters and specs
 
 ## Installation
 
-1. Download the latest version from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster) or [Wago](https://addons.wago.io/addons/dotmaster)
+1. Download the latest version from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster), [Wago](https://addons.wago.io/addons/dotmaster), or [GitHub](https://github.com/jervaise/DotMaster/releases)
 2. Extract to your World of Warcraft\_retail_\Interface\AddOns folder
 3. Ensure [Plater Nameplates](https://www.curseforge.com/wow/addons/plater-nameplates) is installed and enabled
 4. Restart WoW or reload your UI (/reload)
@@ -45,26 +45,38 @@ DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking a
 2. Open the "Tracked Spells" tab
 3. Click "Add New" and select your spell
 4. Choose a custom color for the spell
-5. Adjust priority if tracking multiple spells
+5. Adjust priority if tracking multiple spells (lower number = higher priority)
 
 ### Creating a Combination
 1. Open the "Combinations" tab
 2. Click "New Combination"
 3. Select multiple spells to include in the combination
 4. Choose a color to show when all selected spells are active on a target
+5. Set priority to determine which combination/DoT displays when multiple are active
 
 ## Advanced Configuration
 
+### Expiry Flash Options
+- **Expiry Flash**: Enable/disable the flashing effect when DoTs are about to expire
+- **Seconds**: Set how many seconds before expiration the flashing begins
+- **Interval**: Control how quickly the nameplate flashes (lower = faster flashing)
+- **Brightness**: Adjust the intensity of the flashing effect
+
 ### Border Options
-- **Extend Plater Colors to Borders**: Maintains Plater's M+ color coding for important/caster mobs while showing DoT status in borders
-- **Use Borders for DoT Tracking**: Shows DoT status in nameplate borders only, without changing health bar colors
-- **Border Thickness**: Customize border size from 1-5 pixels
+- **Extend Plater Colors to Borders**: Maintains Plater's color coding for important/caster mobs while showing DoT status
+- **Use Borders for DoT Tracking**: Shows DoT status in nameplate borders only, preserving health bar colors
+- **Border Thickness**: Customize border size from 1-5 pixels (requires UI reload)
+
+### Finding & Managing DoTs
+- Use the **Find My Dots** feature in the Database tab to automatically detect your DoTs
+- Set color-coding by importance (bright colors for high-priority DoTs, subtle colors for maintenance DoTs)
+- Create combinations for your core DoT sets to easily track targets with complete DoT coverage
 
 ### Compatibility
 DotMaster works with:
 - All retail WoW classes and specializations
-- Plater Nameplates (required)
-- WoW version 11.1.5 and 11.1.7
+- All versions of Plater Nameplates (required)
+- WoW versions 11.1.5 and 11.1.7
 
 ## Commands
 
@@ -73,11 +85,18 @@ DotMaster works with:
 - `/dm reset` - Reset to default settings
 - `/dm version` - Display current version
 
+## Troubleshooting
+
+- **Colors Not Showing**: Ensure DotMaster is enabled and Plater integration is installed
+- **Missing Spells**: Use the Database tab's "Find My Dots" feature to detect your spells
+- **UI Reload Prompt**: Some settings (like border thickness) require a UI reload to take effect
+- **After Plater Updates**: You may need to reinstall the DotMaster integration
+
 ## Support
 
 For issues, feature requests, or questions:
 - Report issues on [GitHub](https://github.com/jervaise/DotMaster/issues)
-- Join the community on [Discord](https://discord.gg/yourserver)
+- Download the latest version from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster)
 
 ## Credits
 

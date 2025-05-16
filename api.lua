@@ -445,6 +445,12 @@ function DM.API:GetSettings()
     if globalSettings.flashThresholdSeconds ~= nil then
       settings.flashThresholdSeconds = globalSettings.flashThresholdSeconds
     end
+    if globalSettings.flashFrequency ~= nil then
+      settings.flashFrequency = globalSettings.flashFrequency
+    end
+    if globalSettings.flashBrightness ~= nil then
+      settings.flashBrightness = globalSettings.flashBrightness
+    end
     if globalSettings.extendPlaterColors ~= nil then
       settings.extendPlaterColors = globalSettings.extendPlaterColors
     end
@@ -471,6 +477,8 @@ function DM.API:GetSettings()
     borderThickness = tonumber(globalSettings.borderThickness) or 2,
     flashExpiring = (globalSettings.flashExpiring ~= nil) and globalSettings.flashExpiring or false,
     flashThresholdSeconds = globalSettings.flashThresholdSeconds or 3.0,
+    flashFrequency = globalSettings.flashFrequency or 0.5,
+    flashBrightness = globalSettings.flashBrightness or 0.3,
     extendPlaterColors = (globalSettings.extendPlaterColors ~= nil) and globalSettings.extendPlaterColors or false,
     minimapIcon = minimapSettings
   }
@@ -516,6 +524,14 @@ function DM.API:SaveSettings(settings)
       DotMasterDB.settings.flashThresholdSeconds = settings.flashThresholdSeconds
     end
 
+    if settings.flashFrequency ~= nil then
+      DotMasterDB.settings.flashFrequency = settings.flashFrequency
+    end
+
+    if settings.flashBrightness ~= nil then
+      DotMasterDB.settings.flashBrightness = settings.flashBrightness
+    end
+
     if settings.extendPlaterColors ~= nil then
       DotMasterDB.settings.extendPlaterColors = settings.extendPlaterColors
     end
@@ -534,6 +550,8 @@ function DM.API:SaveSettings(settings)
       settings.borderThickness ~= nil or
       settings.flashExpiring ~= nil or
       settings.flashThresholdSeconds ~= nil or
+      settings.flashFrequency ~= nil or
+      settings.flashBrightness ~= nil or
       settings.extendPlaterColors ~= nil
 
   if visualSettingChanged and DM.InstallPlaterMod then

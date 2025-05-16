@@ -1,5 +1,21 @@
 # DotMaster Changelog
 
+## [2.1.7] - 2024-07-30
+### Added
+- Enhanced user guide with more comprehensive information
+- Improved Expiry Flash settings with separate interval and brightness controls
+- Better CurseForge integration with automatic packaging support
+
+### Changed
+- Refined UI layout with better spacing and cleaner visual organization
+- Improved settings display and section spacing in the General tab
+- Updated documentation with more detailed usage instructions
+
+### Fixed
+- Fixed issue with flash settings not persisting after UI reload
+- Improved error handling and settings persistence
+- Fixed UI spacing inconsistencies
+
 ## [2.1.6] - 2024-07-29
 ### Changed
 - Updated CurseForge packaging configuration with proper changelog integration
@@ -97,10 +113,10 @@
 - Fixed a critical bug where clicking reorder arrows would cause all spells to disappear
 - Improved error handling and debug messages throughout
 
-## [2.0.1] - YYYY-MM-DD
+## [2.0.1] - 2023-11-25
 ### Fixed
-- Resolved an issue where the border color on nameplates would not correctly revert to Plater's default when "Use Borders for DoT Tracking" was enabled and a tracked DoT/combination expired. This involved ensuring DotMaster explicitly set the border to opaque black before Plater's refresh to clear any lingering color states.
-- Corrected a UI bug in the main settings panel where previously selected tabs would not visually unhighlight (return to their inactive color) when a new tab was clicked. This was fixed by properly targeting the tab's background texture for color changes.
+- Resolved an issue where the border color on nameplates would not correctly revert to Plater's default when "Use Borders for DoT Tracking" was enabled and a tracked DoT/combination expired
+- Corrected a UI bug in the main settings panel where previously selected tabs would not visually unhighlight when a new tab was clicked
 
 ## [2.0.0] - 2023-11-22
 ### Added

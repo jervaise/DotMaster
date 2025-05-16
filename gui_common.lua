@@ -339,7 +339,7 @@ function DM:CreateGUI()
     yOffset = yOffset - CreateSection("What is DotMaster?", yOffset)
     yOffset = yOffset -
         CreateText(
-          "DotMaster is an addon that colors enemy nameplates based on the damage-over-time (DoT) effects you apply to them. It works with any class and specialization, making it easier to track which targets have your DoTs applied and which ones need attention.",
+          "DotMaster is an advanced DoT tracking addon that enhances your enemy nameplates through Plater integration. It visually tracks your damage-over-time and healing-over-time effects with customizable colors, making it easier to manage your DoTs during combat for any class and specialization.",
           yOffset)
 
     -- Overview Section
@@ -347,7 +347,7 @@ function DM:CreateGUI()
     yOffset = yOffset - CreateSection("How DotMaster Works", yOffset)
     yOffset = yOffset -
         CreateText(
-          "DotMaster integrates with Plater Nameplates to provide dynamic visual tracking of DoTs through nameplate colors, borders, or both. When you apply a DoT spell to a target, its nameplate or border will change color based on your configuration.",
+          "DotMaster seamlessly integrates with Plater Nameplates to provide real-time visual tracking of your DoTs. When you apply a DoT to a target, its nameplate changes color based on your settings. You can choose to color the entire nameplate or just the border, with custom colors for each spell or combination of spells.",
           yOffset)
 
     -- Features Section
@@ -356,106 +356,119 @@ function DM:CreateGUI()
 
     -- Feature list with explanations
     yOffset = yOffset -
-        CreateFeature("DoT Tracking",
-          "Colors enemy nameplates based on the DoTs you've applied to them. Track individual DoTs or combinations for more complex rotations.",
+        CreateFeature("Advanced DoT Tracking",
+          "Track all DoTs/HoTs with custom colors on enemy nameplates. Perfect for multi-DoT classes like Warlocks, Shadow Priests, and Affliction specializations.",
           yOffset)
     yOffset = yOffset -
-        CreateFeature("Expiry Flash",
-          "Nameplates can flash when your DoTs are about to expire, helping you time re-applications perfectly.", yOffset)
-    yOffset = yOffset -
-        CreateFeature("Border Only Mode",
-          "Instead of coloring the entire nameplate, you can opt to only color the border, preserving other nameplate information.",
+        CreateFeature("Combinations Tracking",
+          "Create unique colors for when multiple specific DoTs are active on the same target, ideal for complex rotations and priority management.",
           yOffset)
     yOffset = yOffset -
-        CreateFeature("Extend Plater Colors",
-          "Apply Plater's custom NPC colors to nameplate borders for better visibility.",
+        CreateFeature("Border-Only Mode",
+          "Keep Plater's health bar colors intact while using borders to track DoTs, maintaining important information like target health percentage.",
           yOffset)
     yOffset = yOffset -
-        CreateFeature("Force Threat Color", "Prioritize threat coloring over DoT coloring for better tanking awareness.",
+        CreateFeature("Expiry Warning",
+          "Nameplates flash when DoTs are about to expire, with customizable threshold, interval, and brightness settings.",
           yOffset)
     yOffset = yOffset -
-        CreateFeature("Border Thickness", "Customize the nameplate border thickness to your preference.", yOffset)
+        CreateFeature("M+ Profile Integration",
+          "Extend Plater colors option preserves important M+ mob indicators (like casters, healers, etc.) while still showing DoT status.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Class & Spec Awareness",
+          "Automatically adapts to your current class and specialization with unique settings for each.",
+          yOffset)
 
     -- Settings Section
     yOffset = yOffset - 20 -- Extra space
-    yOffset = yOffset - CreateSection("Settings Explained", yOffset)
+    yOffset = yOffset - CreateSection("Getting Started", yOffset)
 
     yOffset = yOffset -
-        CreateFeature("General Settings",
-          "Control basic addon functionality, including enabling/disabling the addon, showing the minimap icon, and determining how threat and DoT colors interact.",
-          yOffset)
-    yOffset = yOffset -
-        CreateFeature("Tracked Spells",
-          "Add specific spells to track. Each spell can have its own custom color. You can add spells directly from your spellbook or by spell ID.",
-          yOffset)
-    yOffset = yOffset -
-        CreateFeature("Combinations",
-          "Create color rules for specific combinations of DoTs. When all DoTs in a combination are active on a target, it will use the combination color instead of individual DoT colors.",
-          yOffset)
-    yOffset = yOffset -
-        CreateFeature("Border Logic",
-          "Control whether DoT colors affect the entire nameplate or just the border. You can also customize the border thickness and extend Plater's NPC colors to borders.",
+        CreateText(
+          "1. |cFFFFD100Enable DotMaster|r - Open the addon with /dm and check 'Enable DotMaster' in the General tab\n" ..
+          "2. |cFFFFD100Install Plater Integration|r - Click the 'Install Plater Integration' button if prompted\n" ..
+          "3. |cFFFFD100Add DoTs to Track|r - Go to the Tracked Spells tab and add spells you want to monitor\n" ..
+          "4. |cFFFFD100Customize Colors|r - Assign unique colors to each spell for easy recognition\n" ..
+          "5. |cFFFFD100Create Combinations|r - Set up spell combinations in the Combinations tab for more advanced tracking\n" ..
+          "6. |cFFFFD100Adjust Visual Settings|r - Fine-tune border thickness, expiry flash settings, and other visual preferences",
           yOffset)
 
-    -- Usage Tips
+    -- Tab Explanations
     yOffset = yOffset - 20 -- Extra space
-    yOffset = yOffset - CreateSection("Usage Tips", yOffset)
+    yOffset = yOffset - CreateSection("Understanding the Tabs", yOffset)
 
     yOffset = yOffset -
-        CreateText("• Border-only mode is useful when you want to preserve health bar colors but still track DoTs",
+        CreateFeature("General Tab",
+          "Core settings including enabling/disabling the addon, Plater integration, minimap icon, border behavior, and expiry flash settings. This is where you control how DotMaster looks and behaves.",
           yOffset)
     yOffset = yOffset -
-        CreateText(
-          "• For multi-DoT specializations, create combinations for your core DoT sets to easily track targets with all DoTs applied",
+        CreateFeature("Tracked Spells Tab",
+          "Manage which spells DotMaster monitors. Add spells, set unique colors, and define display priorities. Higher priority spells take precedence when multiple DoTs are active.",
           yOffset)
     yOffset = yOffset -
-        CreateText(
-          "• Extend Plater Colors works only for NPCs with custom colors set in Plater's NPC Colors & Names tab",
+        CreateFeature("Combinations Tab",
+          "Create and manage spell combinations. Define spell groups that should display a unique color when all spells in the group are active on the same target, perfect for complex rotations.",
           yOffset)
     yOffset = yOffset -
-        CreateText("• When adjusting border thickness, you'll need to reload your UI for the changes to apply fully",
-          yOffset)
-    yOffset = yOffset -
-        CreateText("• If Plater integration is missing, use the 'Install Plater Integration' button in the window",
+        CreateFeature("Database Tab",
+          "View all spells DotMaster has detected from your character. Use the 'Find My Dots' feature to discover and track new spells as you cast them.",
           yOffset)
 
-    -- Additional Resources
+    -- Visual Settings Explained
     yOffset = yOffset - 20 -- Extra space
-    yOffset = yOffset - CreateSection("Additional Resources", yOffset)
+    yOffset = yOffset - CreateSection("Visual Options Explained", yOffset)
+
     yOffset = yOffset -
         CreateText(
-          "For additional tips, configurations, and Plater profiles optimized for use with DotMaster, check the recommended Plater profile accessible through the 'Get Jervaise Plater Profile' button in the General tab.",
+          "|cFFFFD100Border Logic:|r\n" ..
+          "• |cFFADD8E6Extend Plater Colors to Borders:|r Preserves Plater's M+ color coding for important mobs in borders\n" ..
+          "• |cFFADD8E6Use Borders for DoT Tracking:|r Only changes border color instead of the entire health bar\n" ..
+          "• |cFFADD8E6Border Thickness:|r Adjusts the thickness of nameplate borders (requires UI reload)\n\n" ..
+          "|cFFFFD100Expiry Warning:|r\n" ..
+          "• |cFFADD8E6Expiry Flash:|r Enables flashing when DoTs are about to expire\n" ..
+          "• |cFFADD8E6Seconds:|r How many seconds before expiration the flashing begins\n" ..
+          "• |cFFADD8E6Interval:|r Controls how quickly the nameplate flashes\n" ..
+          "• |cFFADD8E6Brightness:|r Adjusts the intensity of the flashing effect",
           yOffset)
 
-    -- GUI Tabs Overview
+    -- Pro Tips
     yOffset = yOffset - 20 -- Extra space
-    yOffset = yOffset - CreateSection("GUI Tabs Overview", yOffset)
+    yOffset = yOffset - CreateSection("Pro Tips", yOffset)
 
     yOffset = yOffset -
         CreateText(
-          "|cFFFFD100Key Features:|r\n" ..
-          "- Automatic DoT Detection: Finds your DoTs as you play.\n" ..
-          "- Customizable Tracking: Choose which spells to track, their colors, and priorities.\n" ..
-          "- Plater Integration: Seamlessly colors Plater nameplates based on your DoTs.\n" ..
-          "- Spell Combinations: Group multiple DoTs into a single, prioritized visual.\n" ..
-          "- Class and Spec Awareness: Works with any class and specialization.",
+          "• |cFFFFD100Color Strategy:|r Use bright colors for high-priority DoTs and softer colors for maintenance DoTs\n" ..
+          "• |cFFFFD100Border-Only Mode:|r Ideal for tanks and M+ where health percentages are critical information\n" ..
+          "• |cFFFFD100Combination Priority:|r Set higher priority for your core DoT combinations to ensure they're always visible\n" ..
+          "• |cFFFFD100Custom Per Spec:|r Configure different tracking settings for different specializations (e.g., Shadow vs Discipline)\n" ..
+          "• |cFFFFD100Find My Dots:|r Cast your spells once to auto-detect them if you're unsure of spell IDs",
           yOffset)
 
-    yOffset = yOffset -
-        CreateText(
-          "|cFFFFD100GUI Tabs Overview:|r\n" ..
-          "- |cFFADD8E6General Tab:|r Configure core DotMaster settings, Plater integration, minimap icon, and appearance options like border logic.\n" ..
-          "- |cFFADD8E6Tracked Spells Tab:|r Manage individual spells. Enable/disable tracking, set custom colors, and assign priorities for display.\n" ..
-          "- |cFFADD8E6Combinations Tab:|r Create and manage spell combinations. Define sets of spells that should be treated as a single, powerful effect with its own color and priority.\n" ..
-          "- |cFFADD8E6Database Tab:|r View all spells DotMaster has detected. Use the \"Find My Dots\" feature to discover new spells cast by your character.",
-          yOffset)
+    -- Troubleshooting
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Troubleshooting", yOffset)
 
     yOffset = yOffset -
         CreateText(
-          "|cFFFFD100Getting Started:|r\n" ..
-          "1. Open DotMaster settings with /dm.\n" ..
-          "2. Configure your preferences and settings.\n" ..
-          "3. Enjoy seamless integration with Plater Nameplates!",
+          "• |cFFFFD100Colors Not Showing:|r Ensure DotMaster is enabled and Plater integration is installed\n" ..
+          "• |cFFFFD100Missing Spells:|r Use the Database tab's 'Find My Dots' feature to detect your spells\n" ..
+          "• |cFFFFD100UI Reload Prompt:|r Some settings (like border thickness) require a UI reload to take effect\n" ..
+          "• |cFFFFD100Plater Updates:|r If you update Plater, you may need to reinstall the DotMaster integration\n" ..
+          "• |cFFFFD100Reset Option:|r Use /dm reset if you need to start fresh with default settings",
+          yOffset)
+
+    -- Footer
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Commands & Resources", yOffset)
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100Slash Commands:|r\n" ..
+          "• |cFFADD8E6/dm|r or |cFFADD8E6/dotmaster|r - Toggle the main interface\n" ..
+          "• |cFFADD8E6/dm minimap|r - Toggle minimap icon\n" ..
+          "• |cFFADD8E6/dm reset|r - Reset to default settings\n" ..
+          "• |cFFADD8E6/dm version|r - Display current version\n\n" ..
+          "For additional support and the latest updates, visit the addon page on CurseForge, Wago, or GitHub.",
           yOffset)
 
     return helpFrame
