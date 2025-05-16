@@ -230,9 +230,9 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
   elseif event == "PLAYER_ENTERING_WORLD" then
     DM.initState = "player_entering_world"
 
-    -- Display welcome message
+    -- No longer display welcome message
     C_Timer.After(2.0, function()
-      DM:DisplayWelcomeMessage()
+      -- DM:DisplayWelcomeMessage() -- Removed to prevent chat spam
       DM:CheckPlaterInstallation()
     end)
 
@@ -344,7 +344,8 @@ SlashCmdList["DOTMASTER"] = function(msg)
   end
 end
 
--- Function to display welcome message
+-- Function to display welcome message - removed to prevent chat spam
+--[[
 function DM:DisplayWelcomeMessage()
   print("|cFFCC00FF==== DotMaster ====|r")
   print("|cFFCC00FFWelcome to DotMaster!|r")
@@ -355,6 +356,7 @@ function DM:DisplayWelcomeMessage()
   print("|cFF88FFFF/dm minimap|r - Toggle minimap icon visibility")
   print("|cFFCC00FF===================|r")
 end
+]] --
 
 -- Check for Plater installation
 function DM:CheckPlaterInstallation()

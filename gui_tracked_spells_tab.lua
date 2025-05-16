@@ -996,15 +996,39 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
         end
       end
     end
+
+    -- Store the original colors for cancel function
+    local originalR, originalG, originalB = r, g, b
+
     local function cancelFunc()
-      local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues); texture:SetColorTexture(prevR, prevG, prevB, 1)
+      -- Safer approach to restore original color
+      if texture and texture.SetColorTexture then
+        texture:SetColorTexture(originalR, originalG, originalB, 1)
+        -- Ensure local variables are also restored
+        r, g, b = originalR, originalG, originalB
+      end
     end
+
     if ColorPickerFrame.SetupColorPickerAndShow then
-      local info = { swatchFunc = colorFunc, cancelFunc = cancelFunc, r = r, g = g, b = b, opacity = 1, hasOpacity = false }; ColorPickerFrame
-          :SetupColorPickerAndShow(info)
+      local info = {
+        swatchFunc = colorFunc,
+        cancelFunc = cancelFunc,
+        r = r,
+        g = g,
+        b = b,
+        opacity = 1,
+        hasOpacity = false
+      }
+      ColorPickerFrame:SetupColorPickerAndShow(info)
     else
-      ColorPickerFrame.func = colorFunc; ColorPickerFrame.cancelFunc = cancelFunc; ColorPickerFrame.opacityFunc = nil; ColorPickerFrame.hasOpacity = false; ColorPickerFrame.previousValues = {
-        r, g, b }
+      ColorPickerFrame.func = colorFunc
+      ColorPickerFrame.cancelFunc = cancelFunc
+      ColorPickerFrame.opacityFunc = nil
+      ColorPickerFrame.hasOpacity = false
+
+      -- Store original values properly
+      ColorPickerFrame.previousValues = { originalR, originalG, originalB }
+
       if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
         ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
       end

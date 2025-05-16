@@ -637,7 +637,7 @@ function DM:CreateGeneralTab(parent)
   end)
 
   -- Border thickness control
-  if settings.borderThickness == nil then settings.borderThickness = 2 end
+  if settings.borderThickness == nil then settings.borderThickness = 2.0 end
   local thicknessContainer = CreateFrame("Frame", nil, rightColumn)
   thicknessContainer:SetSize(240, 26)
   thicknessContainer:SetPoint("TOPLEFT", borderOnlyCheckbox, "BOTTOMLEFT", 0, -3)
@@ -650,14 +650,19 @@ function DM:CreateGeneralTab(parent)
 
   -- Value container
   local thicknessValueContainer = CreateFrame("Frame", nil, thicknessContainer)
-  thicknessValueContainer:SetSize(30, 26)
+  thicknessValueContainer:SetSize(40, 26) -- Increased width for decimal display
   thicknessValueContainer:SetPoint("LEFT", thicknessLabel, "RIGHT", 5, 0)
+
+  -- Format thickness value with one decimal place
+  local function formatThickness(value)
+    return string.format("%.1f px", value)
+  end
 
   -- Thickness value display
   local thicknessValue = thicknessValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   thicknessValue:SetPoint("RIGHT", thicknessValueContainer, "RIGHT", 0, 0)
   thicknessValue:SetJustifyH("RIGHT")
-  thicknessValue:SetText(settings.borderThickness .. " px")
+  thicknessValue:SetText(formatThickness(settings.borderThickness))
 
   -- Decrease button
   local decreaseButton = CreateFrame("Button", nil, thicknessContainer)
@@ -667,14 +672,14 @@ function DM:CreateGeneralTab(parent)
   decreaseButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
   decreaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   decreaseButton:SetScript("OnClick", function()
-    if settings.borderThickness > 1 then
-      -- Decrement the thickness value
+    if settings.borderThickness > 1.0 then
+      -- Decrement the thickness value by 0.1
       local oldValue = settings.borderThickness
-      settings.borderThickness = settings.borderThickness - 1
+      settings.borderThickness = math.max(1.0, math.floor((settings.borderThickness - 0.1) * 10 + 0.5) / 10)
       local newValue = settings.borderThickness
 
       -- Update the display
-      thicknessValue:SetText(settings.borderThickness .. " px")
+      thicknessValue:SetText(formatThickness(settings.borderThickness))
 
       -- Force-save the borderThickness to DotMasterDB immediately
       if DotMasterDB and DotMasterDB.settings then
@@ -697,14 +702,14 @@ function DM:CreateGeneralTab(parent)
   increaseButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
   increaseButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
   increaseButton:SetScript("OnClick", function()
-    if settings.borderThickness < 5 then
-      -- Increment the thickness value
+    if settings.borderThickness < 5.0 then
+      -- Increment the thickness value by 0.1
       local oldValue = settings.borderThickness
-      settings.borderThickness = settings.borderThickness + 1
+      settings.borderThickness = math.min(5.0, math.floor((settings.borderThickness + 0.1) * 10 + 0.5) / 10)
       local newValue = settings.borderThickness
 
       -- Update the display
-      thicknessValue:SetText(settings.borderThickness .. " px")
+      thicknessValue:SetText(formatThickness(settings.borderThickness))
 
       -- Force-save the borderThickness to DotMasterDB immediately
       if DotMasterDB and DotMasterDB.settings then
