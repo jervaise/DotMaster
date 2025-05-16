@@ -506,45 +506,38 @@ function DM:CreateGUI()
     print("DotMaster: Current border thickness: " .. (settings.borderThickness or "nil"))
     print("DotMaster: Current border only: " .. (settings.borderOnly and "true" or "false"))
 
-    -- Get saved settings from DotMasterDB for comparison
-    local savedBorderThickness = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness
-    local savedBorderOnly = DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderOnly
-    print("DotMaster: Saved border thickness: " .. (savedBorderThickness or "nil"))
-    print("DotMaster: Saved border only: " .. (savedBorderOnly and "true" or "false"))
+    -- Get session start settings for comparison
+    print("DotMaster: Session start border thickness: " .. (DM.sessionStartSettings.borderThickness or "nil"))
+    print("DotMaster: Session start border only: " .. (DM.sessionStartSettings.borderOnly and "true" or "false"))
 
-    -- Check for changes by direct comparison
+    -- Check for changes by direct comparison with SESSION start values
     local settingsChanged = false
     local changedSettings = {}
 
-    -- Compare border thickness (convert to numbers for proper comparison)
-    if tonumber(settings.borderThickness) ~= tonumber(savedBorderThickness) then
+    -- Compare border thickness with session start value (convert to numbers for proper comparison)
+    if tonumber(settings.borderThickness) ~= tonumber(DM.sessionStartSettings.borderThickness) then
       settingsChanged = true
-      print("DotMaster: Border thickness changed!")
+      print("DotMaster: Border thickness changed since session start!")
       table.insert(changedSettings,
-        "Border Thickness: " .. (savedBorderThickness or "default") .. " → " .. settings.borderThickness)
-
-      -- Update the saved value
-      if DotMasterDB and DotMasterDB.settings then
-        print("DotMaster: Updating saved border thickness to: " .. settings.borderThickness)
-        DotMasterDB.settings.borderThickness = settings.borderThickness
-      end
+        "Border Thickness: " ..
+        (DM.sessionStartSettings.borderThickness or "default") .. " → " .. settings.borderThickness)
     end
 
-    -- Compare border only mode (convert to boolean for proper comparison)
+    -- Compare border only mode with session start value (convert to boolean for proper comparison)
     local currentBorderOnly = settings.borderOnly and true or false
-    local previousBorderOnly = savedBorderOnly and true or false
-    if currentBorderOnly ~= previousBorderOnly then
+    local sessionStartBorderOnly = DM.sessionStartSettings.borderOnly and true or false
+    if currentBorderOnly ~= sessionStartBorderOnly then
       settingsChanged = true
-      print("DotMaster: Border only mode changed!")
-      local oldValue = previousBorderOnly and "On" or "Off"
+      print("DotMaster: Border only mode changed since session start!")
+      local oldValue = sessionStartBorderOnly and "On" or "Off"
       local newValue = currentBorderOnly and "On" or "Off"
       table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
+    end
 
-      -- Update the saved value
-      if DotMasterDB and DotMasterDB.settings then
-        print("DotMaster: Updating saved border only to: " .. tostring(currentBorderOnly))
-        DotMasterDB.settings.borderOnly = currentBorderOnly
-      end
+    -- Update saved settings in DB
+    if DotMasterDB and DotMasterDB.settings then
+      DotMasterDB.settings.borderThickness = settings.borderThickness
+      DotMasterDB.settings.borderOnly = settings.borderOnly
     end
 
     -- Force push to DotMaster Integration with current settings
@@ -560,7 +553,7 @@ function DM:CreateGUI()
     if settingsChanged then
       print("DotMaster: Settings changed, showing reload UI prompt!")
 
-      -- Define dialog directly here (no need for separate popup hiding)
+      -- Define dialog directly here
       StaticPopupDialogs["DOTMASTER_RELOAD_NEEDED"] = {
         text = "The following settings require a UI reload to take full effect:\n\n• " ..
             table.concat(changedSettings, "\n• ") ..
@@ -569,10 +562,16 @@ function DM:CreateGUI()
         button2 = "Later",
         OnAccept = function()
           print("DotMaster: Reloading UI...")
+          -- Update session start values before reload
+          DM.sessionStartSettings.borderThickness = settings.borderThickness
+          DM.sessionStartSettings.borderOnly = settings.borderOnly
           ReloadUI()
         end,
         OnCancel = function()
           print("DotMaster: Reload canceled")
+          -- Update session start values to avoid repeated prompts
+          DM.sessionStartSettings.borderThickness = settings.borderThickness
+          DM.sessionStartSettings.borderOnly = settings.borderOnly
           DM:PrintMessage("Remember to reload your UI to fully apply border settings changes.")
         end,
         timeout = 0,
@@ -585,7 +584,7 @@ function DM:CreateGUI()
       print("DotMaster: Showing dialog DOTMASTER_RELOAD_NEEDED")
       StaticPopup_Show("DOTMASTER_RELOAD_NEEDED")
     else
-      print("DotMaster: No border settings changes detected")
+      print("DotMaster: No border settings changes detected since session start")
     end
   end)
 
