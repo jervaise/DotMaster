@@ -510,19 +510,51 @@ function DM:CreateGUI()
     if DM.InstallPlaterMod then
       DM:InstallPlaterMod()
     end
-    if DM.UpdatePlaterStatusFooter then DM:UpdatePlaterStatusFooter() end -- Restore call
 
-    -- Make sure original settings are initialized (safety check)
-    if not DM.originalBorderThickness then
-      DM.originalBorderThickness = settings.borderThickness
+    if DM.UpdatePlaterStatusFooter then
+      DM:UpdatePlaterStatusFooter()
     end
 
-    -- Check if critical Plater settings have changed and show reload popup if needed
-    if DM.TrackCriticalSettingsChange and DM:TrackCriticalSettingsChange() then
-      -- Directly show the reload UI popup if settings have changed
-      if DM.ShowReloadUIPopupForCriticalChanges then
-        DM:ShowReloadUIPopupForCriticalChanges()
-      end
+    -- Simple direct check for border settings changes
+    local settingsChanged = false
+    local changedSettings = {}
+
+    -- Check if border thickness changed
+    if DM.GUI.originalBorderThickness ~= nil and tonumber(settings.borderThickness) ~= tonumber(DM.GUI.originalBorderThickness) then
+      settingsChanged = true
+      table.insert(changedSettings,
+        "Border Thickness: " .. DM.GUI.originalBorderThickness .. " → " .. settings.borderThickness)
+    end
+
+    -- Check if border only mode changed
+    if DM.GUI.originalBorderOnly ~= nil and (settings.borderOnly and true or false) ~= (DM.GUI.originalBorderOnly and true or false) then
+      settingsChanged = true
+      local oldValue = DM.GUI.originalBorderOnly and "On" or "Off"
+      local newValue = settings.borderOnly and "On" or "Off"
+      table.insert(changedSettings, "Border Only Mode: " .. oldValue .. " → " .. newValue)
+    end
+
+    -- Show reload UI prompt if settings changed
+    if settingsChanged then
+      StaticPopupDialogs["DOTMASTER_BORDER_RELOAD_CONFIRM"] = {
+        text = "The following settings require a UI reload to take full effect:\n\n• " ..
+            table.concat(changedSettings, "\n• ") .. "\n\nDo you want to reload now?",
+        button1 = "Reload Now",
+        button2 = "Later",
+        OnAccept = function()
+          ReloadUI()
+        end,
+        OnCancel = function()
+          DM:PrintMessage("Remember to reload your UI to fully apply border settings changes.")
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+        showAlert = true,
+      }
+
+      StaticPopup_Show("DOTMASTER_BORDER_RELOAD_CONFIRM")
     end
   end)
 
@@ -835,6 +867,12 @@ function DM:CreateGUI()
   frame:SetScript("OnShow", function(self)
     -- Original OnShow logic if any (e.g., from LibAdvancedOptionsPanel-1.0)
     if self.OnShow_Original then self:OnShow_Original() end
+
+    -- Capture original border settings when window is opened for comparison when window is closed
+    local settings = DM.API:GetSettings()
+    DM.GUI.originalBorderThickness = settings and settings.borderThickness or nil
+    DM.GUI.originalBorderOnly = settings and settings.borderOnly or nil
+
     DM.GUI:UpdatePlaterOverlayStatus()
   end)
   -- DM.GUI:UpdatePlaterOverlayStatus() -- Initial check when GUI is created (if frame is already shown, OnShow will handle)
