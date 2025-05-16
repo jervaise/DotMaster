@@ -430,20 +430,16 @@ function DM:CreateGeneralTab(parent)
       DotMasterDB.settings.flashExpiring = flashExpiring
     end
 
+    -- Show/hide flash customization sliders
+    if flashFrequencySlider and flashBrightnessSlider then
+      -- Always show sliders regardless of flashExpiring state
+      flashFrequencySlider:Show()
+      flashBrightnessSlider:Show()
+    end
+
     -- Always show seconds container
     if secondsContainer then
       secondsContainer:Show()
-    end
-
-    -- Show/hide flash customization sliders
-    if flashFrequencySlider and flashBrightnessSlider then
-      if flashExpiring then
-        flashFrequencySlider:Show()
-        flashBrightnessSlider:Show()
-      else
-        flashFrequencySlider:Hide()
-        flashBrightnessSlider:Hide()
-      end
     end
 
     -- AutoSave for serialization
@@ -534,11 +530,11 @@ function DM:CreateGeneralTab(parent)
     DM:AutoSave()
   end)
 
-  -- Initially hide sliders if flash expiring is disabled
-  if not settings.flashExpiring then
-    flashFrequencySlider:Hide()
-    flashBrightnessSlider:Hide()
-  end
+  -- Do not initially hide sliders (always show them)
+  -- if not settings.flashExpiring then
+  --   flashFrequencySlider:Hide()
+  --   flashBrightnessSlider:Hide()
+  -- end
 
   -- Add Border Logic header/separator
   local borderHeaderContainer = CreateFrame("Frame", nil, rightColumn)

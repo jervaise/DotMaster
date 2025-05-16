@@ -1,5 +1,18 @@
 # DotMaster Changelog
 
+## [2.1.8] - 2024-07-31
+### Added
+- Always visible interval and brightness sliders for better configuration experience
+- Improved UI for expiry flash settings for more intuitive control
+
+### Changed
+- Enhanced UI with persistent sliders regardless of feature toggle state
+- Improved usability by allowing pre-configuration of settings before enabling features
+
+### Fixed
+- Fixed sliders not always appearing in the General tab
+- Refined GUI layout for better visual balance and spacing
+
 ## [2.1.7] - 2024-07-30
 ### Added
 - Enhanced user guide with more comprehensive information
