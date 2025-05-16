@@ -568,7 +568,10 @@ function DM:CreateGUI()
     if settingsChanged then
       print("DotMaster: Settings changed, showing reload UI prompt!")
 
-      -- Define dialog directly here
+      -- First hide any existing dialog
+      StaticPopup_Hide("DOTMASTER_RELOAD_NEEDED")
+
+      -- Use the same approach that works with the test button
       StaticPopupDialogs["DOTMASTER_RELOAD_NEEDED"] = {
         text = "The following settings require a UI reload to take full effect:\n\n• " ..
             table.concat(changedSettings, "\n• ") ..
@@ -597,7 +600,12 @@ function DM:CreateGUI()
       }
 
       print("DotMaster: Showing dialog DOTMASTER_RELOAD_NEEDED")
-      StaticPopup_Show("DOTMASTER_RELOAD_NEEDED")
+
+      -- Give a small delay before showing the dialog
+      C_Timer.After(0.1, function()
+        -- Force a specific dialog at a global level
+        _G["StaticPopup_Show"]("DOTMASTER_RELOAD_NEEDED")
+      end)
     else
       print("DotMaster: No border settings changes detected since session start")
     end
