@@ -487,17 +487,23 @@ function DM:CreateGUI()
     end
   end)
 
-  -- Also hook the escape key closing
+  -- Hook into frame hide to save settings
   frame:HookScript("OnHide", function()
-    -- Close all child windows
+    -- Close all child windows when the main window is closed
     DM.GUI:CloseAllChildWindows()
 
-    -- Get current settings from both DotMasterDB and API
+    -- Update settings if needed
+    if DM.API:GetSaveNeeded() then
+      -- Apply settings on close
+      DM:AutoSave()
+    end
+
+    -- Force reload of DotMasterDB settings just to double-check
     local settings = DM.API:GetSettings()
 
-    -- Force refresh settings from DotMasterDB to ensure we have the latest values
-    if DotMasterDB and DotMasterDB.settings and DotMasterDB.settings.borderThickness then
-      settings.borderThickness = DotMasterDB.settings.borderThickness
+    -- Store border thickness back in DotMasterDB
+    if DotMasterDB and DotMasterDB.settings then
+      DotMasterDB.settings.borderThickness = settings.borderThickness
     end
 
     -- Force push to DotMaster Integration with current settings when window is closed by any means
@@ -511,9 +517,12 @@ function DM:CreateGUI()
       DM.originalBorderThickness = settings.borderThickness
     end
 
-    -- Use the standard function with improved checks to show popup if needed
-    if DM.ShowReloadUIPopupForCriticalChanges then -- Changed function name
-      DM:ShowReloadUIPopupForCriticalChanges()
+    -- Check if critical Plater settings have changed and show reload popup if needed
+    if DM.TrackCriticalSettingsChange and DM:TrackCriticalSettingsChange() then
+      -- Directly show the reload UI popup if settings have changed
+      if DM.ShowReloadUIPopupForCriticalChanges then
+        DM:ShowReloadUIPopupForCriticalChanges()
+      end
     end
   end)
 
