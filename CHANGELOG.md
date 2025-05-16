@@ -1,5 +1,11 @@
 # DotMaster Changelog
 
+## [2.1.6] - 2024-07-29
+### Changed
+- Updated CurseForge packaging configuration with proper changelog integration
+- Added auto-packaging support through GitHub integration
+- Improved distribution workflow with better version control
+
 ## [2.1.5] - 2024-07-28
 ### Fixed
 - Fixed flashing issues in Plater integration by optimizing color handling to prevent flickering
