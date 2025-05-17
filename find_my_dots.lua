@@ -85,13 +85,12 @@ function DM:StopFindMyDots(automatic, finished)
       DM:DebugMsg("Dot recording mode canceled. No dots detected.")
     end
     -- Show main GUI and select Database tab if no dots found or cancelled early
-    if DM.GUI and DM.GUI.frame then
-      DM.GUI.frame:Show()
-      if DM.GUI.SelectTab then
-        -- Ensure frame.numTabs is properly set before selecting tab
-        if not DM.GUI.frame.numTabs and DM.GUI.tabs then
-          DM.GUI.frame.numTabs = #DM.GUI.tabs
-        end
+    if DM.ToggleGUI then
+      DM:ToggleGUI()
+      if DM.GUI and DM.GUI.SelectTab then
+        -- Set activeTabID to Database tab
+        DM.GUI.activeTabID = 4
+        -- Select the tab
         DM.GUI:SelectTab(4) -- Database tab is ID 4
       end
     end
@@ -567,13 +566,12 @@ function DM:ShowDotsConfirmationDialog(dots)
     closeButton:SetScript("OnClick", function()
       self.dotsConfirmFrame:Hide()
       -- Show main GUI and select Database tab when closing confirmation
-      if DM.GUI and DM.GUI.frame then
-        DM.GUI.frame:Show()
-        if DM.GUI.SelectTab then
-          -- Ensure frame.numTabs is properly set before selecting tab
-          if not DM.GUI.frame.numTabs and DM.GUI.tabs then
-            DM.GUI.frame.numTabs = #DM.GUI.tabs
-          end
+      if DM.ToggleGUI then
+        DM:ToggleGUI()
+        if DM.GUI and DM.GUI.SelectTab then
+          -- Set activeTabID to Database tab
+          DM.GUI.activeTabID = 4
+          -- Select the tab
           DM.GUI:SelectTab(4) -- Database tab is ID 4
         end
       end
@@ -597,13 +595,12 @@ function DM:ShowDotsConfirmationDialog(dots)
       if not hasNewDots then
         DM:DebugMsg("No new dots to add - closing window")
         self.dotsConfirmFrame:Hide()
-        if DM.GUI and DM.GUI.frame then
-          DM.GUI.frame:Show()
-          if DM.GUI.SelectTab then
-            -- Ensure frame.numTabs is properly set before selecting tab
-            if not DM.GUI.frame.numTabs and DM.GUI.tabs then
-              DM.GUI.frame.numTabs = #DM.GUI.tabs
-            end
+        if DM.ToggleGUI then
+          DM:ToggleGUI()
+          if DM.GUI and DM.GUI.SelectTab then
+            -- Set activeTabID to Database tab
+            DM.GUI.activeTabID = 4
+            -- Select the tab
             DM.GUI:SelectTab(4) -- Database tab is ID 4
           end
         end
@@ -687,13 +684,12 @@ function DM:ShowDotsConfirmationDialog(dots)
       self.dotsConfirmFrame:Hide()
 
       -- Show main GUI and select Database tab
-      if DM.GUI and DM.GUI.frame then
-        DM.GUI.frame:Show()
-        if DM.GUI.SelectTab then
-          -- Ensure frame.numTabs is properly set before selecting tab
-          if not DM.GUI.frame.numTabs and DM.GUI.tabs then
-            DM.GUI.frame.numTabs = #DM.GUI.tabs
-          end
+      if DM.ToggleGUI then
+        DM:ToggleGUI()
+        if DM.GUI and DM.GUI.SelectTab then
+          -- Set activeTabID to Database tab
+          DM.GUI.activeTabID = 4
+          -- Select the tab
           DM.GUI:SelectTab(4) -- Database tab is ID 4
         end
       end
