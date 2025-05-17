@@ -664,104 +664,22 @@ function DM:CreateGUI()
     DM:PrintMessage("Settings saved and pushed to Plater")
   end)
 
-  -- Create tab system
-  local tabHeight = 30
-  local tabFrames = {}
-  local activeTab = 1
+  -- Create content frame directly (no tabs)
+  local contentFrame = CreateFrame("Frame", "DotMasterGeneralContent", frame)
+  contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -45)
+  contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 60)
 
-  -- Tab background
-  local tabBg = frame:CreateTexture(nil, "BACKGROUND")
-  tabBg:SetPoint("TOPLEFT", 8, -40)
-  tabBg:SetPoint("TOPRIGHT", -8, -40)
-  tabBg:SetHeight(tabHeight)
-  tabBg:SetColorTexture(0, 0, 0, 0.6) -- Match debug window transparency
-
-  for i = 1, 4 do
-    -- Tab content frames
-    tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
-    tabFrames[i]:SetPoint("TOPLEFT", 10, -(45 + tabHeight))
-    tabFrames[i]:SetPoint("BOTTOMRIGHT", -10, 60) -- Increased from 30 to 60 to make room for footer
-    tabFrames[i]:Hide()
-
-    -- Custom tab buttons
-    local tabButton = CreateFrame("Button", "DotMasterTab" .. i, frame)
-    tabButton:SetSize(100, tabHeight)
-
-    -- Tab styling
-    local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
-    normalTexture:SetAllPoints()
-    -- Set initial inactive color
-    normalTexture:SetColorTexture(0, 0, 0, 0.7)
-    tabButton.normalTexture = normalTexture -- Store reference to the texture
-
-    -- Tab text
-    local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    text:SetPoint("CENTER")
-    if i == 1 then
-      text:SetText("General")
-    elseif i == 2 then
-      text:SetText("Tracked Spells")
-    elseif i == 3 then
-      text:SetText("Combinations")
-    else
-      text:SetText("Database")
-    end
-    text:SetTextColor(1, 0.82, 0)
-
-    -- Store ID and script
-    tabButton.id = i
-    tabButton:SetScript("OnClick", function(self)
-      DM.GUI:SelectTab(self.id)
-    end)
-
-    -- Position tabs side by side with appropriate spacing
-    -- Adjust width to fit 4 tabs
-    local tabWidth = 115
-    tabButton:SetSize(tabWidth, tabHeight)
-    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * (tabWidth + 5), -40)
-  end
-
-  -- Set initial active tab
-  local firstTab = _G["DotMasterTab1"]
-  if firstTab and firstTab.normalTexture then
-    -- Set to active color
-    firstTab.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-  end
-  tabFrames[1]:Show()
-
-  -- Ensure functions exist before calling them
+  -- Create General tab content
   if DM.CreateGeneralTab then
-    DM:CreateGeneralTab(tabFrames[1])
+    DM:CreateGeneralTab(contentFrame)
   elseif DotMaster_Components.CreateGeneralTab then
-    DotMaster_Components.CreateGeneralTab(tabFrames[1])
+    DotMaster_Components.CreateGeneralTab(contentFrame)
   else
     print("Error: CreateGeneralTab function not found!")
   end
 
-  -- Create Tracked Spells tab content
-  if DotMaster_Components.CreateTrackedSpellsTab then
-    DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
-  else
-    print("Error: CreateTrackedSpellsTab function not found!")
-  end
-
-  -- Create Combinations tab content
-  if DotMaster_Components.CreateCombinationsTab then
-    DotMaster_Components.CreateCombinationsTab(tabFrames[3])
-  else
-    print("Error: CreateCombinationsTab function not found!")
-  end
-
-  -- Create Database tab content (now index 4 instead of 3)
-  if DotMaster_Components.CreateDatabaseTab then
-    DotMaster_Components.CreateDatabaseTab(tabFrames[4])
-  else
-    print("Error: CreateDatabaseTab function not found!")
-  end
-
   -- Initialize GUI frame
   DM.GUI.frame = frame
-  DM.GUI.tabs = {}
 
   -- Create Plater Status Overlay (Initially Hidden)
   local overlay = CreateFrame("Frame", "DotMasterPlaterOverlay", frame, "BackdropTemplate")
@@ -925,109 +843,19 @@ function DM:CreateGUI()
     DM.GUI:UpdatePlaterOverlayStatus()
   end)
 
-  -- Initialize Tabs
-  local tabInfo = {
-    -- ... existing code ...
-  }
-
   return frame
 end
 
 -- Function to create the tab group and tabs
 function DM.GUI:CreateTabs(parent, tabInfo)
-  local tabGroup = CreateFrame("Frame", nil, parent)
-  tabGroup:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -40)
-  tabGroup:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -10, 10)
-  DM.GUI.frame.tabGroup = tabGroup -- Store reference to tabGroup
-
-  local currentY = 0
-  local tabWidth = 110
-  local tabHeight = 28
-
-  -- Set the numTabs property on the parent frame - CRITICAL for PanelTemplates_UpdateTabs
-  parent.numTabs = #tabInfo
-
-  for i, info in ipairs(tabInfo) do
-    local tab = CreateFrame("Button", "DotMasterTab" .. i, tabGroup, "CharacterFrameTabButtonTemplate")
-    tab:SetSize(tabWidth, tabHeight)
-    tab:SetPoint("TOPLEFT", tabGroup, "TOPLEFT", (i - 1) * (tabWidth - 13), currentY)
-    tab:SetText(info.name)
-    tab.id = i
-
-    local content = CreateFrame("Frame", "DotMasterTabContent" .. i, tabGroup)
-    content:SetAllPoints(tabGroup)
-    content:Hide()
-    info.createFunc(content) -- Call the function to populate the tab content
-
-    tab.content = content
-    DM.GUI.tabs[i] = tab
-
-    tab:SetScript("OnClick", function(self)
-      DM.GUI:SelectTab(self.id)
-    end)
-  end
-
-  return tabGroup
+  -- This function is no longer used after removing tab system
+  -- Keeping as stub for compatibility
 end
 
 -- Function to select a tab
 function DM.GUI:SelectTab(tabID)
-  -- Safety check: ensure frame.numTabs is properly set
-  if not DM.GUI.frame.numTabs then
-    DM.GUI.frame.numTabs = #DM.GUI.tabs
-  end
-
-  -- Set the tab with WoW's built-in system
-  PanelTemplates_SetTab(DM.GUI.frame, tabID)
-
-  -- Handle the custom tab frames (DotMasterTabFrame1, etc.)
-  for i = 1, 4 do
-    local tabFrame = _G["DotMasterTabFrame" .. i]
-    if tabFrame then
-      if i == tabID then
-        tabFrame:Show()
-      else
-        tabFrame:Hide()
-      end
-    end
-  end
-
-  -- Handle the template-based tab content
-  for i, tab in ipairs(DM.GUI.tabs) do
-    if i == tabID then
-      if tab.content then tab.content:Show() end
-      if tab.OnShow then tab.OnShow() end
-    else
-      if tab.content then tab.content:Hide() end
-    end
-  end
-
-  -- Force a visual refresh of tab button appearance
-  for i = 1, 4 do
-    local tabButton = _G["DotMasterTab" .. i]
-    if tabButton and tabButton.normalTexture then
-      if i == tabID then
-        -- Active tab
-        tabButton.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-      else
-        -- Inactive tab
-        tabButton.normalTexture:SetColorTexture(0, 0, 0, 0.7)
-      end
-    end
-  end
-
-  -- Refresh appropriate tab content when clicked
-  if tabID == 2 then -- Tracked Spells tab
-    if DM.GUI.RefreshTrackedSpellTabList then
-      DM.GUI:RefreshTrackedSpellTabList("")
-    end
-  elseif tabID == 4 then -- Database tab
-    if DM.GUI.RefreshDatabaseTabList then
-      DM.GUI:RefreshDatabaseTabList("")
-    end
-  end
-
-  PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+  -- This function is no longer used after removing tab system
+  -- Keeping as stub for compatibility
 end
 
 -- Original CreateFooterMessage and UpdatePlaterStatusFooter can be removed later
