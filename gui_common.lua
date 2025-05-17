@@ -149,6 +149,35 @@ function DM:CreateGUI()
   -- Register with UI special frames to enable Escape key closing
   tinsert(UISpecialFrames, "DotMasterOptionsFrame")
 
+  -- Add direct ESC key handling as a backup
+  frame:SetScript("OnKeyDown", function(self, key)
+    if key == "ESCAPE" then
+      self:Hide()
+      return true -- Return true to stop ESC from propagating to the game menu
+    end
+    return false  -- Let other keys propagate normally
+  end)
+
+  -- Only propagate non-ESC keys
+  frame:SetPropagateKeyboardInput(true)
+  frame:HookScript("OnKeyDown", function(self, key)
+    if key == "ESCAPE" then
+      -- Explicitly stop the ESC key from propagating to the game menu
+      self:SetPropagateKeyboardInput(false)
+    else
+      -- Allow other keys to propagate normally
+      self:SetPropagateKeyboardInput(true)
+    end
+  end)
+
+  -- Make the frame closable with the B key (Blizzard standard)
+  frame:EnableKeyboard(true)
+  frame:SetScript("OnKeyUp", function(self, key)
+    if key == "ESCAPE" or key == "B" then
+      self:Hide()
+    end
+  end)
+
   -- Add a backdrop
   frame:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -664,22 +693,106 @@ function DM:CreateGUI()
     DM:PrintMessage("Settings saved and pushed to Plater")
   end)
 
-  -- Create content frame directly (no tabs)
-  local contentFrame = CreateFrame("Frame", "DotMasterGeneralContent", frame)
-  contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -45)
-  contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 60)
+  -- Create tab system
+  local tabHeight = 30
+  local tabFrames = {}
+  local tabButtons = {}
+  DM.GUI.tabFrames = tabFrames
+  DM.GUI.tabButtons = tabButtons
+  DM.GUI.activeTabID = 1 -- Track the active tab ID
 
-  -- Create General tab content
+  -- Tab background
+  local tabBg = frame:CreateTexture(nil, "BACKGROUND")
+  tabBg:SetPoint("TOPLEFT", 8, -40)
+  tabBg:SetPoint("TOPRIGHT", -8, -40)
+  tabBg:SetHeight(tabHeight)
+  tabBg:SetColorTexture(0, 0, 0, 0.6)
+
+  -- Tab names and order
+  local tabNames = {
+    "General",
+    "Tracked Spells",
+    "Combinations",
+    "Database"
+  }
+
+  -- Create each tab frame
+  for i = 1, #tabNames do
+    -- Tab content frame
+    tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
+    tabFrames[i]:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -(45 + tabHeight))
+    tabFrames[i]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 60)
+    tabFrames[i]:Hide()
+
+    -- Tab button
+    local tabButton = CreateFrame("Button", "DotMasterTab" .. i, frame)
+    tabButton:SetSize(110, tabHeight)
+    tabButtons[i] = tabButton -- Store direct reference to button
+
+    -- Tab styling
+    local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
+    normalTexture:SetAllPoints()
+    normalTexture:SetColorTexture(0, 0, 0, 0.7)
+    tabButton.normalTexture = normalTexture
+
+    -- Tab text
+    local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    text:SetPoint("CENTER")
+    text:SetText(tabNames[i])
+    text:SetTextColor(1, 0.82, 0)
+    tabButton.text = text -- Store direct reference to text
+
+    -- Store ID and script
+    tabButton.id = i
+    tabButton:SetScript("OnClick", function(self)
+      DM.GUI:SelectTab(self.id)
+    end)
+
+    -- Position tabs side by side
+    local tabWidth = 110
+    tabButton:SetSize(tabWidth, tabHeight)
+    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * (tabWidth + 5), -40)
+  end
+
+  -- Set initial active tab styling
+  if tabButtons[1] and tabButtons[1].normalTexture then
+    tabButtons[1].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  end
+  tabFrames[1]:Show()
+
+  -- Create tab content
   if DM.CreateGeneralTab then
-    DM:CreateGeneralTab(contentFrame)
+    DM:CreateGeneralTab(tabFrames[1])
   elseif DotMaster_Components.CreateGeneralTab then
-    DotMaster_Components.CreateGeneralTab(contentFrame)
+    DotMaster_Components.CreateGeneralTab(tabFrames[1])
   else
     print("Error: CreateGeneralTab function not found!")
   end
 
+  -- Create Tracked Spells tab content
+  if DotMaster_Components.CreateTrackedSpellsTab then
+    DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
+  else
+    print("Error: CreateTrackedSpellsTab function not found!")
+  end
+
+  -- Create Combinations tab content
+  if DotMaster_Components.CreateCombinationsTab then
+    DotMaster_Components.CreateCombinationsTab(tabFrames[3])
+  else
+    print("Error: CreateCombinationsTab function not found!")
+  end
+
+  -- Create Database tab content
+  if DotMaster_Components.CreateDatabaseTab then
+    DotMaster_Components.CreateDatabaseTab(tabFrames[4])
+  else
+    print("Error: CreateDatabaseTab function not found!")
+  end
+
   -- Initialize GUI frame
   DM.GUI.frame = frame
+  DM.GUI.tabs = {}
 
   -- Create Plater Status Overlay (Initially Hidden)
   local overlay = CreateFrame("Frame", "DotMasterPlaterOverlay", frame, "BackdropTemplate")
@@ -854,12 +967,144 @@ end
 
 -- Function to select a tab
 function DM.GUI:SelectTab(tabID)
-  -- This function is no longer used after removing tab system
-  -- Keeping as stub for compatibility
+  -- Safety checks
+  if not DM.GUI or not DM.GUI.tabFrames or not DM.GUI.tabButtons then
+    return false
+  end
+
+  -- Ensure tabID is valid
+  if not tabID or type(tabID) ~= "number" or tabID < 1 or tabID > #DM.GUI.tabFrames then
+    return false
+  end
+
+  -- Store the active tab ID
+  DM.GUI.activeTabID = tabID
+
+  -- Hide all tab frames and reset button appearance
+  for i = 1, #DM.GUI.tabFrames do
+    if DM.GUI.tabFrames[i] then
+      DM.GUI.tabFrames[i]:Hide()
+    end
+
+    if DM.GUI.tabButtons[i] and DM.GUI.tabButtons[i].normalTexture then
+      -- Set inactive color
+      DM.GUI.tabButtons[i].normalTexture:SetColorTexture(0, 0, 0, 0.7)
+    end
+  end
+
+  -- Show selected tab
+  if DM.GUI.tabFrames[tabID] then
+    DM.GUI.tabFrames[tabID]:Show()
+  else
+    print("Error: Tab content frame " .. tabID .. " not found")
+    return false
+  end
+
+  -- Set active tab appearance
+  if DM.GUI.tabButtons[tabID] and DM.GUI.tabButtons[tabID].normalTexture then
+    DM.GUI.tabButtons[tabID].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  end
+
+  -- Refresh appropriate tab content when clicked
+  if tabID == 2 then -- Tracked Spells tab
+    if DM.GUI.RefreshTrackedSpellTabList then
+      pcall(function() DM.GUI:RefreshTrackedSpellTabList("") end)
+    end
+  elseif tabID == 4 then -- Database tab
+    if DM.GUI.RefreshDatabaseTabList then
+      pcall(function() DM.GUI:RefreshDatabaseTabList("") end)
+    end
+  end
+
+  -- Play sound if available
+  if SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB then
+    pcall(function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB) end)
+  end
+
+  return true
 end
 
--- Original CreateFooterMessage and UpdatePlaterStatusFooter can be removed later
--- if the new overlay system fully replaces their functionality.
+-- Function to restore tab state after zone changes
+function DM.GUI:RestoreTabState()
+  -- Check if we have a stored active tab
+  if DM.GUI and DM.GUI.activeTabID then
+    -- Reselect the active tab
+    DM.GUI:SelectTab(DM.GUI.activeTabID)
+  end
+end
+
+-- Create and register event frame for zone changes and loading screens
+local loadingEventFrame = CreateFrame("Frame")
+loadingEventFrame.eventCount = 0
+loadingEventFrame:RegisterEvent("ZONE_CHANGED")
+loadingEventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+loadingEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+loadingEventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
+loadingEventFrame:RegisterEvent("LOADING_SCREEN_ENABLED")
+loadingEventFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+
+-- Keep a permanent reference to prevent garbage collection
+DM.loadingEventFrame = loadingEventFrame
+
+-- For debugging, keep track of which events have fired
+DM.loadingEventCounts = DM.loadingEventCounts or {}
+
+-- Function to forcibly close the GUI
+local function ForceCloseGUI(event)
+  -- Always close the GUI during loading screens, regardless of state
+  if DM.GUI and DM.GUI.frame then
+    if DM.GUI.frame:IsShown() then
+      DM.GUI.frame:Hide()
+      DM:PrintMessage("DotMaster window closed due to " .. event .. ". Reopen with /dm or the minimap icon.")
+    end
+  end
+end
+
+loadingEventFrame:SetScript("OnEvent", function(self, event, ...)
+  -- Update event counters for debugging
+  DM.loadingEventCounts[event] = (DM.loadingEventCounts[event] or 0) + 1
+  self.eventCount = self.eventCount + 1
+
+  -- Different handling based on event type
+  if event == "LOADING_SCREEN_ENABLED" then
+    -- Close immediately when loading screen starts
+    ForceCloseGUI(event)
+  elseif event == "PLAYER_ENTERING_WORLD" then
+    -- Use a longer delay for entering world to ensure everything is loaded
+    C_Timer.After(0.5, function() ForceCloseGUI(event) end)
+  else
+    -- For all other events, use a short delay
+    C_Timer.After(0.1, function() ForceCloseGUI(event) end)
+  end
+end)
+
+-- Function to toggle the main GUI visibility
+function DM:ToggleGUI()
+  -- If frame exists, toggle its visibility
+  if DM.GUI and DM.GUI.frame then
+    if DM.GUI.frame:IsShown() then
+      DM.GUI.frame:Hide()
+    else
+      -- Ensure we restore last active tab before showing
+      DM.GUI.frame:Show()
+
+      -- Select the active tab
+      if DM.GUI.activeTabID then
+        DM.GUI:SelectTab(DM.GUI.activeTabID)
+      end
+    end
+  else
+    -- Create GUI if it doesn't exist
+    DM.GUI.frame = DM:CreateGUI()
+    DM.GUI.frame:Show()
+  end
+end
+
+-- Function to handle minimap icon click
+function DM:MinimapIconClicked()
+  -- Always use the toggle function
+  DM:ToggleGUI()
+end
 
 function DM.GUI:ShowHelpPopup()
   if not DM.GUI.HelpPopupFrame then

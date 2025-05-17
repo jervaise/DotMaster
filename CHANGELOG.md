@@ -1,5 +1,18 @@
 # DotMaster Changelog
 
+## [2.1.10] - 2024-08-12
+### Fixed
+- Greatly improved ESC key handling - ESC now correctly closes the main window without opening the game menu
+- Fixed issue with tabs becoming uninteractive after zone changes 
+- Added automatic GUI closure during loading screens to prevent UI issues
+- Fixed minimap icon click behavior creating duplicate GUI windows
+- Added more robust key event handling and tab system stability
+
+### Added
+- Improved tab system with direct frame references for better reliability
+- Enhanced error handling throughout the GUI for better stability
+- Added support for closing the GUI with B key (Blizzard standard)
+
 ## [2.1.9] - 2024-08-01
 ### Fixed
 - Fixed color picker cancel functionality in the tracked spells tab
