@@ -1,12 +1,12 @@
-# DotMaster 2.1.9 Release
+# DotMaster 2.1.12 Release
 
 ## Overview
-DotMaster 2.1.9 brings important fixes to the color picker functionality in the tracked spells tab, improving stability and user experience when customizing DoT colors.
+DotMaster 2.1.12 fixes an important issue with the border-only mode functionality, ensuring that nameplate border colors properly reset when DoTs expire.
 
 ## What's New
-- **Fixed color picker cancel functionality** - Resolves Lua errors when clicking cancel in the color picker
-- **Improved error handling** - Better handling of color swatch updates prevents null reference errors
-- **Enhanced color picker** - More robust original value storage ensures colors revert properly when canceling
+- **Fixed border color reset issue** - Nameplate borders now correctly revert to Plater defaults when DoTs expire in border-only mode
+- **Improved Plater integration** - Enhanced border color handling for more consistent visual feedback
+- **No UI opening required** - Border colors properly reset without needing to open the Plater UI
 
 ## Compatibility
 - Compatible with World of Warcraft 11.1.5 and 11.1.7

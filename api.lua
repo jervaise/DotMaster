@@ -29,7 +29,7 @@ function DM.API:GetVersion()
   elseif GetAddOnMetadata then
     version = GetAddOnMetadata("DotMaster", "Version")
   else
-    version = "2.1.11" -- Hardcoded fallback version
+    version = "2.1.12" -- Hardcoded fallback version
   end
   return version or "Unknown"
 end

@@ -1,5 +1,11 @@
 # DotMaster Changelog
 
+## [2.1.12] - 2024-08-14
+### Fixed
+- Fixed an issue where nameplate border colors would not properly reset to Plater defaults when DoTs expire in border-only mode
+- Improved integration with Plater's border color system for more consistent behavior
+- Border colors now correctly revert without requiring opening the Plater UI
+
 ## [2.1.11] - 2024-08-13
 ### Fixed
 - Resolved issue where ESC key would close DotMaster window AND open the game menu; ESC now only closes the DM window if it's open, requiring a second press to open the game menu.

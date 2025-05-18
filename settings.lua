@@ -17,7 +17,7 @@ function DM:SaveSettings()
     version = GetAddOnMetadata("DotMaster", "Version")
   else
     -- Fallback hardcoded version (updated to match TOC file)
-    version = "2.1.11" -- Hardcoded fallback
+    version = "2.1.12" -- Hardcoded fallback
   end
   DotMasterDB.version = version or "Unknown"
 
