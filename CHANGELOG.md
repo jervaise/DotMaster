@@ -1,5 +1,15 @@
 # DotMaster Changelog
 
+## [2.1.11] - 2024-08-13
+### Fixed
+- Resolved issue where ESC key would close DotMaster window AND open the game menu; ESC now only closes the DM window if it's open, requiring a second press to open the game menu.
+- Changed GUI auto-close trigger from general zone changes to `LOADING_SCREEN_ENABLED` event, so it only closes during actual loading screens (e.g., entering instances, teleporting).
+- Addressed an `ADDON_ACTION_BLOCKED` error related to `SetPropagateKeyboardInput` by removing the problematic `HookScript`. The primary `SetPropagateKeyboardInput(true)` and `OnKeyDown` for ESCAPE should maintain desired behavior.
+
+### Removed
+- Removed the 'B' key functionality for closing the DotMaster window to simplify keybindings.
+- Removed a debug message: "DotMaster window closed due to ZONE_CHANGED. Reopen with /dm or the minimap icon."
+
 ## [2.1.10] - 2024-08-12
 ### Fixed
 - Greatly improved ESC key handling - ESC now correctly closes the main window without opening the game menu

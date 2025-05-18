@@ -152,7 +152,8 @@ function DM:CreateGUI()
   -- Add direct ESC key handling as a backup
   frame:SetScript("OnKeyDown", function(self, key)
     if key == "ESCAPE" then
-      self:Hide()
+      -- self:Hide() -- The frame is in UISpecialFrames, which will handle hiding it.
+      -- This handler's primary job is now to stop ESCAPE from propagating further.
       return true -- Return true to stop ESC from propagating to the game menu
     end
     return false  -- Let other keys propagate normally
@@ -160,22 +161,15 @@ function DM:CreateGUI()
 
   -- Only propagate non-ESC keys
   frame:SetPropagateKeyboardInput(true)
-  frame:HookScript("OnKeyDown", function(self, key)
-    if key == "ESCAPE" then
-      -- Explicitly stop the ESC key from propagating to the game menu
-      self:SetPropagateKeyboardInput(false)
-    else
-      -- Allow other keys to propagate normally
-      self:SetPropagateKeyboardInput(true)
-    end
-  end)
 
   -- Make the frame closable with the B key (Blizzard standard)
   frame:EnableKeyboard(true)
   frame:SetScript("OnKeyUp", function(self, key)
-    if key == "ESCAPE" or key == "B" then
-      self:Hide()
-    end
+    -- if key == "ESCAPE" then  -- Removed this block
+    --   self:Hide()
+    -- end
+    -- The 'B' key functionality was previously removed.
+    -- ESCAPE key press is now handled by OnKeyDown to also stop propagation.
   end)
 
   -- Add a backdrop
@@ -1036,12 +1030,13 @@ end
 -- Create and register event frame for zone changes and loading screens
 local loadingEventFrame = CreateFrame("Frame")
 loadingEventFrame.eventCount = 0
-loadingEventFrame:RegisterEvent("ZONE_CHANGED")
-loadingEventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-loadingEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-loadingEventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
+-- Only register for the event that signifies a loading screen has started
+-- loadingEventFrame:RegisterEvent("ZONE_CHANGED")
+-- loadingEventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+-- loadingEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+-- loadingEventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
 loadingEventFrame:RegisterEvent("LOADING_SCREEN_ENABLED")
-loadingEventFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+-- loadingEventFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
 
 -- Keep a permanent reference to prevent garbage collection
 DM.loadingEventFrame = loadingEventFrame
@@ -1055,7 +1050,6 @@ local function ForceCloseGUI(event)
   if DM.GUI and DM.GUI.frame then
     if DM.GUI.frame:IsShown() then
       DM.GUI.frame:Hide()
-      DM:PrintMessage("DotMaster window closed due to " .. event .. ". Reopen with /dm or the minimap icon.")
     end
   end
 end
@@ -1065,17 +1059,11 @@ loadingEventFrame:SetScript("OnEvent", function(self, event, ...)
   DM.loadingEventCounts[event] = (DM.loadingEventCounts[event] or 0) + 1
   self.eventCount = self.eventCount + 1
 
-  -- Different handling based on event type
+  -- Only act if the loading screen is enabled
   if event == "LOADING_SCREEN_ENABLED" then
-    -- Close immediately when loading screen starts
     ForceCloseGUI(event)
-  elseif event == "PLAYER_ENTERING_WORLD" then
-    -- Use a longer delay for entering world to ensure everything is loaded
-    C_Timer.After(0.5, function() ForceCloseGUI(event) end)
-  else
-    -- For all other events, use a short delay
-    C_Timer.After(0.1, function() ForceCloseGUI(event) end)
   end
+  -- No longer need to handle other events for closing the GUI
 end)
 
 -- Function to toggle the main GUI visibility
