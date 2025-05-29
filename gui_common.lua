@@ -628,7 +628,7 @@ function DM:CreateGUI()
 
   -- Author credit - positioned to center the two-line group vertically in the footer
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -6) -- Reduced offset for better centering
+  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -12) -- Moved lower from -6 to -12
   -- Read version from API first, then SavedVariables, fallback to defaults if not found
   local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
       (DotMasterDB and DotMasterDB.version) or
@@ -637,7 +637,7 @@ function DM:CreateGUI()
 
   -- Add a status message text in the footer, positioned above the author credit with 1.5 line spacing
   local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 6)         -- Reduced from 16 to 6 for better centering
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)         -- Moved lower from 6 to 0
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
   DM.GUI.statusMessage = statusMessage                                  -- Store reference
