@@ -695,13 +695,6 @@ function DM:CreateGUI()
   DM.GUI.tabButtons = tabButtons
   DM.GUI.activeTabID = 1 -- Track the active tab ID
 
-  -- Tab background
-  local tabBg = frame:CreateTexture(nil, "BACKGROUND")
-  tabBg:SetPoint("TOPLEFT", 8, -40)
-  tabBg:SetPoint("TOPRIGHT", -8, -40)
-  tabBg:SetHeight(tabHeight)
-  tabBg:SetColorTexture(0, 0, 0, 0.6)
-
   -- Tab names and order
   local tabNames = {
     "General",
@@ -743,9 +736,9 @@ function DM:CreateGUI()
     text:SetTextColor(1, 0.82, 0)
     tabButton.text = text -- Store direct reference to text
 
-    -- Create class-colored selection highlight at bottom (initially hidden)
+    -- Create class-colored selection highlight at bottom (reduced height to 1 pixel)
     local selectionHighlight = tabButton:CreateTexture(nil, "OVERLAY")
-    selectionHighlight:SetHeight(3)
+    selectionHighlight:SetHeight(1)
     selectionHighlight:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 2, 0)
     selectionHighlight:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", -2, 0)
     selectionHighlight:SetColorTexture(classColor.r, classColor.g, classColor.b, 1.0)
