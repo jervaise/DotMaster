@@ -29,7 +29,7 @@ function DM.API:GetVersion()
   elseif GetAddOnMetadata then
     version = GetAddOnMetadata("DotMaster", "Version")
   else
-    version = "2.1.12" -- Hardcoded fallback version
+    version = "2.2.0" -- Hardcoded fallback version
   end
   return version or "Unknown"
 end
@@ -656,24 +656,43 @@ end
 
 -- Add these functions to support color picker and spell selection
 
--- Show color picker (stub)
+-- Show color picker
 function DM:ShowColorPicker(r, g, b, callback)
-  -- Use the built-in color picker directly for now
-  local function colorFunc()
-    local r, g, b = ColorPickerFrame:GetColorRGB()
-    callback(r, g, b)
-  end
+  -- Use our enhanced color picker with favorites
+  if DotMaster_ColorPicker and DotMaster_ColorPicker.ShowEnhancedColorPicker then
+    DotMaster_ColorPicker.ShowEnhancedColorPicker(r, g, b, callback)
+  elseif _G["DotMaster_ShowEnhancedColorPicker"] then
+    _G["DotMaster_ShowEnhancedColorPicker"](r, g, b, callback)
+  else
+    -- Fallback to standard color picker if enhanced version not available
+    local info = {
+      r = r,
+      g = g,
+      b = b,
+      swatchFunc = function()
+        local newR, newG, newB = ColorPickerFrame:GetColorRGB()
+        if callback then
+          callback(newR, newG, newB)
+        end
+      end,
+      cancelFunc = function()
+        -- Restore original color if canceled
+        if callback then
+          callback(r, g, b)
+        end
+      end
+    }
 
-  local function cancelFunc()
-    local prevR, prevG, prevB = unpack(ColorPickerFrame.previousValues)
-    callback(prevR, prevG, prevB)
+    if ColorPickerFrame.SetupColorPickerAndShow then
+      ColorPickerFrame:SetupColorPickerAndShow(info)
+    else
+      -- Legacy method
+      ColorPickerFrame.func = info.swatchFunc
+      ColorPickerFrame.cancelFunc = info.cancelFunc
+      ColorPickerFrame:SetColorRGB(r, g, b)
+      ColorPickerFrame:Show()
+    end
   end
-
-  ColorPickerFrame.func = colorFunc
-  ColorPickerFrame.cancelFunc = cancelFunc
-  ColorPickerFrame.previousValues = { r, g, b }
-  ColorPickerFrame:SetColorRGB(r, g, b)
-  ColorPickerFrame:Show()
 end
 
 -- Show spell selection (stub)

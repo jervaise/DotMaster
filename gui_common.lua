@@ -8,12 +8,12 @@ DotMaster_Components = {}
 local function CreateTabInfoArea(parentFrame, titleText, explanationText)
   -- Create info area container
   local infoArea = CreateFrame("Frame", nil, parentFrame)
-  infoArea:SetSize(430, 85) -- Increased height from 75px to 85px to accommodate more spacing
-  infoArea:SetPoint("TOP", parentFrame, "TOP", 0, 0)
+  infoArea:SetSize(430, 70)                            -- Reduced height from 85px to 70px for better proportions
+  infoArea:SetPoint("TOP", parentFrame, "TOP", 0, -10) -- Changed from -15 to -10 to reduce space above
 
   -- Center container for text elements with equal top/bottom margins
   local textContainer = CreateFrame("Frame", nil, infoArea)
-  textContainer:SetSize(430, 55)                             -- Increased height from 45px to 55px
+  textContainer:SetSize(430, 50)                             -- Reduced height from 55px to 50px
   textContainer:SetPoint("CENTER", infoArea, "CENTER", 0, 0) -- Centered vertically
 
   -- Info Area Title
@@ -105,7 +105,13 @@ function DM:UpdatePlaterStatusFooter()
 end
 
 -- Create the main GUI
+-- Fixed: Prevent recreation of GUI frame on zone changes which was causing escape key to stop working
 function DM:CreateGUI()
+  -- Check if GUI frame already exists to prevent recreation on zone changes
+  if DM.GUI and DM.GUI.frame and DM.GUI.frame:GetName() then
+    return DM.GUI.frame
+  end
+
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
@@ -147,7 +153,17 @@ function DM:CreateGUI()
   frame:Hide()
 
   -- Register with UI special frames to enable Escape key closing
-  tinsert(UISpecialFrames, "DotMasterOptionsFrame")
+  -- Check if already registered to prevent duplicates
+  local alreadyRegistered = false
+  for _, frameName in ipairs(UISpecialFrames) do
+    if frameName == "DotMasterOptionsFrame" then
+      alreadyRegistered = true
+      break
+    end
+  end
+  if not alreadyRegistered then
+    tinsert(UISpecialFrames, "DotMasterOptionsFrame")
+  end
 
   -- Add direct ESC key handling as a backup
   frame:SetScript("OnKeyDown", function(self, key)
@@ -275,7 +291,17 @@ function DM:CreateGUI()
     helpFrame:Hide()
 
     -- Register with UI special frames to enable Escape key closing
-    tinsert(UISpecialFrames, "DotMasterHelpFrame")
+    -- Check if already registered to prevent duplicates
+    local helpAlreadyRegistered = false
+    for _, frameName in ipairs(UISpecialFrames) do
+      if frameName == "DotMasterHelpFrame" then
+        helpAlreadyRegistered = true
+        break
+      end
+    end
+    if not helpAlreadyRegistered then
+      tinsert(UISpecialFrames, "DotMasterHelpFrame")
+    end
 
     -- Add a backdrop
     helpFrame:SetBackdrop({
@@ -622,13 +648,13 @@ function DM:CreateGUI()
 
   -- Create a footer frame that will contain global buttons
   local footerFrame = CreateFrame("Frame", "DotMasterFooterFrame", frame)
-  footerFrame:SetHeight(45)                                       -- Increased from 40 to 45
-  footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 25) -- Increased y-offset from 20 to 25
-  footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 25)
+  footerFrame:SetHeight(45)                                       -- Reverted back to 45 from 75
+  footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 20) -- Reduced y-offset from 25 to 20 (moves text 5px down)
+  footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 20)
 
   -- Author credit - positioned to center the two-line group vertically in the footer
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -13.5) -- Changed from -13 to -13.5
+  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -14) -- Changed from -13.5 to -14
   -- Read version from API first, then SavedVariables, fallback to defaults if not found
   local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
       (DotMasterDB and DotMasterDB.version) or
@@ -637,7 +663,7 @@ function DM:CreateGUI()
 
   -- Add a status message text in the footer, positioned above the author credit with 1.5 line spacing
   local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0.5)       -- Changed from 1 to 0.5
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)         -- Changed from 0.5 to 0
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
   DM.GUI.statusMessage = statusMessage                                  -- Store reference

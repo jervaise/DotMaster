@@ -58,12 +58,12 @@ function DM:CreateGeneralTab(parent)
   -- Apply a subtle backdrop
   contentPanel:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 16,
+    edgeFile = nil, -- Removed border edge file
+    edgeSize = 0,   -- Set edge size to 0
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
   })
-  contentPanel:SetBackdropColor(0.1, 0.1, 0.1, 0.7)
-  contentPanel:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+  contentPanel:SetBackdropColor(0, 0, 0, 0.7) -- Changed to match tab background color (darker)
+  -- contentPanel:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8) -- Removed border color setting since there's no border
 
   -- Title for the panel
   local configTitle = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")

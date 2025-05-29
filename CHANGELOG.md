@@ -1,5 +1,23 @@
 # DotMaster Changelog
 
+## [2.2.0] - 2024-12-19
+### Added
+- **Enhanced Color Picker**: Completely redesigned color picker with favorite color slots
+- **Favorite Colors System**: Save and reuse up to 10 favorite colors across all characters and specs
+- **Global Color Persistence**: Favorite colors are saved globally and shared across all characters
+- **Draggable Favorites Panel**: Move the favorites panel by dragging the title area for better positioning
+- **Smart Color Picker Positioning**: Color picker now intelligently positions itself relative to open dialogs
+
+### Improved
+- **GUI Enhancements**: Improved overall user interface with better visual consistency
+- **ESC Key Handling**: Fixed inconsistencies with escape key behavior throughout the interface
+- **Color Selection Workflow**: Streamlined color selection process with quick access to favorite colors
+
+### Fixed
+- **Color Picker Positioning**: Resolved issues with color picker appearing in incorrect positions
+- **Dialog Overlap Prevention**: Color picker now avoids overlapping with important UI elements
+- **Interface Consistency**: Improved consistency across all color selection interfaces
+
 ## [2.1.12] - 2024-08-14
 ### Fixed
 - Fixed an issue where nameplate border colors would not properly reset to Plater defaults when DoTs expire in border-only mode
