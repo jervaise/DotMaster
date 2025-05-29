@@ -687,20 +687,13 @@ function DM:CreateGUI()
     DM:PrintMessage("Settings saved and pushed to Plater")
   end)
 
-  -- Create tab system
-  local tabHeight = 30
+  -- Create tab system with modern UI/UX design
+  local tabHeight = 40 -- Increased from 30 for better touch targets
   local tabFrames = {}
   local tabButtons = {}
   DM.GUI.tabFrames = tabFrames
   DM.GUI.tabButtons = tabButtons
   DM.GUI.activeTabID = 1 -- Track the active tab ID
-
-  -- Tab background
-  local tabBg = frame:CreateTexture(nil, "BACKGROUND")
-  tabBg:SetPoint("TOPLEFT", 8, -40)
-  tabBg:SetPoint("TOPRIGHT", -8, -40)
-  tabBg:SetHeight(tabHeight)
-  tabBg:SetColorTexture(0, 0, 0, 0.6)
 
   -- Tab names and order
   local tabNames = {
@@ -710,47 +703,122 @@ function DM:CreateGUI()
     "Database"
   }
 
-  -- Create each tab frame
+  -- Create modern tab container with full-width background
+  local tabContainer = CreateFrame("Frame", nil, frame)
+  tabContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -40)
+  tabContainer:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -40)
+  tabContainer:SetHeight(tabHeight)
+
+  -- Modern gradient background for tab container
+  local tabContainerBg = tabContainer:CreateTexture(nil, "BACKGROUND")
+  tabContainerBg:SetAllPoints()
+  tabContainerBg:SetColorTexture(0.08, 0.08, 0.08, 0.95) -- Dark modern background
+
+  -- Add subtle top border
+  local topBorder = tabContainer:CreateTexture(nil, "BORDER")
+  topBorder:SetHeight(1)
+  topBorder:SetPoint("TOPLEFT", tabContainer, "TOPLEFT", 0, 0)
+  topBorder:SetPoint("TOPRIGHT", tabContainer, "TOPRIGHT", 0, 0)
+  topBorder:SetColorTexture(0.3, 0.3, 0.3, 0.8)
+
+  -- Add subtle bottom border with accent color
+  local bottomBorder = tabContainer:CreateTexture(nil, "BORDER")
+  bottomBorder:SetHeight(2)
+  bottomBorder:SetPoint("BOTTOMLEFT", tabContainer, "BOTTOMLEFT", 0, 0)
+  bottomBorder:SetPoint("BOTTOMRIGHT", tabContainer, "BOTTOMRIGHT", 0, 0)
+  bottomBorder:SetColorTexture(0.2, 0.4, 0.8, 0.6) -- Subtle blue accent
+
+  -- Calculate tab width to span full container width
+  local containerPadding = 16 -- 8px padding on each side
+  local tabSpacing = 2        -- Minimal spacing between tabs
+  local totalSpacing = (tabSpacing * (#tabNames - 1))
+  local availableWidth = frame:GetWidth() - containerPadding
+  local tabWidth = (availableWidth - totalSpacing) / #tabNames
+
+  -- Create each tab frame and button
   for i = 1, #tabNames do
     -- Tab content frame
     tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
-    tabFrames[i]:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -(45 + tabHeight))
+    tabFrames[i]:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -(40 + tabHeight))
     tabFrames[i]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 60)
     tabFrames[i]:Hide()
 
-    -- Tab button
-    local tabButton = CreateFrame("Button", "DotMasterTab" .. i, frame)
-    tabButton:SetSize(110, tabHeight)
-    tabButtons[i] = tabButton -- Store direct reference to button
+    -- Modern tab button with full width coverage
+    local tabButton = CreateFrame("Button", "DotMasterTab" .. i, tabContainer)
+    tabButton:SetHeight(tabHeight)
+    tabButton:SetWidth(tabWidth)
+    tabButtons[i] = tabButton
 
-    -- Tab styling
-    local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
-    normalTexture:SetAllPoints()
-    normalTexture:SetColorTexture(0, 0, 0, 0.7)
-    tabButton.normalTexture = normalTexture
+    -- Position tabs to span full width
+    local xOffset = 8 + (i - 1) * (tabWidth + tabSpacing) -- Start with 8px padding
+    tabButton:SetPoint("LEFT", tabContainer, "LEFT", xOffset, 0)
 
-    -- Tab text
+    -- Modern tab styling with layered approach
+    -- Base background (inactive state)
+    local baseTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 0)
+    baseTexture:SetAllPoints()
+    baseTexture:SetColorTexture(0.12, 0.12, 0.12, 0.8) -- Slightly lighter than container
+    tabButton.baseTexture = baseTexture
+
+    -- Active state overlay
+    local activeTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 1)
+    activeTexture:SetAllPoints()
+    activeTexture:SetColorTexture(0.18, 0.18, 0.18, 0.95) -- Lighter for active state
+    activeTexture:Hide()
+    tabButton.activeTexture = activeTexture
+
+    -- Hover state overlay
+    local hoverTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 2)
+    hoverTexture:SetAllPoints()
+    hoverTexture:SetColorTexture(0.15, 0.15, 0.15, 0.9) -- Medium shade for hover
+    hoverTexture:Hide()
+    tabButton.hoverTexture = hoverTexture
+
+    -- Active indicator line at bottom
+    local activeIndicator = tabButton:CreateTexture(nil, "OVERLAY")
+    activeIndicator:SetHeight(3)
+    activeIndicator:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 4, 0)
+    activeIndicator:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", -4, 0)
+    activeIndicator:SetColorTexture(0.3, 0.6, 1.0, 1.0) -- Modern blue accent
+    activeIndicator:Hide()
+    tabButton.activeIndicator = activeIndicator
+
+    -- Modern typography
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER")
     text:SetText(tabNames[i])
-    text:SetTextColor(1, 0.82, 0)
-    tabButton.text = text -- Store direct reference to text
+    text:SetTextColor(0.85, 0.85, 0.85)                -- Softer white for better readability
+    text:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE") -- Slightly larger, outlined text
+    tabButton.text = text
 
-    -- Store ID and script
+    -- Modern interaction states
+    tabButton:SetScript("OnEnter", function(self)
+      if self.id ~= DM.GUI.activeTabID then
+        self.hoverTexture:Show()
+        self.text:SetTextColor(1.0, 1.0, 1.0) -- Brighter on hover
+      end
+      -- Subtle scale animation could be added here in future
+    end)
+
+    tabButton:SetScript("OnLeave", function(self)
+      if self.id ~= DM.GUI.activeTabID then
+        self.hoverTexture:Hide()
+        self.text:SetTextColor(0.85, 0.85, 0.85) -- Return to normal
+      end
+    end)
+
+    -- Store ID and click handler
     tabButton.id = i
     tabButton:SetScript("OnClick", function(self)
       DM.GUI:SelectTab(self.id)
     end)
-
-    -- Position tabs side by side
-    local tabWidth = 110
-    tabButton:SetSize(tabWidth, tabHeight)
-    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10 + (i - 1) * (tabWidth + 5), -40)
   end
 
   -- Set initial active tab styling
-  if tabButtons[1] and tabButtons[1].normalTexture then
-    tabButtons[1].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  if tabButtons[1] then
+    tabButtons[1].activeTexture:Show()
+    tabButtons[1].activeIndicator:Show()
+    tabButtons[1].text:SetTextColor(1.0, 1.0, 1.0) -- Bright white for active
   end
   tabFrames[1]:Show()
 
@@ -974,19 +1042,35 @@ function DM.GUI:SelectTab(tabID)
   -- Store the active tab ID
   DM.GUI.activeTabID = tabID
 
-  -- Hide all tab frames and reset button appearance
+  -- Hide all tab frames and reset button appearance to inactive state
   for i = 1, #DM.GUI.tabFrames do
     if DM.GUI.tabFrames[i] then
       DM.GUI.tabFrames[i]:Hide()
     end
 
-    if DM.GUI.tabButtons[i] and DM.GUI.tabButtons[i].normalTexture then
-      -- Set inactive color
-      DM.GUI.tabButtons[i].normalTexture:SetColorTexture(0, 0, 0, 0.7)
+    -- Reset all tabs to inactive state with modern styling
+    if DM.GUI.tabButtons[i] then
+      local button = DM.GUI.tabButtons[i]
+
+      -- Hide active state elements
+      if button.activeTexture then
+        button.activeTexture:Hide()
+      end
+      if button.activeIndicator then
+        button.activeIndicator:Hide()
+      end
+      if button.hoverTexture then
+        button.hoverTexture:Hide()
+      end
+
+      -- Set inactive text color
+      if button.text then
+        button.text:SetTextColor(0.85, 0.85, 0.85)
+      end
     end
   end
 
-  -- Show selected tab
+  -- Show selected tab content
   if DM.GUI.tabFrames[tabID] then
     DM.GUI.tabFrames[tabID]:Show()
   else
@@ -994,9 +1078,22 @@ function DM.GUI:SelectTab(tabID)
     return false
   end
 
-  -- Set active tab appearance
-  if DM.GUI.tabButtons[tabID] and DM.GUI.tabButtons[tabID].normalTexture then
-    DM.GUI.tabButtons[tabID].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+  -- Set active tab appearance with modern styling
+  if DM.GUI.tabButtons[tabID] then
+    local activeButton = DM.GUI.tabButtons[tabID]
+
+    -- Show active state elements
+    if activeButton.activeTexture then
+      activeButton.activeTexture:Show()
+    end
+    if activeButton.activeIndicator then
+      activeButton.activeIndicator:Show()
+    end
+
+    -- Set active text color
+    if activeButton.text then
+      activeButton.text:SetTextColor(1.0, 1.0, 1.0) -- Bright white for active
+    end
   end
 
   -- Refresh appropriate tab content when clicked
