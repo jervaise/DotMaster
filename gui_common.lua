@@ -637,7 +637,7 @@ function DM:CreateGUI()
 
   -- Add a status message text in the footer, positioned above the author credit with 1.5 line spacing
   local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 6)         -- Reduced offset for better centering
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 16)        -- Added 10px margin (changed from 6 to 16)
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
   DM.GUI.statusMessage = statusMessage                                  -- Store reference
