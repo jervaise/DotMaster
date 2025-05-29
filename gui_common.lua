@@ -628,7 +628,7 @@ function DM:CreateGUI()
 
   -- Author credit - positioned to center the two-line group vertically in the footer
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -11) -- Changed from -10 to -11
+  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -13) -- Changed from -11 to -13
   -- Read version from API first, then SavedVariables, fallback to defaults if not found
   local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
       (DotMasterDB and DotMasterDB.version) or
