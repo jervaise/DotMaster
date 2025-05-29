@@ -753,42 +753,73 @@ function DM:CreateGUI()
     local xOffset = 8 + (i - 1) * (tabWidth + tabSpacing) -- Start with 8px padding
     tabButton:SetPoint("LEFT", tabContainer, "LEFT", xOffset, 0)
 
-    -- Modern tab styling with layered approach
-    -- Base background (inactive state)
+    -- Modern tab styling with layered approach and subtle gradients
+    -- Base background (inactive state) with subtle gradient
     local baseTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 0)
     baseTexture:SetAllPoints()
-    baseTexture:SetColorTexture(0.12, 0.12, 0.12, 0.8) -- Slightly lighter than container
+    baseTexture:SetColorTexture(0.12, 0.12, 0.12, 0.8)
     tabButton.baseTexture = baseTexture
 
-    -- Active state overlay
-    local activeTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 1)
+    -- Add subtle gradient overlay for depth
+    local gradientTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 1)
+    gradientTexture:SetAllPoints()
+    gradientTexture:SetColorTexture(0.15, 0.15, 0.15, 0.3) -- Very subtle lighter overlay
+    gradientTexture:SetGradient("VERTICAL",
+      CreateColor(0.15, 0.15, 0.15, 0.4),                  -- Slightly lighter at top
+      CreateColor(0.08, 0.08, 0.08, 0.2)                   -- Darker at bottom
+    )
+    tabButton.gradientTexture = gradientTexture
+
+    -- Active state overlay with enhanced styling
+    local activeTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 2)
     activeTexture:SetAllPoints()
-    activeTexture:SetColorTexture(0.18, 0.18, 0.18, 0.95) -- Lighter for active state
+    activeTexture:SetColorTexture(0.20, 0.20, 0.20, 0.95) -- Slightly brighter for active
     activeTexture:Hide()
     tabButton.activeTexture = activeTexture
 
+    -- Active gradient overlay
+    local activeGradient = tabButton:CreateTexture(nil, "BACKGROUND", nil, 3)
+    activeGradient:SetAllPoints()
+    activeGradient:SetGradient("VERTICAL",
+      CreateColor(0.25, 0.25, 0.25, 0.4), -- Lighter at top
+      CreateColor(0.15, 0.15, 0.15, 0.2)  -- Darker at bottom
+    )
+    activeGradient:Hide()
+    tabButton.activeGradient = activeGradient
+
     -- Hover state overlay
-    local hoverTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 2)
+    local hoverTexture = tabButton:CreateTexture(nil, "BACKGROUND", nil, 4)
     hoverTexture:SetAllPoints()
-    hoverTexture:SetColorTexture(0.15, 0.15, 0.15, 0.9) -- Medium shade for hover
+    hoverTexture:SetColorTexture(0.16, 0.16, 0.16, 0.9) -- Medium shade for hover
     hoverTexture:Hide()
     tabButton.hoverTexture = hoverTexture
 
-    -- Active indicator line at bottom
+    -- Enhanced active indicator with subtle glow effect
     local activeIndicator = tabButton:CreateTexture(nil, "OVERLAY")
     activeIndicator:SetHeight(3)
     activeIndicator:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 4, 0)
     activeIndicator:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", -4, 0)
-    activeIndicator:SetColorTexture(0.3, 0.6, 1.0, 1.0) -- Modern blue accent
+    activeIndicator:SetColorTexture(0.4, 0.7, 1.0, 1.0) -- Brighter blue accent
     activeIndicator:Hide()
     tabButton.activeIndicator = activeIndicator
 
-    -- Modern typography
+    -- Add subtle glow under the active indicator
+    local indicatorGlow = tabButton:CreateTexture(nil, "OVERLAY", nil, -1)
+    indicatorGlow:SetHeight(6)
+    indicatorGlow:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 2, -1)
+    indicatorGlow:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", -2, -1)
+    indicatorGlow:SetColorTexture(0.4, 0.7, 1.0, 0.3) -- Subtle blue glow
+    indicatorGlow:Hide()
+    tabButton.indicatorGlow = indicatorGlow
+
+    -- Modern typography with enhanced readability
     local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER")
     text:SetText(tabNames[i])
     text:SetTextColor(0.85, 0.85, 0.85)                -- Softer white for better readability
-    text:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE") -- Slightly larger, outlined text
+    text:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE") -- Slightly larger font for better readability
+    text:SetShadowOffset(1, -1)                        -- Subtle text shadow for depth
+    text:SetShadowColor(0, 0, 0, 0.8)                  -- Dark shadow
     tabButton.text = text
 
     -- Modern interaction states
@@ -817,7 +848,13 @@ function DM:CreateGUI()
   -- Set initial active tab styling
   if tabButtons[1] then
     tabButtons[1].activeTexture:Show()
+    if tabButtons[1].activeGradient then
+      tabButtons[1].activeGradient:Show()
+    end
     tabButtons[1].activeIndicator:Show()
+    if tabButtons[1].indicatorGlow then
+      tabButtons[1].indicatorGlow:Show()
+    end
     tabButtons[1].text:SetTextColor(1.0, 1.0, 1.0) -- Bright white for active
   end
   tabFrames[1]:Show()
@@ -1056,8 +1093,14 @@ function DM.GUI:SelectTab(tabID)
       if button.activeTexture then
         button.activeTexture:Hide()
       end
+      if button.activeGradient then
+        button.activeGradient:Hide()
+      end
       if button.activeIndicator then
         button.activeIndicator:Hide()
+      end
+      if button.indicatorGlow then
+        button.indicatorGlow:Hide()
       end
       if button.hoverTexture then
         button.hoverTexture:Hide()
@@ -1086,8 +1129,14 @@ function DM.GUI:SelectTab(tabID)
     if activeButton.activeTexture then
       activeButton.activeTexture:Show()
     end
+    if activeButton.activeGradient then
+      activeButton.activeGradient:Show()
+    end
     if activeButton.activeIndicator then
       activeButton.activeIndicator:Show()
+    end
+    if activeButton.indicatorGlow then
+      activeButton.indicatorGlow:Show()
     end
 
     -- Set active text color
