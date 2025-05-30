@@ -3,6 +3,18 @@
 
 local DM = DotMaster
 DotMaster_Components = {}
+Tabs = {}
+Tab = {}
+  function Tab:new(id, _frame, is_active, button)
+    local ta = {
+      _ID = id,
+      _Frame = _frame,
+      _Is_active = is_active,
+      _Button = button,
+    }
+
+    return ta
+end
 
 -- Create standardized info area for tabs
 local function CreateTabInfoArea(parentFrame, titleText, explanationText)
@@ -33,6 +45,9 @@ local function CreateTabInfoArea(parentFrame, titleText, explanationText)
   return infoArea
 end
 
+-- Store the info area creation function in the Components namespace
+DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
+
 -- Define component functions first (before they are used)
 DotMaster_Components.CreateGeneralTab = function(parent)
   return DM:CreateGeneralTab(parent)
@@ -46,9 +61,6 @@ end
 DotMaster_Components.CreateCombinationsTab = function(parent)
   return DM:CreateCombinationsTab(parent)
 end
-
--- Store the info area creation function in the Components namespace
-DotMaster_Components.CreateTabInfoArea = CreateTabInfoArea
 
 -- Function to update Plater Integration status in the footer
 function DM:UpdatePlaterStatusFooter()
@@ -115,6 +127,13 @@ function DM:CreateGUI()
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
+  local frame = InternalCreateFrame({frameName="DotMasterOptionsFrame", backdropTemplate = "BackdropTemplate", sizeX = 500, sizeY = 600, setPoint1 = "CENTER",
+                setPoint2 = nil, frameStrata = "HIGH", movable = true, enableMouse = true, anchor = nil})
+  local closeButton = CreateCloseButton(frame)
+  local helpButton = CreateInformationButton(frame, closeButton)
+  SetFrameBackdrop(frame)
+  SetTitle(frame, classColor, "|cFF%02x%02x%02xDotMaster|r")
+  AddHoverEffect(helpButton)
 
   -- Initialize original critical settings if not already done (e.g., by settings.lua loading earlier)
   -- This ensures they are captured at least once when the GUI is created for the session.
@@ -139,18 +158,6 @@ function DM:CreateGUI()
     local settings = DM.API:GetSettings()
     DM.originalBorderThickness = settings.borderThickness
   end
-
-  -- Create main frame
-  local frame = CreateFrame("Frame", "DotMasterOptionsFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(500, 600)
-  frame:SetPoint("CENTER")
-  frame:SetFrameStrata("HIGH")
-  frame:SetMovable(true)
-  frame:EnableMouse(true)
-  frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-  frame:Hide()
 
   -- Register with UI special frames to enable Escape key closing
   -- Check if already registered to prevent duplicates
@@ -526,7 +533,7 @@ function DM:CreateGUI()
   -- Create the help window when the button is clicked
   helpButton:SetScript("OnClick", function()
     if not DM.GUI.helpWindow then
-      DM.GUI.helpWindow = CreateHelpWindow()
+      DM.GUI.helpWindow = CreateHelpWindow(frame, classColor)
     end
 
     if DM.GUI.helpWindow:IsShown() then
@@ -1045,11 +1052,11 @@ function DM.GUI:SelectTab(tabID)
   end
 
   -- Refresh appropriate tab content when clicked
-  if tabID == 2 then -- Tracked Spells tab
+  if selectedframe._ID == 2 then -- Tracked Spells tab
     if DM.GUI.RefreshTrackedSpellTabList then
       pcall(function() DM.GUI:RefreshTrackedSpellTabList("") end)
     end
-  elseif tabID == 4 then -- Database tab
+  elseif selectedframe._ID == 4 then -- Database tab
     if DM.GUI.RefreshDatabaseTabList then
       pcall(function() DM.GUI:RefreshDatabaseTabList("") end)
     end

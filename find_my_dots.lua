@@ -192,13 +192,13 @@ function DM:ShowRecordingIndicator()
     -- Mode text
     self.recordingText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     self.recordingText:SetPoint("LEFT", 20, 0)
-    self.recordingText:SetText("DOT RECORDING MODE ACTIVE")
+    self.recordingText:SetText(DM:GetTextForMenu("RECORDING_ACTIVE"))
     self.recordingText:SetTextColor(1, 0.82, 0) -- Gold color
 
     -- Time indicator
     self.recordingTime = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     self.recordingTime:SetPoint("LEFT", self.recordingText, "RIGHT", 10, 0)
-    self.recordingTime:SetText("30s")
+    self.recordingTime:SetText(DM:GetTextForMenu("TIMER_30"))
     self.recordingTime:SetTextColor(1, 1, 1)
 
     -- Initialize counters
@@ -208,7 +208,7 @@ function DM:ShowRecordingIndicator()
     -- New dots counter with English text
     self.dotsFoundText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     self.dotsFoundText:SetPoint("LEFT", self.recordingTime, "RIGHT", 15, 0) -- Position after time
-    self.dotsFoundText:SetText("0 new dots found")
+    self.dotsFoundText:SetText(DM:GetTextForMenu("NO_NEW_DOTS_FOUND"))
     self.dotsFoundText:SetTextColor(0.3, 1, 0.3)                            -- Green color
 
     -- Button container on far right
@@ -220,7 +220,7 @@ function DM:ShowRecordingIndicator()
     self.finishButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
     self.finishButton:SetSize(70, 22)
     self.finishButton:SetPoint("CENTER", 0, 0)
-    self.finishButton:SetText("Finish")
+    self.finishButton:SetText(DM:GetTextForMenu("NO_NEW_DOTS_FOUND"))
 
     self.finishButton:SetScript("OnClick", function()
       self:StopFindMyDots(false, true) -- Marked as finished
@@ -230,7 +230,7 @@ function DM:ShowRecordingIndicator()
   -- Reset counters
   self.totalDotsFound = 0
   self.newDotsFound = 0
-  self.dotsFoundText:SetText("0 new dots found")
+  self.dotsFoundText:SetText(DM:GetTextForMenu("NO_NEW_DOTS_FOUND"))
 
   -- Make visible
   self.recordingFrame:Show()
@@ -411,10 +411,10 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   local statusText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   statusText:SetPoint("RIGHT", alertFrame, "RIGHT", -12, 0)
   if isExisting then
-    statusText:SetText("Known")
+    statusText:SetText(DM:GetTextForMenu("KNOWN"))
     statusText:SetTextColor(1, 0.3, 0.3) -- Red for existing
   else
-    statusText:SetText("New")
+    statusText:SetText(DM:GetTextForMenu("NEW"))
     statusText:SetTextColor(0.3, 1, 0.3) -- Green for new
   end
 
@@ -531,12 +531,12 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- Title
     local title = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -15)
-    title:SetText("Detected Dots")
+    title:SetText(DM:GetTextForMenu("DETECTED_DOTS"))
 
     -- Subtitle
     local desc = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     desc:SetPoint("TOP", title, "BOTTOM", 0, -5)
-    desc:SetText("Select dots you want to add")
+    desc:SetText(DM:GetTextForMenu("SELECT_DOTS_TO_ADD"))
     desc:SetTextColor(1, 0.82, 0)
 
     -- Scroll frame for dots list
@@ -752,7 +752,7 @@ function DM:ShowDotsConfirmationDialog(dots)
 
   -- Update button text based on whether we have new dots
   if self.saveButton then
-    self.saveButton:SetText(hasNewDots and "Add Selected" or "OK")
+    self.saveButton:SetText(hasNewDots and DM:GetTextForMenu("ADD_SELECTED") or "OK")
   end
 
   -- Simple message if no new dots or no dots at all
@@ -760,7 +760,7 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- No dots detected message
     local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
-    messageText:SetText("No dots have been detected.\n\nTry again and cast your DoT abilities on enemies.")
+    messageText:SetText(DM:GetTextForMenu("NO_NEW_DOTS_DETECTED"))
     messageText:SetWidth(340)
     messageText:SetJustifyH("CENTER")
 
@@ -769,7 +769,7 @@ function DM:ShowDotsConfirmationDialog(dots)
     -- All dots are known message
     local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
-    messageText:SetText("All detected dots are already in your database.")
+    messageText:SetText(DM:GetTextForMenu("ALL_DETECTED_DOTS_EXISTS"))
     messageText:SetWidth(340)
     messageText:SetJustifyH("CENTER")
 

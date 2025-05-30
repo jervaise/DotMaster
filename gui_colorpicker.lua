@@ -71,7 +71,7 @@ function colorpicker.CreateColorSwatch(parent, r, g, b, callback, options)
   swatch:SetScript("OnEnter", function(self)
     border:SetColorTexture(0.3, 0.3, 0.3, 1)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Color Values")
+    GameTooltip:SetText(DM:GetTextForMenu("COLOR_VALUES"))
     GameTooltip:AddLine("R: " .. math.floor(r * 255) .. " G: " .. math.floor(g * 255) .. " B: " .. math.floor(b * 255), 1,
       1, 1)
     GameTooltip:AddLine("Click to change color", 0.7, 0.7, 0.7)
@@ -166,7 +166,7 @@ function colorpicker.CreateFavoritesPanel(callback)
   -- Favorite colors title - styled to match the gold "Color Picker" title
   local favoritesLabel = favoritesPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   favoritesLabel:SetPoint("TOP", favoritesPanel, "TOP", 0, -12)
-  favoritesLabel:SetText("Favorite Colors")
+  favoritesLabel:SetText(DM:GetTextForMenu("FAV_COLORS"))
   favoritesLabel:SetTextColor(1, 0.82, 0, 1) -- Gold color to match WoW UI
 
   -- Make the favorites panel draggable by clicking on the title
@@ -246,7 +246,7 @@ function colorpicker.CreateFavoritesPanel(callback)
     favoriteFrame:SetScript("OnEnter", function()
       favoriteBorder:SetColorTexture(0.4, 0.4, 0.4, 1) -- Lighter border on hover
       GameTooltip:SetOwner(favoriteFrame, "ANCHOR_RIGHT")
-      GameTooltip:SetText("Favorite Color " .. i)
+      GameTooltip:SetText(DM:GetTextForMenu("FAV_COLORS") .. i)
       if color then
         GameTooltip:AddLine("RGB: " .. math.floor(color[1] * 255) .. ", " ..
           math.floor(color[2] * 255) .. ", " .. math.floor(color[3] * 255), 1, 1, 1)

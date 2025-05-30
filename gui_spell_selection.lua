@@ -51,7 +51,7 @@ function DM:ShowSpellSelectionDialog()
     -- Title
     local title = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("CENTER", 0, 0)
-    title:SetText("Select Spells From Database")
+    title:SetText(DM:GetTextForMenu("SELECT_SPELLS_FROM_DB"))
 
     -- Class filter container for better layout
     local filterContainer = CreateFrame("Frame", nil, self.spellSelectionFrame)
@@ -120,7 +120,7 @@ function DM:ShowSpellSelectionDialog()
     local selectAllButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
     selectAllButton:SetSize(115, 26)
     selectAllButton:SetPoint("LEFT", 10, 0)
-    selectAllButton:SetText("Select All")
+    selectAllButton:SetText(DM:GetTextForMenu("SELECT_ALL"))
     selectAllButton:SetNormalFontObject("GameFontNormalSmall")
     selectAllButton:GetNormalTexture():SetVertexColor(0.7, 0.7, 0.7)
 
@@ -128,7 +128,7 @@ function DM:ShowSpellSelectionDialog()
     local selectNoneButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
     selectNoneButton:SetSize(115, 26)
     selectNoneButton:SetPoint("CENTER", 0, 0)
-    selectNoneButton:SetText("Select None")
+    selectNoneButton:SetText(DM:GetTextForMenu("SELECT_NONE"))
     selectNoneButton:SetNormalFontObject("GameFontNormalSmall")
     selectNoneButton:GetNormalTexture():SetVertexColor(0.7, 0.7, 0.7)
 
@@ -136,7 +136,7 @@ function DM:ShowSpellSelectionDialog()
     local addSelectedButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
     addSelectedButton:SetSize(115, 26)
     addSelectedButton:SetPoint("RIGHT", -10, 0)
-    addSelectedButton:SetText("Add Selected")
+    addSelectedButton:SetText(DM:GetTextForMenu("ADD_SELECT"))
     addSelectedButton:SetNormalFontObject("GameFontNormalSmall")
     -- Give it a slight green tint to indicate it's the action button
     for i, region in ipairs({ addSelectedButton:GetRegions() }) do
