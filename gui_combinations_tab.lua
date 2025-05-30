@@ -247,7 +247,7 @@ function DM:CreateCombinationsTab(parent)
   local addButton = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
   addButton:SetPoint("BOTTOM", contentFrame, "BOTTOM", 0, 10)
   addButton:SetSize(150, 30)                                  -- Changed from 200 to 150 to match Find My Dots button
-  addButton:SetText("Create New Combination")
+  addButton:SetText(DM:GetTextForMenu("NEW_COMBO"))
   addButton:SetPoint("CENTER", contentFrame, "BOTTOM", 0, 10) -- Center align at bottom
 
   addButton:SetScript("OnClick", function()
@@ -325,7 +325,7 @@ function DM:CreateCombinationsTab(parent)
 
       local messageText = messageFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       messageText:SetPoint("CENTER", messageFrame, "CENTER", 0, 10)
-      messageText:SetText("Combinations database not initialized")
+      messageText:SetText(DM:ErrorMsg("DB_NOT_INIT"))
       messageText:SetTextColor(1, 0.3, 0.3)
       messageText:SetWidth(messageFrame:GetWidth() - 20)
       messageText:SetJustifyH("CENTER")
@@ -334,7 +334,7 @@ function DM:CreateCombinationsTab(parent)
       local initButton = CreateFrame("Button", nil, messageFrame, "UIPanelButtonTemplate")
       initButton:SetSize(200, 24)
       initButton:SetPoint("TOP", messageText, "BOTTOM", 0, -10)
-      initButton:SetText("Initialize Combinations Database")
+      initButton:SetText(DM:GetTextForMenu("F_INIT_DB"))
 
       initButton:SetScript("OnClick", function()
         -- Try to force initialization
@@ -343,7 +343,7 @@ function DM:CreateCombinationsTab(parent)
           UpdateCombinationsList()
         else
           -- Show error if failed
-          messageText:SetText("Failed to initialize database. See chat for details.")
+          messageText:SetText(DM:ErrorMsg("FAIL_INIT_DB"))
         end
       end)
 
@@ -1188,7 +1188,7 @@ function DM:ShowCombinationDialog(comboID)
     -- Title - centered at top with more space
     local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", dialog, "TOP", 0, -20)
-    title:SetText("New Combination")
+    title:SetText(DM:GetTextForMenu("NEW_COMBO"))
     title:SetWidth(dialog:GetWidth() - 40)
     title:SetJustifyH("CENTER")
     dialog.title = title
@@ -1202,7 +1202,7 @@ function DM:ShowCombinationDialog(comboID)
     -- Name field
     local nameLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     nameLabel:SetPoint("TOP", title, "BOTTOM", 0, -20)
-    nameLabel:SetText("Combination Name:")
+    nameLabel:SetText(DM:GetTextForMenu("COMBO_NAME"))
     nameLabel:SetJustifyH("CENTER")
 
     local nameEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
@@ -1215,7 +1215,7 @@ function DM:ShowCombinationDialog(comboID)
     -- Color picker - with equal spacing above and below
     local colorLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     colorLabel:SetPoint("TOP", nameEditBox, "BOTTOM", 0, -15)
-    colorLabel:SetText("Combination Color:")
+    colorLabel:SetText(DM:GetTextForMenu("COMBO_COLOR"))
     colorLabel:SetJustifyH("CENTER")
 
     local colorButton = CreateFrame("Button", nil, dialog)
@@ -1294,7 +1294,7 @@ function DM:ShowCombinationDialog(comboID)
     -- Spell list - with equal spacing as above the color label
     local spellListLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     spellListLabel:SetPoint("TOP", colorButton, "BOTTOM", 0, -8)
-    spellListLabel:SetText("Spells in this Combination:")
+    spellListLabel:SetText(DM:GetTextForMenu("S_IN_COMBO"))
     spellListLabel:SetJustifyH("CENTER")
 
     -- Spells scroll frame
@@ -1334,7 +1334,7 @@ function DM:ShowCombinationDialog(comboID)
     local addSpellButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     addSpellButton:SetSize(190, 25)
     addSpellButton:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 40)
-    addSpellButton:SetText("Add Spell")
+    addSpellButton:SetText(DM:GetTextForMenu("ADD_SPELL"))
 
     addSpellButton:SetScript("OnClick", function()
       -- Show spell selection UI
@@ -1345,7 +1345,7 @@ function DM:ShowCombinationDialog(comboID)
     local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     cancelButton:SetSize(90, 25)
     cancelButton:SetPoint("BOTTOMLEFT", addSpellButton, "BOTTOMLEFT", 0, -30)
-    cancelButton:SetText("Cancel")
+    cancelButton:SetText(DM:GetTextForMenu("CANCEL"))
 
     cancelButton:SetScript("OnClick", function()
       dialog:Hide()
@@ -1354,7 +1354,7 @@ function DM:ShowCombinationDialog(comboID)
     local saveButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     saveButton:SetSize(90, 25)
     saveButton:SetPoint("BOTTOMRIGHT", addSpellButton, "BOTTOMRIGHT", 0, -30)
-    saveButton:SetText("Save")
+    saveButton:SetText(DM:GetTextForMenu("SAVE"))
 
     saveButton:SetScript("OnClick", function()
       -- Save the combination
@@ -1366,7 +1366,7 @@ function DM:ShowCombinationDialog(comboID)
       if name == "" then
         -- Create warning popup for missing name
         StaticPopupDialogs["DOTMASTER_WARNING_NO_NAME"] = {
-          text = "Please enter a name for the combination.",
+          text = DM:GetTextForMenu("NAME_MISSING_COMBO"),
           button1 = "OK",
           timeout = 0,
           whileDead = true,
@@ -1486,7 +1486,7 @@ function DM:ShowCombinationDialog(comboID)
   if comboID and currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
     local combo = currentCombinations.data[comboID]
 
-    dialog.title:SetText("Edit Combination")
+    dialog.title:SetText(DM:GetTextForMenu("EDIT_COMBO"))
     dialog.comboID = comboID
     dialog.nameEditBox:SetText(combo.name or "")
 
@@ -1516,7 +1516,7 @@ function DM:ShowCombinationDialog(comboID)
     -- Display the spells in the spell list
     DM:UpdateCombinationSpellList(dialog)
   else
-    dialog.title:SetText("New Combination")
+    dialog.title:SetText(DM:GetTextForMenu("NEW_COMBO"))
     dialog.comboID = nil
 
     -- Set default expanded state for new combinations
@@ -1640,7 +1640,7 @@ function DM:UpdateCombinationSpellList(dialog)
     local removeButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
     removeButton:SetSize(70, 22)
     removeButton:SetPoint("RIGHT", row, "RIGHT", -5, 0)
-    removeButton:SetText("Remove")
+    removeButton:SetText(DM:GetTextForMenu("REMOVE"))
 
     removeButton:SetScript("OnClick", function()
       -- Remove this spell from the selectedSpells array
@@ -1807,8 +1807,7 @@ function DM:ShowSpellSelectionForCombo(parent)
       local helpText = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       helpText:SetPoint("TOP", helpFrame, "TOP", 0, 0)
       helpText:SetWidth(scrollContent:GetWidth() - 40)
-      helpText:SetText(
-        "No additional spells available.\n\nYou need to mark spells as 'tracked' for your current specialization in the Database tab.")
+      helpText:SetText(DM:GetTextForMenu("NO_ADDITIONAL_SPELLS_IN_DB"))
       helpText:SetTextColor(1, 0.82, 0)
       helpText:SetJustifyH("CENTER")
       helpText:SetJustifyV("TOP")
@@ -1976,7 +1975,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     local addButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     addButton:SetSize(150, 25)
     addButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 15)
-    addButton:SetText("Add Selected Spells")
+    addButton:SetText(DM:GetTextForMenu("ADD_SELECTED_SPELLS"))
 
     -- Store selected spells
     local selectedSpells = {}

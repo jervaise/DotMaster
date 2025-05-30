@@ -120,7 +120,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
   local addFromDatabaseButton = CreateFrame("Button", nil, buttonContainer, "UIPanelButtonTemplate")
   addFromDatabaseButton:SetSize(150, 30)
   addFromDatabaseButton:SetPoint("RIGHT", buttonContainer, "CENTER", -5, 0)
-  addFromDatabaseButton:SetText("Add from Database")
+  addFromDatabaseButton:SetText(DM:GetTextForMenu("ADD_FROM_DB"))
 
   addFromDatabaseButton:SetScript("OnClick", function()
     -- Try to find and click on the Database tab

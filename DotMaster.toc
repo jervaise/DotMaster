@@ -55,3 +55,9 @@ gui_database_tab.lua
 
 # Initialize the addon
 init.lua
+
+# Helpers
+Helpers\Helepers_get.lua
+
+# Loc
+Media\Localization.lua

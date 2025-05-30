@@ -331,7 +331,7 @@ function GUI:RefreshDatabaseTabList(query)
     if not scrollChild.friendlyMessage then
       scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       scrollChild.friendlyMessage:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
-      scrollChild.friendlyMessage:SetText("No spells found in database. Use 'Find My Dots' to discover spells.")
+      scrollChild.friendlyMessage:SetText(DM:GetTextForMenu("NO_SPELLS_IN_DB"))
       scrollChild.friendlyMessage:SetTextColor(1, 0.82, 0)
     end
     scrollChild.friendlyMessage:Show()
