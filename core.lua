@@ -25,7 +25,7 @@ local function GetVersion()
   elseif GetAddOnMetadata then
     return GetAddOnMetadata("DotMaster", "Version")
   else
-    return "2.1.3" -- Hardcoded fallback
+    return "2.2.0" -- Hardcoded fallback
   end
 end
 

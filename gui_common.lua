@@ -20,12 +20,12 @@ end
 local function CreateTabInfoArea(parentFrame, titleText, explanationText)
   -- Create info area container
   local infoArea = CreateFrame("Frame", nil, parentFrame)
-  infoArea:SetSize(430, 85) -- Increased height from 75px to 85px to accommodate more spacing
-  infoArea:SetPoint("TOP", parentFrame, "TOP", 0, 0)
+  infoArea:SetSize(430, 70)                            -- Reduced height from 85px to 70px for better proportions
+  infoArea:SetPoint("TOP", parentFrame, "TOP", 0, -10) -- Changed from -15 to -10 to reduce space above
 
   -- Center container for text elements with equal top/bottom margins
   local textContainer = CreateFrame("Frame", nil, infoArea)
-  textContainer:SetSize(430, 55)                             -- Increased height from 45px to 55px
+  textContainer:SetSize(430, 50)                             -- Reduced height from 55px to 50px
   textContainer:SetPoint("CENTER", infoArea, "CENTER", 0, 0) -- Centered vertically
 
   -- Info Area Title
@@ -117,7 +117,13 @@ function DM:UpdatePlaterStatusFooter()
 end
 
 -- Create the main GUI
+-- Fixed: Prevent recreation of GUI frame on zone changes which was causing escape key to stop working
 function DM:CreateGUI()
+  -- Check if GUI frame already exists to prevent recreation on zone changes
+  if DM.GUI and DM.GUI.frame and DM.GUI.frame:GetName() then
+    return DM.GUI.frame
+  end
+
   -- Get the player's class color
   local playerClass = select(2, UnitClass("player"))
   local classColor = RAID_CLASS_COLORS[playerClass] or { r = 0.6, g = 0.2, b = 1.0 }
@@ -154,7 +160,375 @@ function DM:CreateGUI()
   end
 
   -- Register with UI special frames to enable Escape key closing
-  tinsert(UISpecialFrames, "DotMasterOptionsFrame")
+  -- Check if already registered to prevent duplicates
+  local alreadyRegistered = false
+  for _, frameName in ipairs(UISpecialFrames) do
+    if frameName == "DotMasterOptionsFrame" then
+      alreadyRegistered = true
+      break
+    end
+  end
+  if not alreadyRegistered then
+    tinsert(UISpecialFrames, "DotMasterOptionsFrame")
+  end
+
+  -- Add direct ESC key handling as a backup
+  frame:SetScript("OnKeyDown", function(self, key)
+    if key == "ESCAPE" then
+      -- self:Hide() -- The frame is in UISpecialFrames, which will handle hiding it.
+      -- This handler's primary job is now to stop ESCAPE from propagating further.
+      return true -- Return true to stop ESC from propagating to the game menu
+    end
+    return false  -- Let other keys propagate normally
+  end)
+
+  -- Only propagate non-ESC keys
+  frame:SetPropagateKeyboardInput(true)
+
+  -- Make the frame closable with the B key (Blizzard standard)
+  frame:EnableKeyboard(true)
+  frame:SetScript("OnKeyUp", function(self, key)
+    -- if key == "ESCAPE" then  -- Removed this block
+    --   self:Hide()
+    -- end
+    -- The 'B' key functionality was previously removed.
+    -- ESCAPE key press is now handled by OnKeyDown to also stop propagation.
+  end)
+
+  -- Add a backdrop
+  frame:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 16,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+  })
+  frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+  frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
+  -- Title
+  local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  title:SetPoint("TOP", 0, -16)
+  -- Use class color for the title text
+  title:SetText(string.format("|cFF%02x%02x%02xDotMaster|r",
+    classColor.r * 255,
+    classColor.g * 255,
+    classColor.b * 255))
+
+  -- Close Button
+  local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+  closeButton:SetPoint("TOPRIGHT", -3, -3)
+  closeButton:SetSize(26, 26)
+
+  -- Function to close all child windows
+  function DM.GUI:CloseAllChildWindows()
+    -- Close the help window if it exists and is shown
+    if DM.GUI.helpWindow and DM.GUI.helpWindow:IsShown() then
+      DM.GUI.helpWindow:Hide()
+    end
+
+    -- Close combination dialog if it exists and is shown
+    if DM.GUI.combinationDialog and DM.GUI.combinationDialog:IsShown() then
+      DM.GUI.combinationDialog:Hide()
+    end
+
+    -- Close spell selection window for combinations if it exists and is shown
+    if DM.GUI.comboSpellSelectionFrame and DM.GUI.comboSpellSelectionFrame:IsShown() then
+      DM.GUI.comboSpellSelectionFrame:Hide()
+    end
+
+    -- Close spell selection dialog if it exists and is shown
+    if DM.spellSelectionFrame and DM.spellSelectionFrame:IsShown() then
+      DM.spellSelectionFrame:Hide()
+    end
+
+    -- Close help popup if it exists and is shown
+    if DM.GUI.HelpPopupFrame and DM.GUI.HelpPopupFrame:IsShown() then
+      DM.GUI.HelpPopupFrame:Hide()
+    end
+
+    -- Close Find My Dots recording frame if it exists and is shown
+    if DM.recordingFrame and DM.recordingFrame:IsShown() then
+      DM:StopFindMyDots(false)
+    end
+
+    -- Close Dots Confirmation frame if it exists and is shown
+    if DM.dotsConfirmFrame and DM.dotsConfirmFrame:IsShown() then
+      DM.dotsConfirmFrame:Hide()
+    end
+
+    -- Close any static popups that belong to DotMaster
+    for name, _ in pairs(StaticPopupDialogs) do
+      if name:find("DOTMASTER_") then
+        StaticPopup_Hide(name)
+      end
+    end
+  end
+
+  -- Help Button (Question Mark)
+  local helpButton = CreateFrame("Button", nil, frame)
+  helpButton:SetSize(20, 20)
+  helpButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", -2, 0)
+
+  -- Informative text for the help button
+  local helpButtonText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  helpButtonText:SetText("How to use")
+  helpButtonText:SetTextColor(0.7, 0.7, 0.7, 0.9)             -- Light grey, slightly transparent
+  helpButtonText:SetPoint("RIGHT", helpButton, "LEFT", -3, 0) -- Position to the left of the icon, with small spacing
+
+  -- Create the texture for the question mark icon
+  local helpIcon = helpButton:CreateTexture(nil, "ARTWORK")
+  helpIcon:SetAllPoints()
+  helpIcon:SetTexture("Interface\\FriendsFrame\\InformationIcon")
+
+  -- Add hover effect
+  helpButton:SetHighlightTexture("Interface\\FriendsFrame\\InformationIcon", "ADD")
+
+  -- Help window creation function
+  local function CreateHelpWindow()
+    -- Create the help window frame
+    local helpFrame = CreateFrame("Frame", "DotMasterHelpFrame", UIParent, "BackdropTemplate")
+    helpFrame:SetSize(500, 600)
+    helpFrame:SetPoint("TOPLEFT", frame, "TOPRIGHT", 5, 0)
+    helpFrame:SetFrameStrata("HIGH")
+    helpFrame:SetMovable(true)
+    helpFrame:EnableMouse(true)
+    helpFrame:RegisterForDrag("LeftButton")
+    helpFrame:SetScript("OnDragStart", helpFrame.StartMoving)
+    helpFrame:SetScript("OnDragStop", helpFrame.StopMovingOrSizing)
+    helpFrame:Hide()
+
+    -- Register with UI special frames to enable Escape key closing
+    -- Check if already registered to prevent duplicates
+    local helpAlreadyRegistered = false
+    for _, frameName in ipairs(UISpecialFrames) do
+      if frameName == "DotMasterHelpFrame" then
+        helpAlreadyRegistered = true
+        break
+      end
+    end
+    if not helpAlreadyRegistered then
+      tinsert(UISpecialFrames, "DotMasterHelpFrame")
+    end
+
+    -- Add a backdrop
+    helpFrame:SetBackdrop({
+      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+      edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+      edgeSize = 16,
+      insets = { left = 4, right = 4, top = 4, bottom = 4 },
+    })
+    helpFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+    helpFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+
+    -- Title
+    local title = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -16)
+    -- Use class color for the title text
+    title:SetText(string.format("|cFF%02x%02x%02xDotMaster Guide|r",
+      classColor.r * 255,
+      classColor.g * 255,
+      classColor.b * 255))
+
+    -- Close Button
+    local helpCloseButton = CreateFrame("Button", nil, helpFrame, "UIPanelCloseButton")
+    helpCloseButton:SetPoint("TOPRIGHT", -3, -3)
+    helpCloseButton:SetSize(26, 26)
+
+    -- Create a scrollable content frame
+    local scrollFrame = CreateFrame("ScrollFrame", "DotMasterHelpScrollFrame", helpFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 20, -45)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -36, 20)
+
+    local content = CreateFrame("Frame", "DotMasterHelpContent", scrollFrame)
+    content:SetSize(450, 1200) -- Make it taller than the scroll frame to enable scrolling
+    scrollFrame:SetScrollChild(content)
+
+    -- Helper function to create section headers
+    local function CreateSection(title, yOffset)
+      local header = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+      header:SetPoint("TOPLEFT", 10, yOffset)
+      header:SetText(title)
+      header:SetTextColor(1, 0.82, 0) -- WoW Gold
+
+      local line = content:CreateTexture(nil, "ARTWORK")
+      line:SetHeight(1)
+      line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
+      line:SetPoint("RIGHT", content, "RIGHT", -10, 0)
+      line:SetColorTexture(0.6, 0.6, 0.6, 0.8)
+
+      return header:GetStringHeight() + 4 -- Return height used by header + line
+    end
+
+    -- Helper function to create content text
+    local function CreateText(text, yOffset, width)
+      local textObj = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      textObj:SetPoint("TOPLEFT", 10, yOffset)
+      textObj:SetWidth(width or 430)
+      textObj:SetJustifyH("LEFT")
+      textObj:SetText(text)
+      textObj:SetTextColor(0.9, 0.9, 0.9)
+
+      return textObj:GetStringHeight() + 10 -- Return height + padding
+    end
+
+    -- Helper function to create feature explanation
+    local function CreateFeature(title, description, yOffset)
+      local featureTitle = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      featureTitle:SetPoint("TOPLEFT", 15, yOffset)
+      featureTitle:SetText("• " .. title)
+      featureTitle:SetTextColor(0.8, 0.95, 1) -- Light blue for feature names
+
+      local featureDesc = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      featureDesc:SetPoint("TOPLEFT", 25, yOffset - featureTitle:GetStringHeight() - 2)
+      featureDesc:SetWidth(415)
+      featureDesc:SetJustifyH("LEFT")
+      featureDesc:SetText(description)
+      featureDesc:SetTextColor(0.9, 0.9, 0.9)
+
+      return featureTitle:GetStringHeight() + featureDesc:GetStringHeight() + 15
+    end
+
+    -- Fill content with DotMaster guide
+    local yOffset = 0
+
+    -- Introduction
+    yOffset = yOffset - CreateSection("What is DotMaster?", yOffset)
+    yOffset = yOffset -
+        CreateText(
+          "DotMaster is an advanced DoT tracking addon that enhances your enemy nameplates through Plater integration. It visually tracks your damage-over-time and healing-over-time effects with customizable colors, making it easier to manage your DoTs during combat for any class and specialization.",
+          yOffset)
+
+    -- Overview Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("How DotMaster Works", yOffset)
+    yOffset = yOffset -
+        CreateText(
+          "DotMaster seamlessly integrates with Plater Nameplates to provide real-time visual tracking of your DoTs. When you apply a DoT to a target, its nameplate changes color based on your settings. You can choose to color the entire nameplate or just the border, with custom colors for each spell or combination of spells.",
+          yOffset)
+
+    -- Features Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Key Features", yOffset)
+
+    -- Feature list with explanations
+    yOffset = yOffset -
+        CreateFeature("Advanced DoT Tracking",
+          "Track all DoTs/HoTs with custom colors on enemy nameplates. Perfect for multi-DoT classes like Warlocks, Shadow Priests, and Affliction specializations.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Combinations Tracking",
+          "Create unique colors for when multiple specific DoTs are active on the same target, ideal for complex rotations and priority management.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Border-Only Mode",
+          "Keep Plater's health bar colors intact while using borders to track DoTs, maintaining important information like target health percentage.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Expiry Warning",
+          "Nameplates flash when DoTs are about to expire, with customizable threshold, interval, and brightness settings.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("M+ Profile Integration",
+          "Extend Plater colors option preserves important M+ mob indicators (like casters, healers, etc.) while still showing DoT status.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Class & Spec Awareness",
+          "Automatically adapts to your current class and specialization with unique settings for each.",
+          yOffset)
+
+    -- Settings Section
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Getting Started", yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "1. |cFFFFD100Enable DotMaster|r - Open the addon with /dm and check 'Enable DotMaster' in the General tab\n" ..
+          "2. |cFFFFD100Install Plater Integration|r - Click the 'Install Plater Integration' button if prompted\n" ..
+          "3. |cFFFFD100Add DoTs to Track|r - Go to the Tracked Spells tab and add spells you want to monitor\n" ..
+          "4. |cFFFFD100Customize Colors|r - Assign unique colors to each spell for easy recognition\n" ..
+          "5. |cFFFFD100Create Combinations|r - Set up spell combinations in the Combinations tab for more advanced tracking\n" ..
+          "6. |cFFFFD100Adjust Visual Settings|r - Fine-tune border thickness, expiry flash settings, and other visual preferences",
+          yOffset)
+
+    -- Tab Explanations
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Understanding the Tabs", yOffset)
+
+    yOffset = yOffset -
+        CreateFeature("General Tab",
+          "Core settings including enabling/disabling the addon, Plater integration, minimap icon, border behavior, and expiry flash settings. This is where you control how DotMaster looks and behaves.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Tracked Spells Tab",
+          "Manage which spells DotMaster monitors. Add spells, set unique colors, and define display priorities. Higher priority spells take precedence when multiple DoTs are active.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Combinations Tab",
+          "Create and manage spell combinations. Define spell groups that should display a unique color when all spells in the group are active on the same target, perfect for complex rotations.",
+          yOffset)
+    yOffset = yOffset -
+        CreateFeature("Database Tab",
+          "View all spells DotMaster has detected from your character. Use the 'Find My Dots' feature to discover and track new spells as you cast them.",
+          yOffset)
+
+    -- Visual Settings Explained
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Visual Options Explained", yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100Border Logic:|r\n" ..
+          "• |cFFADD8E6Extend Plater Colors to Borders:|r Preserves Plater's M+ color coding for important mobs in borders\n" ..
+          "• |cFFADD8E6Use Borders for DoT Tracking:|r Only changes border color instead of the entire health bar\n" ..
+          "• |cFFADD8E6Border Thickness:|r Adjusts the thickness of nameplate borders (requires UI reload)\n\n" ..
+          "|cFFFFD100Expiry Warning:|r\n" ..
+          "• |cFFADD8E6Expiry Flash:|r Enables flashing when DoTs are about to expire\n" ..
+          "• |cFFADD8E6Seconds:|r How many seconds before expiration the flashing begins\n" ..
+          "• |cFFADD8E6Interval:|r Controls how quickly the nameplate flashes\n" ..
+          "• |cFFADD8E6Brightness:|r Adjusts the intensity of the flashing effect",
+          yOffset)
+
+    -- Pro Tips
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Pro Tips", yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "• |cFFFFD100Color Strategy:|r Use bright colors for high-priority DoTs and softer colors for maintenance DoTs\n" ..
+          "• |cFFFFD100Border-Only Mode:|r Ideal for tanks and M+ where health percentages are critical information\n" ..
+          "• |cFFFFD100Combination Priority:|r Set higher priority for your core DoT combinations to ensure they're always visible\n" ..
+          "• |cFFFFD100Custom Per Spec:|r Configure different tracking settings for different specializations (e.g., Shadow vs Discipline)\n" ..
+          "• |cFFFFD100Find My Dots:|r Cast your spells once to auto-detect them if you're unsure of spell IDs",
+          yOffset)
+
+    -- Troubleshooting
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Troubleshooting", yOffset)
+
+    yOffset = yOffset -
+        CreateText(
+          "• |cFFFFD100Colors Not Showing:|r Ensure DotMaster is enabled and Plater integration is installed\n" ..
+          "• |cFFFFD100Missing Spells:|r Use the Database tab's 'Find My Dots' feature to detect your spells\n" ..
+          "• |cFFFFD100UI Reload Prompt:|r Some settings (like border thickness) require a UI reload to take effect\n" ..
+          "• |cFFFFD100Plater Updates:|r If you update Plater, you may need to reinstall the DotMaster integration\n" ..
+          "• |cFFFFD100Reset Option:|r Use /dm reset if you need to start fresh with default settings",
+          yOffset)
+
+    -- Footer
+    yOffset = yOffset - 20 -- Extra space
+    yOffset = yOffset - CreateSection("Commands & Resources", yOffset)
+    yOffset = yOffset -
+        CreateText(
+          "|cFFFFD100Slash Commands:|r\n" ..
+          "• |cFFADD8E6/dm|r or |cFFADD8E6/dotmaster|r - Toggle the main interface\n" ..
+          "• |cFFADD8E6/dm minimap|r - Toggle minimap icon\n" ..
+          "• |cFFADD8E6/dm reset|r - Reset to default settings\n" ..
+          "• |cFFADD8E6/dm version|r - Display current version\n\n" ..
+          "For additional support and the latest updates, visit the addon page on CurseForge, Wago, or GitHub.",
+          yOffset)
+
+    return helpFrame
+  end
 
   -- Create the help window when the button is clicked
   helpButton:SetScript("OnClick", function()
@@ -279,24 +653,24 @@ function DM:CreateGUI()
     end
   end)
 
-  -- Author credit
+  -- Create a footer frame that will contain global buttons
+  local footerFrame = CreateFrame("Frame", "DotMasterFooterFrame", frame)
+  footerFrame:SetHeight(45)                                       -- Reverted back to 45 from 75
+  footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 20) -- Reduced y-offset from 25 to 20 (moves text 5px down)
+  footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 20)
+
+  -- Author credit - positioned to center the two-line group vertically in the footer
   local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  author:SetPoint("BOTTOM", 0, 12) -- Increase from 5 to 12 to add more space
+  author:SetPoint("CENTER", footerFrame, "CENTER", 0, -14) -- Changed from -13.5 to -14
   -- Read version from API first, then SavedVariables, fallback to defaults if not found
   local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
       (DotMasterDB and DotMasterDB.version) or
       (DM.defaults and DM.defaults.version) or "N/A"
   author:SetText("by Jervaise - v" .. versionString)
 
-  -- Create a footer frame that will contain global buttons
-  local footerFrame = CreateFrame("Frame", "DotMasterFooterFrame", frame)
-  footerFrame:SetHeight(45)                                       -- Increased from 40 to 45
-  footerFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 25) -- Increased y-offset from 20 to 25
-  footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 25)
-
-  -- Add a status message text in the footer
+  -- Add a status message text in the footer, positioned above the author credit with 1.5 line spacing
   local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
+  statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)         -- Changed from 0.5 to 0
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
   DM.GUI.statusMessage = statusMessage                                  -- Store reference
@@ -348,32 +722,111 @@ function DM:CreateGUI()
 
   -- Create tab system
   local tabHeight = 30
+  local tabFrames = {}
+  local tabButtons = {}
+  DM.GUI.tabFrames = tabFrames
+  DM.GUI.tabButtons = tabButtons
+  DM.GUI.activeTabID = 1 -- Track the active tab ID
 
-  -- Tab background
-  local tabBg = frame:CreateTexture(nil, "BACKGROUND")
-  tabBg:SetPoint("TOPLEFT", 8, -40)
-  tabBg:SetPoint("TOPRIGHT", -8, -40)
-  tabBg:SetHeight(tabHeight)
-  tabBg:SetColorTexture(0, 0, 0, 0.6) -- Match debug window transparency
-  
-  if #Tabs < 4 then
-    table.insert(Tabs, CreateTab("General", 30, frame))
-    table.insert(Tabs, CreateTab("Tracked Spells", 30, frame))
-    table.insert(Tabs, CreateTab("Combinations", 30, frame))
-    table.insert(Tabs, CreateTab("Database", 30, frame))
+  -- Tab names and order
+  local tabNames = {
+    "General",
+    "Tracked Spells",
+    "Combinations",
+    "Database"
+  }
 
-    for i = 1, #Tabs do
-      Tabs[i]._Button:SetScript("OnClick", function(self)
-        print("Clicked button: " .. Tabs[i]._ID)
-        DM.GUI:SelectTab(Tabs[i])
-      end)
+  -- Calculate total width needed for all tabs and center them
+  local tabWidth = 110
+  local tabSpacing = 5
+  local totalTabsWidth = (#tabNames * tabWidth) + ((#tabNames - 1) * tabSpacing)
+  local frameWidth = frame:GetWidth() or 500
+  local startX = (frameWidth - totalTabsWidth) / 2
+
+  -- Create each tab frame
+  for i = 1, #tabNames do
+    -- Tab content frame
+    tabFrames[i] = CreateFrame("Frame", "DotMasterTabFrame" .. i, frame)
+    tabFrames[i]:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -(45 + tabHeight))
+    tabFrames[i]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 60)
+    tabFrames[i]:Hide()
+
+    -- Tab button
+    local tabButton = CreateFrame("Button", "DotMasterTab" .. i, frame)
+    tabButton:SetSize(tabWidth, tabHeight)
+    tabButtons[i] = tabButton -- Store direct reference to button
+
+    -- Tab styling
+    local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
+    normalTexture:SetAllPoints()
+    normalTexture:SetColorTexture(0, 0, 0, 0.7)
+    tabButton.normalTexture = normalTexture
+
+    -- Tab text
+    local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    text:SetPoint("CENTER")
+    text:SetText(tabNames[i])
+    text:SetTextColor(1, 0.82, 0)
+    tabButton.text = text -- Store direct reference to text
+
+    -- Create class-colored selection highlight at bottom (reduced height to 1 pixel)
+    local selectionHighlight = tabButton:CreateTexture(nil, "OVERLAY")
+    selectionHighlight:SetHeight(1)
+    selectionHighlight:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 2, 0)
+    selectionHighlight:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", -2, 0)
+    selectionHighlight:SetColorTexture(classColor.r, classColor.g, classColor.b, 1.0)
+    selectionHighlight:Hide()
+    tabButton.selectionHighlight = selectionHighlight
+
+    -- Store ID and script
+    tabButton.id = i
+    tabButton:SetScript("OnClick", function(self)
+      DM.GUI:SelectTab(self.id)
+    end)
+
+    -- Position tabs centered
+    tabButton:SetPoint("TOPLEFT", frame, "TOPLEFT", startX + (i - 1) * (tabWidth + tabSpacing), -40)
+  end
+
+  -- Set initial active tab styling
+  if tabButtons[1] and tabButtons[1].normalTexture then
+    tabButtons[1].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+    -- Show selection highlight for first tab
+    if tabButtons[1].selectionHighlight then
+      tabButtons[1].selectionHighlight:Show()
     end
   end
+  tabFrames[1]:Show()
 
-  if #Tabs == 4 then
-    InitilizeTabFrames()
+  -- Create tab content
+  if DM.CreateGeneralTab then
+    DM:CreateGeneralTab(tabFrames[1])
+  elseif DotMaster_Components.CreateGeneralTab then
+    DotMaster_Components.CreateGeneralTab(tabFrames[1])
+  else
+    print("Error: CreateGeneralTab function not found!")
   end
-  
+
+  -- Create Tracked Spells tab content
+  if DotMaster_Components.CreateTrackedSpellsTab then
+    DotMaster_Components.CreateTrackedSpellsTab(tabFrames[2])
+  else
+    print("Error: CreateTrackedSpellsTab function not found!")
+  end
+
+  -- Create Combinations tab content
+  if DotMaster_Components.CreateCombinationsTab then
+    DotMaster_Components.CreateCombinationsTab(tabFrames[3])
+  else
+    print("Error: CreateCombinationsTab function not found!")
+  end
+
+  -- Create Database tab content
+  if DotMaster_Components.CreateDatabaseTab then
+    DotMaster_Components.CreateDatabaseTab(tabFrames[4])
+  else
+    print("Error: CreateDatabaseTab function not found!")
+  end
 
   -- Initialize GUI frame
   DM.GUI.frame = frame
@@ -541,458 +994,158 @@ function DM:CreateGUI()
     DM.GUI:UpdatePlaterOverlayStatus()
   end)
 
-  -- Initialize Tabs
-  local tabInfo = {
-    -- ... existing code ...
-  }
-
   return frame
 end
 
--- DEBUG ONLY !TODO: REMOVE ME 
-function DM:AddToInspector(data, strName)
-  	DevTool:AddData(data, strName)
+-- Function to create the tab group and tabs
+function DM.GUI:CreateTabs(parent, tabInfo)
+  -- This function is no longer used after removing tab system
+  -- Keeping as stub for compatibility
 end
 
-function InitilizeTabFrames()
-  DM:AddToInspector(Tabs, "Tab info")
-
-
-  local firstTab = _G["DotMasterTab_General"]
-  if firstTab and firstTab.normalTexture then
-    firstTab.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-  end
-  Tabs[1]._Frame:Show()
-
-  if DM.CreateGeneralTab then
-    DM:CreateGeneralTab(Tabs[1]._Frame)
-  elseif DotMaster_Components.CreateGeneralTab then
-    DotMaster_Components.CreateGeneralTab(Tabs[1]._Frame)
-  else
-    print("Error: CreateGeneralTab function not found!")
+-- Function to select a tab
+function DM.GUI:SelectTab(tabID)
+  -- Safety checks
+  if not DM.GUI or not DM.GUI.tabFrames or not DM.GUI.tabButtons then
+    return false
   end
 
-  if DotMaster_Components.CreateTrackedSpellsTab then
-    DotMaster_Components.CreateTrackedSpellsTab(Tabs[2]._Frame)
-  else
-    print("Error: CreateTrackedSpellsTab function not found!")
+  -- Ensure tabID is valid
+  if not tabID or type(tabID) ~= "number" or tabID < 1 or tabID > #DM.GUI.tabFrames then
+    return false
   end
 
-  if DotMaster_Components.CreateCombinationsTab then
-    DotMaster_Components.CreateCombinationsTab(Tabs[3]._Frame)
-  else
-    print("Error: CreateCombinationsTab function not found!")
-  end
+  -- Store the active tab ID
+  DM.GUI.activeTabID = tabID
 
-  if DotMaster_Components.CreateDatabaseTab then
-    DotMaster_Components.CreateDatabaseTab(Tabs[4]._Frame)
-  else
-    print("Error: CreateDatabaseTab function not found!")
-  end
+  -- Hide all tab frames and reset button appearance
+  for i = 1, #DM.GUI.tabFrames do
+    if DM.GUI.tabFrames[i] then
+      DM.GUI.tabFrames[i]:Hide()
+    end
 
-end
-
-function AddHoverEffect(button)
-  button:SetHighlightTexture("Interface\\FriendsFrame\\InformationIcon", "ADD")
-end
-
-function CreateInformationButton(frame, closeButton)
-  local helpButton = CreateFrame("Button", nil, frame)
-  helpButton:SetSize(20, 20)
-  helpButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", -2, 0)
-  
-  local helpButtonText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  helpButtonText:SetText("How to use")
-  helpButtonText:SetTextColor(0.7, 0.7, 0.7, 0.9)                   -- Light grey, slightly transparent
-  helpButtonText:SetPoint("RIGHT", helpButton, "LEFT", -3, 0)       -- Position to the left of the icon, with small spacing
-
-  local helpIcon = helpButton:CreateTexture(nil, "ARTWORK")
-  helpIcon:SetAllPoints()
-  helpIcon:SetTexture("Interface\\FriendsFrame\\InformationIcon")
-
-  return helpButton
-end
-
-function DM.GUI:CloseAllChildWindows()
-  -- Close the help window if it exists and is shown
-  if DM.GUI.helpWindow and DM.GUI.helpWindow:IsShown() then
-    DM.GUI.helpWindow:Hide()
-  end
-
-  -- Close combination dialog if it exists and is shown
-  if DM.GUI.combinationDialog and DM.GUI.combinationDialog:IsShown() then
-    DM.GUI.combinationDialog:Hide()
-  end
-
-  -- Close spell selection window for combinations if it exists and is shown
-  if DM.GUI.comboSpellSelectionFrame and DM.GUI.comboSpellSelectionFrame:IsShown() then
-    DM.GUI.comboSpellSelectionFrame:Hide()
-  end
-
-  -- Close spell selection dialog if it exists and is shown
-  if DM.spellSelectionFrame and DM.spellSelectionFrame:IsShown() then
-    DM.spellSelectionFrame:Hide()
-  end
-
-  -- Close help popup if it exists and is shown
-  if DM.GUI.HelpPopupFrame and DM.GUI.HelpPopupFrame:IsShown() then
-    DM.GUI.HelpPopupFrame:Hide()
-  end
-
-  -- Close Find My Dots recording frame if it exists and is shown
-  if DM.recordingFrame and DM.recordingFrame:IsShown() then
-    DM:StopFindMyDots(false)
-  end
-
-  -- Close Dots Confirmation frame if it exists and is shown
-  if DM.dotsConfirmFrame and DM.dotsConfirmFrame:IsShown() then
-    DM.dotsConfirmFrame:Hide()
-  end
-
-  -- Close any static popups that belong to DotMaster
-  for name, _ in pairs(StaticPopupDialogs) do
-    if name:find("DOTMASTER_") then
-      StaticPopup_Hide(name)
+    if DM.GUI.tabButtons[i] and DM.GUI.tabButtons[i].normalTexture then
+      -- Set inactive color
+      DM.GUI.tabButtons[i].normalTexture:SetColorTexture(0, 0, 0, 0.7)
+      -- Hide selection highlight for inactive tabs
+      if DM.GUI.tabButtons[i].selectionHighlight then
+        DM.GUI.tabButtons[i].selectionHighlight:Hide()
+      end
     end
   end
-end
 
-function SetTitle(frame, classColor, windowTitle)
-  local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  title:SetPoint("TOP", 0, -16)
-  -- Use class color for the title text
-  title:SetText(string.format(windowTitle,
-    classColor.r * 255,
-    classColor.g * 255,
-    classColor.b * 255))
-end
-
-function CreateCloseButton(frame)
-  local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-  closeButton:SetPoint("TOPRIGHT", -3, -3)
-  closeButton:SetSize(26, 26)
-
-  return closeButton
-end
-
-function SetFrameBackdrop(frame)
-  frame:SetBackdrop({
-    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 16,
-    insets = { left = 4, right = 4, top = 4, bottom = 4 },
-  })
-  frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-  frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
-end
-
-function InternalCreateFrame(paramenters)
-  local frame = CreateFrame("Frame", paramenters.frameName, UIParent, paramenters.backdropTemplate)
-  frame:SetSize(paramenters.sizeX, paramenters.sizeY)
-  if paramenters.setPoint2 == nil then
-    frame:SetPoint(paramenters.setPoint1)
+  -- Show selected tab
+  if DM.GUI.tabFrames[tabID] then
+    DM.GUI.tabFrames[tabID]:Show()
   else
-    frame:SetPoint(paramenters.setPoint1, paramenters.anchor, paramenters.setPoint2, 5, 0)
-  end
-  frame:SetFrameStrata(paramenters.frameStrata)
-  frame:SetMovable(paramenters.movable)
-  frame:EnableMouse(paramenters.enableMouse)
-  frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-  frame:Hide()
-
-  return frame
-end
-
-function CreateTab(bname, tabHeight, mFrame)
-  local tabFrame
-  -- Tab content frames
-  tabFrame = CreateFrame("Frame", "DotMasterTabFrame_" .. bname, mFrame)
-  tabFrame:SetPoint("TOPLEFT", 10, -(45 + tabHeight))
-  tabFrame:SetPoint("BOTTOMRIGHT", -10, 60)   -- Increased from 30 to 60 to make room for footer
-  tabFrame:Hide()
-
-  -- Custom tab buttons
-  local tabButton = CreateFrame("Button", "DotMasterTab_" .. bname, mFrame)
-  tabButton:SetSize(100, tabHeight)
-
-  -- Tab styling
-  local normalTexture = tabButton:CreateTexture(nil, "BACKGROUND")
-  normalTexture:SetAllPoints()
-  -- Set initial inactive color
-  normalTexture:SetColorTexture(0, 0, 0, 0.7)
-  tabButton.normalTexture = normalTexture   -- Store reference to the texture
-
-  -- Tab text
-  local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  text:SetPoint("CENTER")
-  text:SetText(bname)
-  text:SetTextColor(1, 0.82, 0)
-
-  -- Position tabs side by side with appropriate spacing
-  -- Adjust width to fit 4 tabs
-  local tabWidth = 115
-  tabButton:SetSize(tabWidth, tabHeight)
-  tabButton:SetPoint("TOPLEFT", mFrame, "TOPLEFT", 10 + (#Tabs - 1) * (tabWidth + 5), -40)
-
-  local lastItem = 0
-  if Tabs[#Tabs] == nil then
-    lastItem = 0
-  else
-    lastItem = Tabs[#Tabs]._ID
+    print("Error: Tab content frame " .. tabID .. " not found")
+    return false
   end
 
-  return Tab:new(lastItem + 1, tabFrame, 0, tabButton)
-end
-
-function CreateHelpWindow(frame, classColor)
-  local helpFrame = InternalCreateFrame({
-    frameName = "DotMasterHelpFrame",
-    backdropTemplate = "BackdropTemplate",
-    sizeX = 500,
-    sizeY = 600,
-    setPoint1 = "TOPLEFT",
-    setPoint2 = "TOPRIGHT",
-    frameStrata = "HIGH",
-    movable = true,
-    enableMouse = true,
-    anchor = frame
-  })
-  SetFrameBackdrop(helpFrame)
-  SetTitle(helpFrame, classColor, "|cFF%02x%02x%02xDotMaster Guide|r")
-  CreateCloseButton(helpFrame)
-
-  -- Register with UI special frames to enable Escape key closing
-  tinsert(UISpecialFrames, "DotMasterHelpFrame")
-
-  -- Create a scrollable content frame
-  local scrollFrame = CreateFrame("ScrollFrame", "DotMasterHelpScrollFrame", helpFrame, "UIPanelScrollFrameTemplate")
-  scrollFrame:SetPoint("TOPLEFT", 20, -45)
-  scrollFrame:SetPoint("BOTTOMRIGHT", -36, 20)
-
-  local content = CreateFrame("Frame", "DotMasterHelpContent", scrollFrame)
-  content:SetSize(450, 1200)   -- Make it taller than the scroll frame to enable scrolling
-  scrollFrame:SetScrollChild(content)
-
-  -- Helper function to create section headers
-  local function CreateSection(title, yOffset)
-    local header = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    header:SetPoint("TOPLEFT", 10, yOffset)
-    header:SetText(title)
-    header:SetTextColor(1, 0.82, 0)   -- WoW Gold
-
-    local line = content:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
-    line:SetPoint("RIGHT", content, "RIGHT", -10, 0)
-    line:SetColorTexture(0.6, 0.6, 0.6, 0.8)
-
-    return header:GetStringHeight() + 4   -- Return height used by header + line
-  end
-
-  -- Helper function to create content text
-  local function CreateText(text, yOffset, width)
-    local textObj = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    textObj:SetPoint("TOPLEFT", 10, yOffset)
-    textObj:SetWidth(width or 430)
-    textObj:SetJustifyH("LEFT")
-    textObj:SetText(text)
-    textObj:SetTextColor(0.9, 0.9, 0.9)
-
-    return textObj:GetStringHeight() + 10   -- Return height + padding
-  end
-
-  -- Helper function to create feature explanation
-  local function CreateFeature(title, description, yOffset)
-    local featureTitle = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    featureTitle:SetPoint("TOPLEFT", 15, yOffset)
-    featureTitle:SetText("• " .. title)
-    featureTitle:SetTextColor(0.8, 0.95, 1)   -- Light blue for feature names
-
-    local featureDesc = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    featureDesc:SetPoint("TOPLEFT", 25, yOffset - featureTitle:GetStringHeight() - 2)
-    featureDesc:SetWidth(415)
-    featureDesc:SetJustifyH("LEFT")
-    featureDesc:SetText(description)
-    featureDesc:SetTextColor(0.9, 0.9, 0.9)
-
-    return featureTitle:GetStringHeight() + featureDesc:GetStringHeight() + 15
-  end
-
-
-  -- !TODO: Brother, no. Seperate file for all the text, then just grab it from there. This is unreadbale.
-  -- Fill content with DotMaster guide
-  local yOffset = 0
-
-  -- Introduction
-  yOffset = yOffset - CreateSection("What is DotMaster?", yOffset)
-  yOffset = yOffset -
-      CreateText(
-        "DotMaster is an advanced DoT tracking addon that enhances your enemy nameplates through Plater integration. It visually tracks your damage-over-time and healing-over-time effects with customizable colors, making it easier to manage your DoTs during combat for any class and specialization.",
-        yOffset)
-
-  -- Overview Section
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("How DotMaster Works", yOffset)
-  yOffset = yOffset -
-      CreateText(
-        "DotMaster seamlessly integrates with Plater Nameplates to provide real-time visual tracking of your DoTs. When you apply a DoT to a target, its nameplate changes color based on your settings. You can choose to color the entire nameplate or just the border, with custom colors for each spell or combination of spells.",
-        yOffset)
-
-  -- Features Section
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Key Features", yOffset)
-
-  -- Feature list with explanations
-  yOffset = yOffset -
-      CreateFeature("Advanced DoT Tracking",
-        "Track all DoTs/HoTs with custom colors on enemy nameplates. Perfect for multi-DoT classes like Warlocks, Shadow Priests, and Affliction specializations.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Combinations Tracking",
-        "Create unique colors for when multiple specific DoTs are active on the same target, ideal for complex rotations and priority management.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Border-Only Mode",
-        "Keep Plater's health bar colors intact while using borders to track DoTs, maintaining important information like target health percentage.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Expiry Warning",
-        "Nameplates flash when DoTs are about to expire, with customizable threshold, interval, and brightness settings.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("M+ Profile Integration",
-        "Extend Plater colors option preserves important M+ mob indicators (like casters, healers, etc.) while still showing DoT status.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Class & Spec Awareness",
-        "Automatically adapts to your current class and specialization with unique settings for each.",
-        yOffset)
-
-  -- Settings Section
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Getting Started", yOffset)
-
-  yOffset = yOffset -
-      CreateText(
-        "1. |cFFFFD100Enable DotMaster|r - Open the addon with /dm and check 'Enable DotMaster' in the General tab\n" ..
-        "2. |cFFFFD100Install Plater Integration|r - Click the 'Install Plater Integration' button if prompted\n" ..
-        "3. |cFFFFD100Add DoTs to Track|r - Go to the Tracked Spells tab and add spells you want to monitor\n" ..
-        "4. |cFFFFD100Customize Colors|r - Assign unique colors to each spell for easy recognition\n" ..
-        "5. |cFFFFD100Create Combinations|r - Set up spell combinations in the Combinations tab for more advanced tracking\n" ..
-        "6. |cFFFFD100Adjust Visual Settings|r - Fine-tune border thickness, expiry flash settings, and other visual preferences",
-        yOffset)
-
-  -- Tab Explanations
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Understanding the Tabs", yOffset)
-
-  yOffset = yOffset -
-      CreateFeature("General Tab",
-        "Core settings including enabling/disabling the addon, Plater integration, minimap icon, border behavior, and expiry flash settings. This is where you control how DotMaster looks and behaves.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Tracked Spells Tab",
-        "Manage which spells DotMaster monitors. Add spells, set unique colors, and define display priorities. Higher priority spells take precedence when multiple DoTs are active.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Combinations Tab",
-        "Create and manage spell combinations. Define spell groups that should display a unique color when all spells in the group are active on the same target, perfect for complex rotations.",
-        yOffset)
-  yOffset = yOffset -
-      CreateFeature("Database Tab",
-        "View all spells DotMaster has detected from your character. Use the 'Find My Dots' feature to discover and track new spells as you cast them.",
-        yOffset)
-
-  -- Visual Settings Explained
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Visual Options Explained", yOffset)
-
-  yOffset = yOffset -
-      CreateText(
-        "|cFFFFD100Border Logic:|r\n" ..
-        "• |cFFADD8E6Extend Plater Colors to Borders:|r Preserves Plater's M+ color coding for important mobs in borders\n" ..
-        "• |cFFADD8E6Use Borders for DoT Tracking:|r Only changes border color instead of the entire health bar\n" ..
-        "• |cFFADD8E6Border Thickness:|r Adjusts the thickness of nameplate borders (requires UI reload)\n\n" ..
-        "|cFFFFD100Expiry Warning:|r\n" ..
-        "• |cFFADD8E6Expiry Flash:|r Enables flashing when DoTs are about to expire\n" ..
-        "• |cFFADD8E6Seconds:|r How many seconds before expiration the flashing begins\n" ..
-        "• |cFFADD8E6Interval:|r Controls how quickly the nameplate flashes\n" ..
-        "• |cFFADD8E6Brightness:|r Adjusts the intensity of the flashing effect",
-        yOffset)
-
-  -- Pro Tips
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Pro Tips", yOffset)
-
-  yOffset = yOffset -
-      CreateText(
-        "• |cFFFFD100Color Strategy:|r Use bright colors for high-priority DoTs and softer colors for maintenance DoTs\n" ..
-        "• |cFFFFD100Border-Only Mode:|r Ideal for tanks and M+ where health percentages are critical information\n" ..
-        "• |cFFFFD100Combination Priority:|r Set higher priority for your core DoT combinations to ensure they're always visible\n" ..
-        "• |cFFFFD100Custom Per Spec:|r Configure different tracking settings for different specializations (e.g., Shadow vs Discipline)\n" ..
-        "• |cFFFFD100Find My Dots:|r Cast your spells once to auto-detect them if you're unsure of spell IDs",
-        yOffset)
-
-  -- Troubleshooting
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Troubleshooting", yOffset)
-
-  yOffset = yOffset -
-      CreateText(
-        "• |cFFFFD100Colors Not Showing:|r Ensure DotMaster is enabled and Plater integration is installed\n" ..
-        "• |cFFFFD100Missing Spells:|r Use the Database tab's 'Find My Dots' feature to detect your spells\n" ..
-        "• |cFFFFD100UI Reload Prompt:|r Some settings (like border thickness) require a UI reload to take effect\n" ..
-        "• |cFFFFD100Plater Updates:|r If you update Plater, you may need to reinstall the DotMaster integration\n" ..
-        "• |cFFFFD100Reset Option:|r Use /dm reset if you need to start fresh with default settings",
-        yOffset)
-
-  -- Footer
-  yOffset = yOffset - 20   -- Extra space
-  yOffset = yOffset - CreateSection("Commands & Resources", yOffset)
-  yOffset = yOffset -
-      CreateText(
-        "|cFFFFD100Slash Commands:|r\n" ..
-        "• |cFFADD8E6/dm|r or |cFFADD8E6/dotmaster|r - Toggle the main interface\n" ..
-        "• |cFFADD8E6/dm minimap|r - Toggle minimap icon\n" ..
-        "• |cFFADD8E6/dm reset|r - Reset to default settings\n" ..
-        "• |cFFADD8E6/dm version|r - Display current version\n\n" ..
-        "For additional support and the latest updates, visit the addon page on CurseForge, Wago, or GitHub.",
-        yOffset)
-
-  return helpFrame
-end
-
-function DM.GUI:SelectTab(selectedframe)
-  selectedframe._Is_active = 1
-  selectedframe._Frame:Show()
-  selectedframe._Button.normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
-
-  for i = 1, #Tabs do
-    if i ~= selectedframe._ID then
-      Tabs[i]._Frame:Hide()
-      Tabs[i]._Button.normalTexture:SetColorTexture(0, 0, 0, 0.7)
-      Tabs[i]._Is_active = 0
+  -- Set active tab appearance
+  if DM.GUI.tabButtons[tabID] and DM.GUI.tabButtons[tabID].normalTexture then
+    DM.GUI.tabButtons[tabID].normalTexture:SetColorTexture(0.2, 0.2, 0.2, 0.8)
+    -- Show selection highlight for active tab
+    if DM.GUI.tabButtons[tabID].selectionHighlight then
+      DM.GUI.tabButtons[tabID].selectionHighlight:Show()
     end
   end
 
   -- Refresh appropriate tab content when clicked
   if selectedframe._ID == 2 then -- Tracked Spells tab
     if DM.GUI.RefreshTrackedSpellTabList then
-      DM.GUI:RefreshTrackedSpellTabList("")
+      pcall(function() DM.GUI:RefreshTrackedSpellTabList("") end)
     end
   elseif selectedframe._ID == 4 then -- Database tab
     if DM.GUI.RefreshDatabaseTabList then
-      DM.GUI:RefreshDatabaseTabList("")
+      pcall(function() DM.GUI:RefreshDatabaseTabList("") end)
     end
   end
 
-  PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+  -- Play sound if available
+  if SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB then
+    pcall(function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB) end)
+  end
+
+  return true
 end
 
--- Original CreateFooterMessage and UpdatePlaterStatusFooter can be removed later
--- if the new overlay system fully replaces their functionality.
+-- Function to restore tab state after zone changes
+function DM.GUI:RestoreTabState()
+  -- Check if we have a stored active tab
+  if DM.GUI and DM.GUI.activeTabID then
+    -- Reselect the active tab
+    DM.GUI:SelectTab(DM.GUI.activeTabID)
+  end
+end
+
+-- Create and register event frame for zone changes and loading screens
+local loadingEventFrame = CreateFrame("Frame")
+loadingEventFrame.eventCount = 0
+-- Only register for the event that signifies a loading screen has started
+-- loadingEventFrame:RegisterEvent("ZONE_CHANGED")
+-- loadingEventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+-- loadingEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+-- loadingEventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
+loadingEventFrame:RegisterEvent("LOADING_SCREEN_ENABLED")
+-- loadingEventFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+
+-- Keep a permanent reference to prevent garbage collection
+DM.loadingEventFrame = loadingEventFrame
+
+-- For debugging, keep track of which events have fired
+DM.loadingEventCounts = DM.loadingEventCounts or {}
+
+-- Function to forcibly close the GUI
+local function ForceCloseGUI(event)
+  -- Always close the GUI during loading screens, regardless of state
+  if DM.GUI and DM.GUI.frame then
+    if DM.GUI.frame:IsShown() then
+      DM.GUI.frame:Hide()
+    end
+  end
+end
+
+loadingEventFrame:SetScript("OnEvent", function(self, event, ...)
+  -- Update event counters for debugging
+  DM.loadingEventCounts[event] = (DM.loadingEventCounts[event] or 0) + 1
+  self.eventCount = self.eventCount + 1
+
+  -- Only act if the loading screen is enabled
+  if event == "LOADING_SCREEN_ENABLED" then
+    ForceCloseGUI(event)
+  end
+  -- No longer need to handle other events for closing the GUI
+end)
+
+-- Function to toggle the main GUI visibility
+function DM:ToggleGUI()
+  -- If frame exists, toggle its visibility
+  if DM.GUI and DM.GUI.frame then
+    if DM.GUI.frame:IsShown() then
+      DM.GUI.frame:Hide()
+    else
+      -- Ensure we restore last active tab before showing
+      DM.GUI.frame:Show()
+
+      -- Select the active tab
+      if DM.GUI.activeTabID then
+        DM.GUI:SelectTab(DM.GUI.activeTabID)
+      end
+    end
+  else
+    -- Create GUI if it doesn't exist
+    DM.GUI.frame = DM:CreateGUI()
+    DM.GUI.frame:Show()
+  end
+end
+
+-- Function to handle minimap icon click
+function DM:MinimapIconClicked()
+  -- Always use the toggle function
+  DM:ToggleGUI()
+end
+
 function DM.GUI:ShowHelpPopup()
   if not DM.GUI.HelpPopupFrame then
     local helpFrame = CreateFrame("Frame", "DotMasterHelpPopupFrame", UIParent, "BackdropTemplate")

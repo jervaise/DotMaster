@@ -79,14 +79,8 @@ function DM:InitializeMinimapIcon()
     text = "DotMaster",
     icon = iconPath,
     OnClick = function(_, button)
-      -- Toggle main interface for both left and right clicks
-      if DM.GUI and DM.GUI.frame then
-        if DM.GUI.frame:IsShown() then
-          DM.GUI.frame:Hide()
-        else
-          DM.GUI.frame:Show()
-        end
-      end
+      -- Use the new ToggleGUI function for consistent behavior
+      DM:ToggleGUI()
     end,
     OnTooltipShow = function(tooltip)
       if not tooltip or not tooltip.AddLine then return end

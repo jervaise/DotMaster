@@ -533,93 +533,56 @@ function DM:CreateCombinationsTab(parent)
           local b = currentColor.b or currentColor[3] or 0
           local a = currentColor.a or currentColor[4] or 1
 
-          -- Try to use the color picker from DotMaster_ColorPicker
-          if DotMaster_ColorPicker and DotMaster_ColorPicker.CreateColorSwatch then
-            -- Create color picker info
-            local colorPickerInfo = {
-              r = r,
-              g = g,
-              b = b,
-              opacity = a,
-              hasOpacity = true,
+          -- Use our enhanced color picker with favorites
+          if DotMaster_ShowEnhancedColorPicker then
+            DotMaster_ShowEnhancedColorPicker(r, g, b, function(newR, newG, newB)
+              -- Get the current spec's combinations again to ensure we have the latest data
+              local currentCombinations = DM:GetCurrentSpecCombinations()
+              if currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
+                -- Update color in database (keeping alpha from before)
+                currentCombinations.data[comboID].color = {
+                  r = newR, g = newG, b = newB, a = a
+                }
 
-              -- When color is changed
-              swatchFunc = function()
-                -- Get the new color values
-                local newR, newG, newB
-                if ColorPickerFrame.GetColorRGB then
-                  newR, newG, newB = ColorPickerFrame:GetColorRGB()
-                else
-                  newR, newG, newB = ColorPickerFrame:GetColorValues()
+                -- Save the updated combinations data
+                DM:SaveCombinationsDB()
+
+                -- Apply immediate color updates to this row
+                row.colorTexture:SetColorTexture(newR, newG, newB, a)
+                row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
+                row.nameText:SetTextColor(newR, newG, newB)
+
+                -- Use our refresh function to update all instances of this combo
+                if DM.RefreshCombinationColors then
+                  DM:RefreshCombinationColors()
                 end
-
-                -- Get alpha value
-                local newA = a
-                if OpacitySliderFrame and OpacitySliderFrame.GetValue then
-                  newA = OpacitySliderFrame:GetValue()
-                elseif ColorPickerFrame.opacity then
-                  newA = ColorPickerFrame.opacity
-                end
-
-                -- Get the current spec's combinations again to ensure we have the latest data
-                local currentCombinations = DM:GetCurrentSpecCombinations()
-                if currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
-                  -- Update color in database
-                  currentCombinations.data[comboID].color = {
-                    r = newR, g = newG, b = newB, a = newA
-                  }
-
-                  -- Save the updated combinations data
-                  DM:SaveCombinationsDB()
-
-                  -- Apply immediate color updates to this row
-                  row.colorTexture:SetColorTexture(newR, newG, newB, newA)
-                  row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
-                  row.nameText:SetTextColor(newR, newG, newB)
-
-                  -- Use our refresh function to update all instances of this combo
-                  if DM.RefreshCombinationColors then
-                    DM:RefreshCombinationColors()
-                  end
-                end
-              end,
-
-              -- Standard color picker function
-              func = function() end,
-
-              -- When color picker is canceled
-              cancelFunc = function()
-                -- No need to do anything, the color hasn't changed
               end
-            }
+            end)
+          else
+            -- Fallback to DM:ShowColorPicker if enhanced version not available
+            DM:ShowColorPicker(r, g, b, function(newR, newG, newB)
+              -- Get the current spec's combinations again to ensure we have the latest data
+              local currentCombinations = DM:GetCurrentSpecCombinations()
+              if currentCombinations and currentCombinations.data and currentCombinations.data[comboID] then
+                -- Update color in database (keeping alpha from before)
+                currentCombinations.data[comboID].color = {
+                  r = newR, g = newG, b = newB, a = a
+                }
 
-            -- Show the color picker
-            ColorPickerFrame:Hide() -- Hide first to ensure a refresh
+                -- Save the updated combinations data
+                DM:SaveCombinationsDB()
 
-            -- Use appropriate API
-            if ColorPickerFrame.SetupColorPickerAndShow then
-              ColorPickerFrame:SetupColorPickerAndShow(colorPickerInfo)
-            else
-              -- Older method - manually set each property
-              ColorPickerFrame.func = colorPickerInfo.swatchFunc
-              ColorPickerFrame.swatchFunc = colorPickerInfo.swatchFunc
-              ColorPickerFrame.cancelFunc = colorPickerInfo.cancelFunc
-              ColorPickerFrame.opacityFunc = colorPickerInfo.swatchFunc
-              ColorPickerFrame.hasOpacity = colorPickerInfo.hasOpacity
-              ColorPickerFrame.opacity = colorPickerInfo.opacity
-              ColorPickerFrame.previousValues = { r = r, g = g, b = b, a = a }
+                -- Apply immediate color updates to this row
+                row.colorTexture:SetColorTexture(newR, newG, newB, a)
+                row.rowBg:SetColorTexture(newR * 0.2, newG * 0.2, newB * 0.2, 0.8)
+                row.nameText:SetTextColor(newR, newG, newB)
 
-              -- Set colors based on available API
-              if ColorPickerFrame.SetColorRGB then
-                ColorPickerFrame:SetColorRGB(r, g, b)
-              else
-                -- Manually set RGB values for ElvUI
-                ColorPickerFrame:SetColorAlpha(r, g, b, a)
+                -- Use our refresh function to update all instances of this combo
+                if DM.RefreshCombinationColors then
+                  DM:RefreshCombinationColors()
+                end
               end
-
-              -- Show the frame
-              ColorPickerFrame:Show()
-            end
+            end)
           end
         end)
 
@@ -1297,90 +1260,34 @@ function DM:ShowCombinationDialog(comboID)
       -- Store current values for cancel
       local r, g, b, a = dialog.selectedColor.r, dialog.selectedColor.g, dialog.selectedColor.b, dialog.selectedColor.a
 
-      -- Create a simpler color picker info table compatible with both standard and ElvUI
-      local colorPickerInfo = {
-        r = r,
-        g = g,
-        b = b,
-        opacity = a,
-        hasOpacity = true,
-
-        -- When color is changed (swatchFunc is used by ElvUI)
-        swatchFunc = function()
-          -- Get the new color values - need to check which API is available
-          local newR, newG, newB
-          if ColorPickerFrame.GetColorRGB then -- Standard API
-            newR, newG, newB = ColorPickerFrame:GetColorRGB()
-          else                                 -- ElvUI may replace with these values
-            newR, newG, newB = ColorPickerFrame:GetColorValues()
-          end
-
-          -- Get alpha value - need to handle ElvUI's modifications
-          local newA = a -- Default to current alpha if we can't get a new one
-          if OpacitySliderFrame and OpacitySliderFrame.GetValue then
-            newA = OpacitySliderFrame:GetValue()
-          elseif ColorPickerFrame.opacity then
-            newA = ColorPickerFrame.opacity
-          end
-
-          -- Update selected color
+      -- Use our enhanced color picker with favorites
+      if DotMaster_ShowEnhancedColorPicker then
+        DotMaster_ShowEnhancedColorPicker(r, g, b, function(newR, newG, newB)
+          -- Update selected color (keeping alpha from before)
           dialog.selectedColor = {
             r = newR,
             g = newG,
             b = newB,
-            a = newA
-          }
-
-          -- Update color swatch
-          dialog.colorTexture:SetColorTexture(newR, newG, newB, newA)
-        end,
-
-        -- Used by ElvUI or standard color picker
-        func = function()
-          -- This will be called too in some cases, but we handle everything in swatchFunc
-        end,
-
-        -- When color picker is canceled
-        cancelFunc = function()
-          -- Restore original color
-          dialog.selectedColor = {
-            r = r,
-            g = g,
-            b = b,
             a = a
           }
 
           -- Update color swatch
-          dialog.colorTexture:SetColorTexture(r, g, b, a)
-        end
-      }
-
-      -- Show the color picker
-      ColorPickerFrame:Hide() -- Hide first to ensure a refresh
-
-      -- Try the standard API first, fall back to old method if not available
-      if ColorPickerFrame.SetupColorPickerAndShow then
-        ColorPickerFrame:SetupColorPickerAndShow(colorPickerInfo)
+          dialog.colorTexture:SetColorTexture(newR, newG, newB, a)
+        end)
       else
-        -- Older method - manually set each property
-        ColorPickerFrame.func = colorPickerInfo.swatchFunc
-        ColorPickerFrame.swatchFunc = colorPickerInfo.swatchFunc
-        ColorPickerFrame.cancelFunc = colorPickerInfo.cancelFunc
-        ColorPickerFrame.opacityFunc = colorPickerInfo.swatchFunc
-        ColorPickerFrame.hasOpacity = colorPickerInfo.hasOpacity
-        ColorPickerFrame.opacity = colorPickerInfo.opacity
-        ColorPickerFrame.previousValues = { r = r, g = g, b = b, a = a }
+        -- Fallback to DM:ShowColorPicker if enhanced version not available
+        DM:ShowColorPicker(r, g, b, function(newR, newG, newB)
+          -- Update selected color (keeping alpha from before)
+          dialog.selectedColor = {
+            r = newR,
+            g = newG,
+            b = newB,
+            a = a
+          }
 
-        -- Set colors based on available API
-        if ColorPickerFrame.SetColorRGB then
-          ColorPickerFrame:SetColorRGB(r, g, b)
-        else
-          -- Manually set RGB values for ElvUI
-          ColorPickerFrame:SetColorAlpha(r, g, b, a)
-        end
-
-        -- Show the frame
-        ColorPickerFrame:Show()
+          -- Update color swatch
+          dialog.colorTexture:SetColorTexture(newR, newG, newB, a)
+        end)
       end
     end)
 

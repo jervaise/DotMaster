@@ -1,6 +1,6 @@
 # DotMaster
 
-## Version 2.1.9
+## Version 2.2.0
 
 DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking through seamless integration with Plater Nameplates. It provides a fully customizable visual system for tracking your damage-over-time and healing-over-time effects directly on enemy nameplates.
 
@@ -14,8 +14,10 @@ DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking t
 - **Combinations Tracking**: Create custom spell combinations with unique colors when multiple specific DoTs are active
 - **Smart Border System**: Choose between full nameplate coloring or border-only mode for cleaner UI
 - **Enhanced Expiry Warnings**: Configurable flashing with adjustable threshold, interval, and brightness
+- **Favorite Colors System**: Save and reuse your favorite colors across all characters and specs
 
 ### Visual Customization
+- **Enhanced Color Picker**: Improved color picker with favorite color slots for quick access
 - **Border Thickness Control**: Adjust nameplate border thickness to your preference
 - **Priority System**: Set display priority between multiple active DoTs
 - **M+ Profile Integration**: Preserves important Mythic+ mob indicators when using custom Plater profiles
@@ -25,6 +27,7 @@ DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking t
 - **Drag & Drop Priority**: Easily rearrange spells with drag-and-drop priority system
 - **Minimap Access**: Convenient minimap button with customizable position
 - **Per-Character Settings**: Maintain different configurations for different characters and specs
+- **Improved ESC Key Handling**: Consistent escape key behavior throughout the interface
 
 ## Installation
 
@@ -66,6 +69,14 @@ DotMaster is a powerful World of Warcraft addon that enhances DoT/HoT tracking t
 - **Extend Plater Colors to Borders**: Maintains Plater's color coding for important/caster mobs while showing DoT status
 - **Use Borders for DoT Tracking**: Shows DoT status in nameplate borders only, preserving health bar colors
 - **Border Thickness**: Customize border size from 1-5 pixels (requires UI reload)
+
+### Favorite Colors System
+- **Enhanced Color Picker**: When selecting colors for spells or combinations, you'll see an improved color picker with 10 favorite color slots
+- **Global Favorites**: Favorite colors are saved globally and shared across all characters and specializations
+- **Quick Access**: Left-click any favorite slot to instantly apply that color to your spell or combination
+- **Easy Saving**: Right-click any favorite slot while the color picker is open to save the current color to that slot
+- **Persistent Storage**: Your favorite colors are automatically saved and will persist across game sessions
+- **Draggable Interface**: The favorites panel can be moved by dragging the title area for better positioning
 
 ### Finding & Managing DoTs
 - Use the **Find My Dots** feature in the Database tab to automatically detect your DoTs

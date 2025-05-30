@@ -1,5 +1,52 @@
 # DotMaster Changelog
 
+## [2.2.0] - 2024-12-19
+### Added
+- **Enhanced Color Picker**: Completely redesigned color picker with favorite color slots
+- **Favorite Colors System**: Save and reuse up to 10 favorite colors across all characters and specs
+- **Global Color Persistence**: Favorite colors are saved globally and shared across all characters
+- **Draggable Favorites Panel**: Move the favorites panel by dragging the title area for better positioning
+- **Smart Color Picker Positioning**: Color picker now intelligently positions itself relative to open dialogs
+
+### Improved
+- **GUI Enhancements**: Improved overall user interface with better visual consistency
+- **ESC Key Handling**: Fixed inconsistencies with escape key behavior throughout the interface
+- **Color Selection Workflow**: Streamlined color selection process with quick access to favorite colors
+
+### Fixed
+- **Color Picker Positioning**: Resolved issues with color picker appearing in incorrect positions
+- **Dialog Overlap Prevention**: Color picker now avoids overlapping with important UI elements
+- **Interface Consistency**: Improved consistency across all color selection interfaces
+
+## [2.1.12] - 2024-08-14
+### Fixed
+- Fixed an issue where nameplate border colors would not properly reset to Plater defaults when DoTs expire in border-only mode
+- Improved integration with Plater's border color system for more consistent behavior
+- Border colors now correctly revert without requiring opening the Plater UI
+
+## [2.1.11] - 2024-08-13
+### Fixed
+- Resolved issue where ESC key would close DotMaster window AND open the game menu; ESC now only closes the DM window if it's open, requiring a second press to open the game menu.
+- Changed GUI auto-close trigger from general zone changes to `LOADING_SCREEN_ENABLED` event, so it only closes during actual loading screens (e.g., entering instances, teleporting).
+- Addressed an `ADDON_ACTION_BLOCKED` error related to `SetPropagateKeyboardInput` by removing the problematic `HookScript`. The primary `SetPropagateKeyboardInput(true)` and `OnKeyDown` for ESCAPE should maintain desired behavior.
+
+### Removed
+- Removed the 'B' key functionality for closing the DotMaster window to simplify keybindings.
+- Removed a debug message: "DotMaster window closed due to ZONE_CHANGED. Reopen with /dm or the minimap icon."
+
+## [2.1.10] - 2024-08-12
+### Fixed
+- Greatly improved ESC key handling - ESC now correctly closes the main window without opening the game menu
+- Fixed issue with tabs becoming uninteractive after zone changes 
+- Added automatic GUI closure during loading screens to prevent UI issues
+- Fixed minimap icon click behavior creating duplicate GUI windows
+- Added more robust key event handling and tab system stability
+
+### Added
+- Improved tab system with direct frame references for better reliability
+- Enhanced error handling throughout the GUI for better stability
+- Added support for closing the GUI with B key (Blizzard standard)
+
 ## [2.1.9] - 2024-08-01
 ### Fixed
 - Fixed color picker cancel functionality in the tracked spells tab

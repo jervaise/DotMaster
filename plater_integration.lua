@@ -429,6 +429,12 @@ function(self, unitId, unitFrame, envTable, modTable)
       if unitFrame.healthBar.border then
         -- Allow Plater to handle the border reset naturally
         unitFrame.customBorderColor = nil
+
+        -- Use Plater's border color system directly
+        if Plater.UpdateBorderColor then
+          Plater.UpdateBorderColor(unitFrame)
+        end
+
         shouldRefreshColor = true
       end
     else

@@ -129,7 +129,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,          -- Default to enabled for new installations
-  version = "2.1.5",
+  version = "2.2.0",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }
@@ -236,8 +236,9 @@ DM:SetScript("OnEvent", function(self, event, arg1, ...)
       DM:CheckPlaterInstallation()
     end)
 
-    -- Create GUI if available
-    if DM.CreateGUI then
+    -- Create GUI if available and doesn't already exist
+    -- Fixed: Prevent recreation on zone changes which was breaking escape key functionality
+    if DM.CreateGUI and not (DM.GUI and DM.GUI.frame and DM.GUI.frame:GetName()) then
       DM:CreateGUI()
     end
 

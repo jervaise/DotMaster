@@ -16,7 +16,8 @@ function DM:SaveSettings()
   elseif GetAddOnMetadata then
     version = GetAddOnMetadata("DotMaster", "Version")
   else
-    version = "2.1.5" -- Hardcoded fallback
+    -- Fallback hardcoded version (updated to match TOC file)
+    version = "2.2.0" -- Hardcoded fallback
   end
   DotMasterDB.version = version or "Unknown"
 
@@ -374,8 +375,8 @@ function DM:InitializeMainSlashCommands()
       end
     else
       -- Default: Show the config panel
-      if DM.GUI and DM.GUI.frame then
-        DM.GUI.frame:Show()
+      if DM.ToggleGUI then
+        DM:ToggleGUI()
       else
         DM:PrintMessage("Configuration panel not available")
       end

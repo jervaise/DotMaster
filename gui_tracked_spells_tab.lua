@@ -979,60 +979,45 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
     border:SetColorTexture(0.1, 0.1, 0.1, 1); GameTooltip:Hide()
   end)
   colorSwatch:SetScript("OnClick", function()
-    local function colorFunc()
-      local newR, newG, newB
-      if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker then
-        newR, newG, newB = ColorPickerFrame
-            .Content.ColorPicker:GetColorRGB()
-      else
-        newR, newG, newB = ColorPickerFrame:GetColorRGB()
-      end
-      texture:SetColorTexture(newR, newG, newB, 1); r, g, b = newR, newG, newB
-      if currentProfile.spells[spellID] then
-        currentProfile.spells[spellID].color = { newR, newG, newB }; DM:SaveDMSpellsDB()
-        if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
-          C_Timer.After(0.1,
-            function() DM.ClassSpec:PushConfigToPlater() end)
-        end
-      end
-    end
-
     -- Store the original colors for cancel function
     local originalR, originalG, originalB = r, g, b
 
-    local function cancelFunc()
-      -- Safer approach to restore original color
-      if texture and texture.SetColorTexture then
-        texture:SetColorTexture(originalR, originalG, originalB, 1)
-        -- Ensure local variables are also restored
-        r, g, b = originalR, originalG, originalB
-      end
-    end
+    -- Use our enhanced color picker with favorites
+    if DotMaster_ShowEnhancedColorPicker then
+      DotMaster_ShowEnhancedColorPicker(r, g, b, function(newR, newG, newB)
+        -- Update the texture
+        texture:SetColorTexture(newR, newG, newB, 1)
+        r, g, b = newR, newG, newB
 
-    if ColorPickerFrame.SetupColorPickerAndShow then
-      local info = {
-        swatchFunc = colorFunc,
-        cancelFunc = cancelFunc,
-        r = r,
-        g = g,
-        b = b,
-        opacity = 1,
-        hasOpacity = false
-      }
-      ColorPickerFrame:SetupColorPickerAndShow(info)
+        -- Save to database
+        if currentProfile.spells[spellID] then
+          currentProfile.spells[spellID].color = { newR, newG, newB }
+          DM:SaveDMSpellsDB()
+          if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+            C_Timer.After(0.1, function()
+              DM.ClassSpec:PushConfigToPlater()
+            end)
+          end
+        end
+      end)
     else
-      ColorPickerFrame.func = colorFunc
-      ColorPickerFrame.cancelFunc = cancelFunc
-      ColorPickerFrame.opacityFunc = nil
-      ColorPickerFrame.hasOpacity = false
+      -- Fallback to DM:ShowColorPicker if enhanced version not available
+      DM:ShowColorPicker(r, g, b, function(newR, newG, newB)
+        -- Update the texture
+        texture:SetColorTexture(newR, newG, newB, 1)
+        r, g, b = newR, newG, newB
 
-      -- Store original values properly
-      ColorPickerFrame.previousValues = { originalR, originalG, originalB }
-
-      if ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-        ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
-      end
-      ColorPickerFrame:Show()
+        -- Save to database
+        if currentProfile.spells[spellID] then
+          currentProfile.spells[spellID].color = { newR, newG, newB }
+          DM:SaveDMSpellsDB()
+          if DM.ClassSpec and DM.ClassSpec.PushConfigToPlater then
+            C_Timer.After(0.1, function()
+              DM.ClassSpec:PushConfigToPlater()
+            end)
+          end
+        end
+      end)
     end
   end)
   rightMostPlacedElement = colorSwatch -- This is now the element that the nameText will be to the left of.
