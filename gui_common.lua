@@ -17,13 +17,13 @@ local function CreateTabInfoArea(parentFrame, titleText, explanationText)
   textContainer:SetPoint("CENTER", infoArea, "CENTER", 0, 0) -- Centered vertically
 
   -- Info Area Title
-  local infoTitle = textContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  local infoTitle = textContainer:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
   infoTitle:SetPoint("TOP", textContainer, "TOP", 0, 0)
   infoTitle:SetText(titleText)
   infoTitle:SetTextColor(1, 0.82, 0) -- WoW Gold
 
   -- Info Area Explanation
-  local infoExplanation = textContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  local infoExplanation = textContainer:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
   infoExplanation:SetPoint("TOP", infoTitle, "BOTTOM", 0, -10) -- Increased spacing from -2 to -10
   infoExplanation:SetWidth(300)
   infoExplanation:SetJustifyH("CENTER")
@@ -199,7 +199,7 @@ function DM:CreateGUI()
   frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
   -- Title
-  local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  local title = frame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
   title:SetPoint("TOP", 0, -16)
   -- Use class color for the title text
   title:SetText(string.format("|cFF%02x%02x%02xDotMaster|r",
@@ -263,7 +263,7 @@ function DM:CreateGUI()
   helpButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", -2, 0)
 
   -- Informative text for the help button
-  local helpButtonText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local helpButtonText = frame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
   helpButtonText:SetText("How to use")
   helpButtonText:SetTextColor(0.7, 0.7, 0.7, 0.9)             -- Light grey, slightly transparent
   helpButtonText:SetPoint("RIGHT", helpButton, "LEFT", -3, 0) -- Position to the left of the icon, with small spacing
@@ -314,7 +314,7 @@ function DM:CreateGUI()
     helpFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
     -- Title
-    local title = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = helpFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", 0, -16)
     -- Use class color for the title text
     title:SetText(string.format("|cFF%02x%02x%02xDotMaster Guide|r",
@@ -338,7 +338,7 @@ function DM:CreateGUI()
 
     -- Helper function to create section headers
     local function CreateSection(title, yOffset)
-      local header = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+      local header = content:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
       header:SetPoint("TOPLEFT", 10, yOffset)
       header:SetText(title)
       header:SetTextColor(1, 0.82, 0) -- WoW Gold
@@ -354,7 +354,7 @@ function DM:CreateGUI()
 
     -- Helper function to create content text
     local function CreateText(text, yOffset, width)
-      local textObj = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local textObj = content:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       textObj:SetPoint("TOPLEFT", 10, yOffset)
       textObj:SetWidth(width or 430)
       textObj:SetJustifyH("LEFT")
@@ -366,12 +366,12 @@ function DM:CreateGUI()
 
     -- Helper function to create feature explanation
     local function CreateFeature(title, description, yOffset)
-      local featureTitle = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local featureTitle = content:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       featureTitle:SetPoint("TOPLEFT", 15, yOffset)
       featureTitle:SetText("• " .. title)
       featureTitle:SetTextColor(0.8, 0.95, 1) -- Light blue for feature names
 
-      local featureDesc = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local featureDesc = content:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       featureDesc:SetPoint("TOPLEFT", 25, yOffset - featureTitle:GetStringHeight() - 2)
       featureDesc:SetWidth(415)
       featureDesc:SetJustifyH("LEFT")
@@ -653,16 +653,17 @@ function DM:CreateGUI()
   footerFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 20)
 
   -- Author credit - positioned to center the two-line group vertically in the footer
-  local author = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local author = frame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
   author:SetPoint("CENTER", footerFrame, "CENTER", 0, -14) -- Changed from -13.5 to -14
   -- Read version from API first, then SavedVariables, fallback to defaults if not found
   local versionString = (DM.API and DM.API.GetVersion and DM.API:GetVersion()) or
       (DotMasterDB and DotMasterDB.version) or
       (DM.defaults and DM.defaults.version) or "N/A"
   author:SetText("by Jervaise - v" .. versionString)
+  author:SetTextColor(1, 0.82, 0) -- WoW Gold color
 
   -- Add a status message text in the footer, positioned above the author credit with 1.5 line spacing
-  local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local statusMessage = footerFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
   statusMessage:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)         -- Changed from 0.5 to 0
   statusMessage:SetText("Plater Integration: Initializing...")
   statusMessage:SetTextColor(0.7, 0.7, 0.7)                             -- Neutral color initially
@@ -756,7 +757,7 @@ function DM:CreateGUI()
     tabButton.normalTexture = normalTexture
 
     -- Tab text
-    local text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local text = tabButton:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     text:SetPoint("CENTER")
     text:SetText(tabNames[i])
     text:SetTextColor(1, 0.82, 0)
@@ -844,7 +845,7 @@ function DM:CreateGUI()
   overlay:Hide()
   DM.GUI.PlaterOverlay = overlay
 
-  local overlayMessage = overlay:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+  local overlayMessage = overlay:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalLarge"))
   overlayMessage:SetPoint("CENTER", overlay, "CENTER", 0, 30)
   overlayMessage:SetTextColor(1, 0.82, 0) -- Gold color
   overlayMessage:SetJustifyH("CENTER")
@@ -1161,7 +1162,7 @@ function DM.GUI:ShowHelpPopup()
     helpFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.95) -- Darker backdrop
     helpFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.8)
 
-    local title = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = helpFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", 0, -18)
     title:SetText("DotMaster Guide")
 
@@ -1173,7 +1174,7 @@ function DM.GUI:ShowHelpPopup()
     scrollChild:SetSize(scrollFrame:GetWidth(), 1000) -- Initial height, will adjust
     scrollFrame:SetScrollChild(scrollChild)
 
-    local helpText = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    local helpText = scrollChild:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormal"))
     helpText:SetPoint("TOPLEFT", 5, -5)
     helpText:SetPoint("TOPRIGHT", -5, -5)
     helpText:SetJustifyH("LEFT")

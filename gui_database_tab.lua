@@ -117,13 +117,13 @@ function Components.CreateDatabaseTab(parentFrame)
   searchBox:SetSize(400, 20)
   searchBox:SetPoint("LEFT", searchIcon, "RIGHT", 5, 0)
   searchBox:SetPoint("RIGHT", searchContainer, "RIGHT", -5, 0)
-  searchBox:SetFontObject("GameFontHighlight")
+  searchBox:SetFontObject(DM:GetExpresswayFont("GameFontHighlight"))
   searchBox:SetAutoFocus(false)
   searchBox:SetMaxLetters(50)
   searchBox:SetTextInsets(0, 5, 0, 0)
 
   -- Create placeholder text
-  local placeholderText = searchContainer:CreateFontString(nil, "ARTWORK", "GameFontDisable")
+  local placeholderText = searchContainer:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontDisable"))
   placeholderText:SetText("Search")
   placeholderText:SetPoint("LEFT", searchIcon, "RIGHT", 5, 0)
   placeholderText:SetPoint("RIGHT", searchContainer, "RIGHT", -5, 0)
@@ -329,7 +329,7 @@ function GUI:RefreshDatabaseTabList(query)
   if not hasAnySpells then
     -- Show friendly message for empty database
     if not scrollChild.friendlyMessage then
-      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       scrollChild.friendlyMessage:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
       scrollChild.friendlyMessage:SetText("No spells found in database. Use 'Find My Dots' to discover spells.")
       scrollChild.friendlyMessage:SetTextColor(1, 0.82, 0)
@@ -397,7 +397,7 @@ function GUI:RefreshDatabaseTabList(query)
   -- Show search results message if no matches found
   if spellCount == 0 and query ~= "" then
     if not scrollChild.friendlyMessage then
-      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       scrollChild.friendlyMessage:SetPoint("CENTER", scrollChild, "CENTER", 0, 0)
     end
     scrollChild.friendlyMessage:SetText(string.format("No spells found matching '%s'", query))
@@ -476,7 +476,7 @@ function GUI:RefreshDatabaseTabList(query)
         bg:SetColorTexture(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.8)
       end
 
-      local text = classFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+      local text = classFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalLarge"))
       text:SetPoint("LEFT", 20, 0)
       local displayName = DM:GetClassDisplayName(className) or className
       text:SetText(displayName)
@@ -627,7 +627,7 @@ function GUI:RefreshDatabaseTabList(query)
             icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Clean up icon borders
           end
 
-          local specText = specFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+          local specText = specFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormal"))
           specText:SetPoint("LEFT", icon, "RIGHT", 8, 0) -- Position text next to icon
           specText:SetText(specData.specName)
 
@@ -688,7 +688,7 @@ function GUI:RefreshDatabaseTabList(query)
             icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
             -- Spell Name & ID
-            local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+            local nameText = spellFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalSmall"))
             nameText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
             nameText:SetWidth(spellFrame:GetWidth() - 160) -- Wider for indentation
             nameText:SetText(string.format("%s (%d)", spellData.spellname or "Unknown", spellID))
@@ -700,7 +700,7 @@ function GUI:RefreshDatabaseTabList(query)
             checkbox:SetPoint("RIGHT", -16, 0) -- Align with toggle buttons
             checkbox:SetChecked(spellData.tracked == 1)
 
-            local trackLabel = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+            local trackLabel = spellFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalSmall"))
             trackLabel:SetText("Track")
             trackLabel:SetPoint("RIGHT", checkbox, "LEFT", -6, 0) -- Increased spacing from -2 to -6
 

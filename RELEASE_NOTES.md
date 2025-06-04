@@ -1,60 +1,78 @@
-# DotMaster 2.2.0 Release
+# DotMaster 2.2.1 Release
 
-**Release Date:** December 19, 2024
+## Font System Overhaul & Visual Improvements
 
-DotMaster 2.2.0 introduces a completely redesigned color picker system with favorite colors, enhanced GUI improvements, and better user experience throughout the addon.
+DotMaster 2.2.1 introduces a comprehensive font system overhaul with the modern Expressway font, providing a consistent and professional appearance across all interface elements.
 
-## 🎨 Major New Features
+## 🎨 New Features
 
-### Enhanced Color Picker with Favorites
-- **10 Favorite Color Slots**: Save your most-used colors for quick access
-- **Global Persistence**: Favorite colors are shared across all characters and specializations
-- **Intuitive Interface**: Left-click to use a favorite color, right-click to save the current color
-- **Smart Positioning**: Color picker intelligently positions itself to avoid overlapping dialogs
-- **Draggable Panel**: Move the favorites panel by dragging the title area
+### **Complete Expressway Font Integration**
+- **Modern Typography**: All UI elements now use the sleek Expressway font for a contemporary look
+- **Consistent Styling**: Unified font appearance across all tabs, dialogs, and interface components
+- **Enhanced Readability**: Improved text clarity with proper outline effects and sizing
+- **Professional Appearance**: Clean, modern font that matches current UI design trends
 
-### Improved User Experience
-- **Consistent ESC Key Behavior**: Fixed inconsistencies with escape key handling throughout the interface
-- **Better Dialog Management**: Color picker now properly positions relative to combination dialogs and main GUI
-- **Enhanced Visual Design**: Improved overall interface consistency and visual appeal
+### **Improved Visual Polish**
+- **Gold Author Credits**: Footer author/version text now displays in elegant gold color
+- **Better Contrast**: Enhanced text visibility with proper outline effects
+- **Consistent Sizing**: Standardized font sizes across all interface elements
 
 ## 🔧 Technical Improvements
 
-### GUI Enhancements
-- Redesigned color selection workflow for better usability
-- Improved positioning logic for color picker and favorites panel
-- Enhanced visual consistency across all interface elements
-- Better integration with WoW's native UI styling
+### **Robust Font System**
+- **Font Object Management**: Complete font object definitions for all sizes and styles
+- **Helper Functions**: Easy-to-use font mapping and application functions
+- **Error Handling**: Improved font initialization with proper error checking
+- **Maintainable Code**: Clean font system architecture for future enhancements
 
-### Bug Fixes
-- Fixed color picker positioning issues that could cause it to appear off-screen
-- Resolved dialog overlap problems when multiple windows are open
-- Improved interface consistency across all color selection areas
-- Enhanced stability of the favorites system
+### **Enhanced GUI Framework**
+- **Updated Components**: All GUI files updated to use the new font system
+- **Consistent Implementation**: Standardized font usage across all interface elements
+- **Future-Proof Design**: Extensible font system for easy customization
 
-## 🚀 Getting Started with Favorite Colors
+## 📋 Files Updated
 
-1. **Open any color picker** in DotMaster (spell colors, combination colors, etc.)
-2. **See the favorites panel** appear below the color picker with 10 color slots
-3. **Save colors**: Right-click any slot while the color picker is open to save the current color
-4. **Use colors**: Left-click any saved color to instantly apply it
-5. **Move the panel**: Drag the "Favorite Colors" title to reposition the panel
-6. **Global access**: Your favorite colors will be available on all characters and specs
+### **Core Font System**
+- `fonts.lua` - New comprehensive font management system
+- `DotMaster.toc` - Updated to include font loading
 
-## 📋 Compatibility
+### **GUI Components**
+- `gui_common.lua` - Updated with new font references and gold author text
+- `gui_general_tab.lua` - Expressway font integration
+- `gui_tracked_spells_tab.lua` - Modern font styling
+- `gui_combinations_tab.lua` - Updated font references
+- `gui_database_tab.lua` - Consistent font usage
+- `gui_spell_selection.lua` - Enhanced typography
+- `gui_colorpicker.lua` - Modern font styling
+- `find_my_dots.lua` - Updated font implementation
 
-- **WoW Versions**: 11.1.5, 11.1.7
-- **Plater Integration**: Fully compatible with all current Plater versions
-- **Backward Compatibility**: Existing settings and configurations are preserved
+## 🎯 User Experience
 
-## 🔄 Upgrade Notes
+### **Visual Consistency**
+- Unified appearance across all DotMaster interfaces
+- Professional, modern look that integrates well with current WoW UI
+- Improved text readability in all lighting conditions
 
+### **Enhanced Usability**
+- Better text contrast for improved accessibility
+- Consistent font sizing for easier reading
+- Professional appearance that enhances the overall addon experience
+
+## 🔄 Compatibility
+
+- **WoW Version**: Compatible with 11.1.5 and 11.1.7
+- **Plater Integration**: Fully compatible with latest Plater versions
+- **Backward Compatibility**: All existing settings and configurations preserved
+
+## 📥 Installation & Updates
+
+**Download DotMaster 2.2.1** from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster), [Wago](https://addons.wago.io/addons/dotmaster), or [GitHub](https://github.com/jervaise/DotMaster/releases)
+
+### **Update Notes**
+- No configuration changes required
+- Font improvements are automatically applied
 - All existing settings and tracked spells are preserved
-- Favorite colors start with a default palette that you can customize
-- No action required - the enhanced color picker will automatically appear when selecting colors
 
 ---
 
-**Download DotMaster 2.2.0** from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster), [Wago](https://addons.wago.io/addons/dotmaster), or [GitHub](https://github.com/jervaise/DotMaster/releases)
-
-*Track your DoTs with style - now with your favorite colors!* 
+*DotMaster 2.2.1 represents a significant visual upgrade while maintaining all the powerful DoT tracking features you rely on. The new Expressway font system provides a modern, professional appearance that enhances your gameplay experience.* 

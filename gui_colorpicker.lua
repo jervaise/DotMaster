@@ -164,7 +164,7 @@ function colorpicker.CreateFavoritesPanel(callback)
   favoritesPanel:EnableMouse(true)
 
   -- Favorite colors title - styled to match the gold "Color Picker" title
-  local favoritesLabel = favoritesPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  local favoritesLabel = favoritesPanel:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
   favoritesLabel:SetPoint("TOP", favoritesPanel, "TOP", 0, -12)
   favoritesLabel:SetText("Favorite Colors")
   favoritesLabel:SetTextColor(1, 0.82, 0, 1) -- Gold color to match WoW UI

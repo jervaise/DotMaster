@@ -66,7 +66,7 @@ function DM:CreateGeneralTab(parent)
   -- contentPanel:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8) -- Removed border color setting since there's no border
 
   -- Title for the panel
-  local configTitle = contentPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  local configTitle = contentPanel:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
   configTitle:SetPoint("TOP", contentPanel, "TOP", 0, -15)
 
   -- Get current class and spec
@@ -110,7 +110,7 @@ function DM:CreateGeneralTab(parent)
   pandaImage:SetTexture("Interface\\AddOns\\DotMaster\\Media\\dotmaster-main-icon.tga")
 
   -- Descriptive text for Jervaise Plater Profile button
-  local profileDescription = leftColumn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local profileDescription = leftColumn:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
   profileDescription:SetText(
     "For the best experience, install the Jervaise Plater Profile. It includes predefined M+ nameplate colors for casters & important mobs.")
   profileDescription:SetTextColor(0.8, 0.8, 0.8, 0.9) -- Light grey, slightly transparent
@@ -163,13 +163,13 @@ function DM:CreateGeneralTab(parent)
       popup:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
       -- Title
-      local title = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+      local title = popup:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
       title:SetPoint("TOP", 0, -16)
       title:SetText("Jervaise Plater Profile")
       title:SetTextColor(1, 0.82, 0) -- WoW Gold
 
       -- Instructions
-      local instructions = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local instructions = popup:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       instructions:SetPoint("TOP", title, "BOTTOM", 0, -10)
       instructions:SetText("Copy the URL below to import the recommended Plater profile:")
       instructions:SetTextColor(0.9, 0.9, 0.9)
@@ -229,7 +229,7 @@ function DM:CreateGeneralTab(parent)
     if defaultText then defaultText:Hide() end
 
     -- Create our own text element
-    local text = checkbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    local text = checkbox:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormal"))
     text:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
     text:SetText(label)
     text:SetTextColor(0.9, 0.9, 0.9)
@@ -261,7 +261,8 @@ function DM:CreateGeneralTab(parent)
   generalHeaderContainer:SetPoint("TOPLEFT", rightColumn, "TOPLEFT", 5, -5) -- 5px padding within rightColumn
 
   -- Create general header text
-  local generalHeaderText = generalHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local generalHeaderText = generalHeaderContainer:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontNormalSmall"))
   generalHeaderText:SetPoint("LEFT", generalHeaderContainer, "LEFT", 2, 0)
   generalHeaderText:SetText("General Settings")
   generalHeaderText:SetTextColor(0.7, 0.7, 0.7)
@@ -367,7 +368,8 @@ function DM:CreateGeneralTab(parent)
   secondsValueContainer:SetPoint("LEFT", secondsContainer, "LEFT", 0, 0)
 
   -- Seconds value display
-  local secondsValue = secondsValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local secondsValue = secondsValueContainer:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontHighlightSmall"))
   secondsValue:SetPoint("RIGHT", secondsValueContainer, "RIGHT", 0, 0)
   secondsValue:SetJustifyH("RIGHT")
   secondsValue:SetText(settings.flashThresholdSeconds .. " s")
@@ -464,7 +466,8 @@ function DM:CreateGeneralTab(parent)
   _G[flashFrequencySlider:GetName() .. "High"]:SetText("")
 
   -- Create value text
-  local flashFrequencyValue = flashFrequencySlider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local flashFrequencyValue = flashFrequencySlider:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontHighlightSmall"))
   flashFrequencyValue:SetPoint("TOP", flashFrequencySlider, "BOTTOM", 0, 0)
   flashFrequencyValue:SetText(string.format("%.1f s", settings.flashFrequency or 0.5))
 
@@ -506,7 +509,8 @@ function DM:CreateGeneralTab(parent)
   _G[flashBrightnessSlider:GetName() .. "High"]:SetText("")
 
   -- Create value text
-  local flashBrightnessValue = flashBrightnessSlider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local flashBrightnessValue = flashBrightnessSlider:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontHighlightSmall"))
   flashBrightnessValue:SetPoint("TOP", flashBrightnessSlider, "BOTTOM", 0, 0)
   flashBrightnessValue:SetText(string.format("%d%%", math.floor((settings.flashBrightness or 0.3) * 100)))
 
@@ -542,7 +546,8 @@ function DM:CreateGeneralTab(parent)
   borderHeaderContainer:SetPoint("TOPLEFT", flashFrequencySlider, "BOTTOMLEFT", -20, -15)
 
   -- Create border header text
-  local borderHeaderText = borderHeaderContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local borderHeaderText = borderHeaderContainer:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontNormalSmall"))
   borderHeaderText:SetPoint("LEFT", borderHeaderContainer, "LEFT", 2, 0)
   borderHeaderText:SetText("Border Logic")
   borderHeaderText:SetTextColor(0.7, 0.7, 0.7)
@@ -643,7 +648,8 @@ function DM:CreateGeneralTab(parent)
   thicknessContainer:SetPoint("TOPLEFT", borderOnlyCheckbox, "BOTTOMLEFT", 0, -3)
 
   -- Thickness label
-  local thicknessLabel = thicknessContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local thicknessLabel = thicknessContainer:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontHighlightSmall"))
   thicknessLabel:SetPoint("LEFT", thicknessContainer, "LEFT", 26, 0)
   thicknessLabel:SetText("Border Thickness:")
   thicknessLabel:SetTextColor(0.8, 0.8, 0.8)
@@ -659,7 +665,8 @@ function DM:CreateGeneralTab(parent)
   end
 
   -- Thickness value display
-  local thicknessValue = thicknessValueContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local thicknessValue = thicknessValueContainer:CreateFontString(nil, "OVERLAY",
+    DM:GetExpresswayFont("GameFontHighlightSmall"))
   thicknessValue:SetPoint("RIGHT", thicknessValueContainer, "RIGHT", 0, 0)
   thicknessValue:SetJustifyH("RIGHT")
   thicknessValue:SetText(formatThickness(settings.borderThickness))

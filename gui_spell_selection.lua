@@ -49,7 +49,7 @@ function DM:ShowSpellSelectionDialog()
     titleBg:SetColorTexture(0.15, 0.15, 0.15, 0.8)
 
     -- Title
-    local title = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = titleBar:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("CENTER", 0, 0)
     title:SetText("Select Spells From Database")
 
@@ -59,7 +59,7 @@ function DM:ShowSpellSelectionDialog()
     filterContainer:SetPoint("TOP", titleBar, "BOTTOM", 0, -10)
 
     -- Class filter
-    local classFilterLabel = filterContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local classFilterLabel = filterContainer:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     classFilterLabel:SetPoint("LEFT", 10, 0)
     classFilterLabel:SetText("Class Filter:")
     classFilterLabel:SetTextColor(1, 0.82, 0) -- Gold color
@@ -121,7 +121,7 @@ function DM:ShowSpellSelectionDialog()
     selectAllButton:SetSize(115, 26)
     selectAllButton:SetPoint("LEFT", 10, 0)
     selectAllButton:SetText("Select All")
-    selectAllButton:SetNormalFontObject("GameFontNormalSmall")
+    selectAllButton:SetNormalFontObject(DM:GetExpresswayFont("GameFontNormalSmall"))
     selectAllButton:GetNormalTexture():SetVertexColor(0.7, 0.7, 0.7)
 
     -- Select None button with WoW styling
@@ -129,7 +129,7 @@ function DM:ShowSpellSelectionDialog()
     selectNoneButton:SetSize(115, 26)
     selectNoneButton:SetPoint("CENTER", 0, 0)
     selectNoneButton:SetText("Select None")
-    selectNoneButton:SetNormalFontObject("GameFontNormalSmall")
+    selectNoneButton:SetNormalFontObject(DM:GetExpresswayFont("GameFontNormalSmall"))
     selectNoneButton:GetNormalTexture():SetVertexColor(0.7, 0.7, 0.7)
 
     -- Add Selected button with WoW styling - green tint to indicate action
@@ -137,7 +137,7 @@ function DM:ShowSpellSelectionDialog()
     addSelectedButton:SetSize(115, 26)
     addSelectedButton:SetPoint("RIGHT", -10, 0)
     addSelectedButton:SetText("Add Selected")
-    addSelectedButton:SetNormalFontObject("GameFontNormalSmall")
+    addSelectedButton:SetNormalFontObject(DM:GetExpresswayFont("GameFontNormalSmall"))
     -- Give it a slight green tint to indicate it's the action button
     for i, region in ipairs({ addSelectedButton:GetRegions() }) do
       if region:GetObjectType() == "Texture" then
@@ -350,7 +350,7 @@ function DM:PopulateSpellList()
     classBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
 
     -- Class name
-    local classText = classHeader:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local classText = classHeader:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     classText:SetPoint("LEFT", 5, 0)
     classText:SetText("+ " .. self:GetClassDisplayName(className))
 
@@ -406,7 +406,7 @@ function DM:PopulateSpellList()
       specBg:SetColorTexture(0.15, 0.15, 0.15, 0.6)
 
       -- Spec name
-      local specText = specHeader:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local specText = specHeader:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       specText:SetPoint("LEFT", 5, 0)
       specText:SetText(specName)
       specText:SetTextColor(1, 0.82, 0)
@@ -460,7 +460,7 @@ function DM:PopulateSpellList()
           self.spellCheckboxes[tostring(id)] = checkbox
 
           -- Spell name and ID
-          local text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+          local text = row:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
           text:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
           text:SetText(string.format("%s (ID: %d)", spellData.name, id))
 
@@ -614,12 +614,12 @@ function DM:ShowFindMyDotsPrompt()
     self.promptFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8)
 
     -- Title
-    local title = self.promptFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = self.promptFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", 0, -20)
     title:SetText("No Spells Detected Yet")
 
     -- Description
-    local desc = self.promptFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local desc = self.promptFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     desc:SetPoint("TOP", title, "BOTTOM", 0, -20)
     desc:SetWidth(350)
     desc:SetText(

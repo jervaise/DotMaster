@@ -190,13 +190,13 @@ function DM:ShowRecordingIndicator()
     self.recordingFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8) -- Purple border
 
     -- Mode text
-    self.recordingText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    self.recordingText = self.recordingFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     self.recordingText:SetPoint("LEFT", 20, 0)
     self.recordingText:SetText("DOT RECORDING MODE ACTIVE")
     self.recordingText:SetTextColor(1, 0.82, 0) -- Gold color
 
     -- Time indicator
-    self.recordingTime = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.recordingTime = self.recordingFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
     self.recordingTime:SetPoint("LEFT", self.recordingText, "RIGHT", 10, 0)
     self.recordingTime:SetText("30s")
     self.recordingTime:SetTextColor(1, 1, 1)
@@ -206,7 +206,7 @@ function DM:ShowRecordingIndicator()
     self.newDotsFound = 0
 
     -- New dots counter with English text
-    self.dotsFoundText = self.recordingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    self.dotsFoundText = self.recordingFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     self.dotsFoundText:SetPoint("LEFT", self.recordingTime, "RIGHT", 15, 0) -- Position after time
     self.dotsFoundText:SetText("0 new dots found")
     self.dotsFoundText:SetTextColor(0.3, 1, 0.3)                            -- Green color
@@ -391,7 +391,7 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   border:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, 1.0)
 
   -- Spell name with larger font
-  local spellText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  local spellText = alertFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
   spellText:SetPoint("LEFT", icon, "RIGHT", 12, 4)
   spellText:SetText(name)
   spellText:SetTextColor(1, 0.82, 0) -- Gold
@@ -402,13 +402,13 @@ function DM:ShowDetectedDotNotification(name, id, isExisting)
   spellText:SetNonSpaceWrap(false)
 
   -- Spell ID
-  local idText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  local idText = alertFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
   idText:SetPoint("TOPLEFT", spellText, "BOTTOMLEFT", 0, -2)
   idText:SetText("ID: " .. id)
   idText:SetTextColor(0.7, 0.7, 0.7) -- Gray
 
   -- Add status text (New/Known)
-  local statusText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  local statusText = alertFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
   statusText:SetPoint("RIGHT", alertFrame, "RIGHT", -12, 0)
   if isExisting then
     statusText:SetText("Known")
@@ -529,12 +529,12 @@ function DM:ShowDotsConfirmationDialog(dots)
     self.dotsConfirmFrame:SetBackdropBorderColor(0.6, 0.2, 1.0, 0.8)
 
     -- Title
-    local title = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", 0, -15)
     title:SetText("Detected Dots")
 
     -- Subtitle
-    local desc = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local desc = self.dotsConfirmFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     desc:SetPoint("TOP", title, "BOTTOM", 0, -5)
     desc:SetText("Select dots you want to add")
     desc:SetTextColor(1, 0.82, 0)
@@ -758,7 +758,7 @@ function DM:ShowDotsConfirmationDialog(dots)
   -- Simple message if no new dots or no dots at all
   if #sortedDots == 0 then
     -- No dots detected message
-    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontHighlight"))
     messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
     messageText:SetText("No dots have been detected.\n\nTry again and cast your DoT abilities on enemies.")
     messageText:SetWidth(340)
@@ -767,7 +767,7 @@ function DM:ShowDotsConfirmationDialog(dots)
     yOffset = yOffset + 60
   elseif not hasNewDots then
     -- All dots are known message
-    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local messageText = self.dotsScrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontHighlight"))
     messageText:SetPoint("TOP", self.dotsScrollChild, "TOP", 0, -10)
     messageText:SetText("All detected dots are already in your database.")
     messageText:SetWidth(340)
@@ -820,13 +820,13 @@ function DM:ShowDotsConfirmationDialog(dots)
     end
 
     -- Spell name and ID
-    local text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local text = row:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontHighlight"))
     text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     text:SetText(string.format("%s (ID: %d)", dotInfo.name, id))
     text:SetWidth(230)
 
     -- Status label
-    local statusText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local statusText = row:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontHighlightSmall"))
     statusText:SetPoint("RIGHT", row, "RIGHT", -5, 0)
     statusText:SetText(isExisting and "Known" or "New")
     statusText:SetTextColor(isExisting and 1 or 0, isExisting and 0 or 1, 0)

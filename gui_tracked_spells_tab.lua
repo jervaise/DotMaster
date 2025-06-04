@@ -168,7 +168,7 @@ function Components.CreateTrackedSpellsTab(parentFrame)
 
   -- Create header labels
   local function CreateHeaderLabel(text, justify, xOffset, yOffset)
-    local label = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local label = headerFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     label:SetText(text)
     if justify == "RIGHT" then
       label:SetPoint("RIGHT", headerFrame, "RIGHT", xOffset, yOffset or 0)
@@ -397,7 +397,7 @@ function GUI:RefreshTrackedSpellTabList()
   if not hasTrackedSpells then
     -- Create or show friendly message
     if not scrollChild.friendlyMessage then
-      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      scrollChild.friendlyMessage = scrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       scrollChild.friendlyMessage:SetPoint("TOP", scrollChild, "TOP", 0, -50)
       scrollChild.friendlyMessage:SetText(
         "No spells are currently being tracked.\nUse the 'Add from Database' button to start tracking spells.")
@@ -580,7 +580,7 @@ function GUI:RefreshTrackedSpellTabList()
     -- Format spec text without class name
     local textLabel = displayName
 
-    local text = specFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge") -- Use larger font
+    local text = specFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge")) -- Use larger font
     text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     text:SetText(textLabel)
     text:SetJustifyH("LEFT")
@@ -710,7 +710,7 @@ function GUI:RefreshTrackedSpellTabList()
 
       -- If no spells in this spec, add empty message
       if visibleSpellCount == 0 then
-        local emptyText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        local emptyText = scrollChild:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalSmall"))
         emptyText:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 40, -yOffset) -- Keep the empty message indented
         emptyText:SetText("No spells found for this specialization")
         emptyText:SetTextColor(0.7, 0.7, 0.7)
@@ -1024,7 +1024,7 @@ function GUI:CreateTrackedSpellRow(parent, spellID, spellData, width, rowIndexIn
   offsetToTheLeft = -padding           -- Standard padding for the gap between nameText and colorSwatch.
 
   -- 2. Spell Name & ID (in the middle)
-  local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+  local nameText = spellFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalSmall"))
   nameText:SetPoint("LEFT", currentLeftAnchor, "RIGHT", currentLeftOffset, 0)    -- currentLeftAnchor is icon, currentLeftOffset is the offset for the left of nameText
   nameText:SetPoint("RIGHT", rightMostPlacedElement, "LEFT", offsetToTheLeft, 0) -- Anchor right of nameText to left of colorSwatch
   nameText:SetHeight(entryHeight)

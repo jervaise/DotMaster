@@ -198,7 +198,7 @@ function DM:CreateCombinationsTab(parent)
 
   -- Create header labels with similar style to tracked spells tab
   local function CreateHeaderLabel(text, xPosition)
-    local label = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local label = headerFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     label:SetPoint("LEFT", headerFrame, "LEFT", xPosition, 0)
     label:SetText(text)
     label:SetTextColor(1, 0.82, 0) -- Gold text color
@@ -323,7 +323,7 @@ function DM:CreateCombinationsTab(parent)
       messageBg:SetAllPoints()
       messageBg:SetColorTexture(0.1, 0, 0, 0.5)
 
-      local messageText = messageFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local messageText = messageFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       messageText:SetPoint("CENTER", messageFrame, "CENTER", 0, 10)
       messageText:SetText("Combinations database not initialized")
       messageText:SetTextColor(1, 0.3, 0.3)
@@ -494,7 +494,7 @@ function DM:CreateCombinationsTab(parent)
         row.indicator = indicator
 
         -- Name text - similar to class names in tracked spells tab
-        local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        local nameText = row:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
         nameText:SetPoint("LEFT", row, "LEFT", COLUMN_POSITIONS.NAME + 15, 0) -- Moved 15px right
         nameText:SetWidth(140)                                                -- Width for name text
         nameText:SetJustifyH("LEFT")
@@ -1051,7 +1051,7 @@ function DM:CreateCombinationsTab(parent)
             icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim border
 
             -- Spell name text
-            local nameText = spellFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+            local nameText = spellFrame:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontHighlightSmall"))
             nameText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
             nameText:SetPoint("RIGHT", spellFrame, "RIGHT", -5, 0)
             nameText:SetJustifyH("LEFT")
@@ -1186,7 +1186,7 @@ function DM:ShowCombinationDialog(comboID)
     dialog:SetBackdropColor(0.05, 0.05, 0.05, 0.95) -- Darker background to match main window
 
     -- Title - centered at top with more space
-    local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = dialog:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", dialog, "TOP", 0, -20)
     title:SetText("New Combination")
     title:SetWidth(dialog:GetWidth() - 40)
@@ -1200,7 +1200,7 @@ function DM:ShowCombinationDialog(comboID)
 
     -- Form elements
     -- Name field
-    local nameLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local nameLabel = dialog:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     nameLabel:SetPoint("TOP", title, "BOTTOM", 0, -20)
     nameLabel:SetText("Combination Name:")
     nameLabel:SetJustifyH("CENTER")
@@ -1213,7 +1213,7 @@ function DM:ShowCombinationDialog(comboID)
     dialog.nameEditBox = nameEditBox
 
     -- Color picker - with equal spacing above and below
-    local colorLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local colorLabel = dialog:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     colorLabel:SetPoint("TOP", nameEditBox, "BOTTOM", 0, -15)
     colorLabel:SetText("Combination Color:")
     colorLabel:SetJustifyH("CENTER")
@@ -1292,7 +1292,7 @@ function DM:ShowCombinationDialog(comboID)
     end)
 
     -- Spell list - with equal spacing as above the color label
-    local spellListLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local spellListLabel = dialog:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     spellListLabel:SetPoint("TOP", colorButton, "BOTTOM", 0, -8)
     spellListLabel:SetText("Spells in this Combination:")
     spellListLabel:SetJustifyH("CENTER")
@@ -1569,7 +1569,7 @@ function DM:UpdateCombinationSpellList(dialog)
   -- Exit if no spells
   if #dialog.selectedSpells == 0 then
     self:DebugMsg("UpdateCombinationSpellList: No spells in combination")
-    local noSpellsText = dialog.spellsContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local noSpellsText = dialog.spellsContent:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
     noSpellsText:SetPoint("CENTER", dialog.spellsContent, "CENTER")
     noSpellsText:SetText("Add spells to the combination using the button below")
     noSpellsText:SetTextColor(1, 0.82, 0) -- Gold color for better visibility
@@ -1630,7 +1630,7 @@ function DM:UpdateCombinationSpellList(dialog)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- Trim icon borders
 
     -- Spell name with ID in parentheses
-    local name = row:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    local name = row:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalSmall"))
     name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
     name:SetPoint("RIGHT", row, "RIGHT", -80, 0) -- Reserve space for remove button
     name:SetJustifyH("LEFT")
@@ -1750,7 +1750,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     -- If current spec profile isn't available, show error
     local currentProfile = DM:GetCurrentSpecProfile()
     if not currentProfile or not currentProfile.spells then
-      local errorText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local errorText = scrollContent:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       errorText:SetPoint("CENTER", scrollContent, "CENTER", 0, 0)
       errorText:SetText("Current specialization spells not available")
       errorText:SetTextColor(1, 0.3, 0.3)
@@ -1804,7 +1804,7 @@ function DM:ShowSpellSelectionForCombo(parent)
       helpFrame:SetPoint("TOP", scrollContent, "TOP", 0, -10)
 
       -- Add message text
-      local helpText = helpFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      local helpText = helpFrame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormal"))
       helpText:SetPoint("TOP", helpFrame, "TOP", 0, 0)
       helpText:SetWidth(scrollContent:GetWidth() - 40)
       helpText:SetText(
@@ -1881,7 +1881,7 @@ function DM:ShowSpellSelectionForCombo(parent)
       end)
 
       -- Spell name with ID in parentheses
-      local name = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+      local name = button:CreateFontString(nil, "ARTWORK", DM:GetExpresswayFont("GameFontNormalSmall"))
       name:SetPoint("LEFT", checkbox, "RIGHT", 8, 0)
       name:SetPoint("RIGHT", button, "RIGHT", -5, 0) -- Extend to the right edge with margin
       name:SetJustifyH("LEFT")
@@ -1923,7 +1923,7 @@ function DM:ShowSpellSelectionForCombo(parent)
     frame:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 1.0)
 
     -- Title - centered at top with more space
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local title = frame:CreateFontString(nil, "OVERLAY", DM:GetExpresswayFont("GameFontNormalLarge"))
     title:SetPoint("TOP", frame, "TOP", 0, -20)
     title:SetText("Current Spec Tracked Spells")
     title:SetWidth(frame:GetWidth() - 40)

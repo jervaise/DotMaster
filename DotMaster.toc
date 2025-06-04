@@ -1,7 +1,7 @@
 ## Interface: 110107
 ## Title: DotMaster
 ## Notes: Advanced DoT tracking for Plater - Compatible with WoW 11.1.5 and 11.1.7
-## Version: 2.2.0
+## Version: 2.2.1
 ## X-Min-Interface: 110105
 ## X-Compatible-With: 11.1.5, 11.1.7
 ## Author: Jervaise
@@ -34,6 +34,7 @@ Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 # Core files
 bootstrap.lua
 core.lua
+fonts.lua
 plater_integration.lua
 class_spec_integration.lua
 api.lua

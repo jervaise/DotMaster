@@ -1,5 +1,22 @@
 # DotMaster Changelog
 
+## [2.2.1] - 2024-12-19
+
+### Added
+- **Expressway Font Integration**: Complete font system overhaul with modern Expressway font
+  - All UI elements now use the Expressway font for a consistent, modern appearance
+  - Proper font sizing and styling across all interface components
+  - Improved readability with outline effects for better contrast
+
+### Changed
+- **Author Credit Styling**: Footer author/version text now displays in gold color for better visibility
+- **Font System**: Comprehensive font mapping system for easy maintenance and extensibility
+
+### Technical
+- Added `fonts.lua` with complete font object definitions and helper functions
+- Updated all GUI files to use the new font system
+- Improved font initialization and error handling
+
 ## [2.2.0] - 2024-12-19
 ### Added
 - **Enhanced Color Picker**: Completely redesigned color picker with favorite color slots
