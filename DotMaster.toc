@@ -1,9 +1,9 @@
-## Interface: 110107
+## Interface: 110200
 ## Title: DotMaster
-## Notes: Advanced DoT tracking for Plater - Compatible with WoW 11.1.5 and 11.1.7
-## Version: 2.2.1
+## Notes: Advanced DoT tracking for Plater - Compatible with WoW 11.1.7, 11.2.* and TWW Season 3
+## Version: 2.2.3
 ## X-Min-Interface: 110105
-## X-Compatible-With: 11.1.5, 11.1.7
+## X-Compatible-With: 11.1.7, 11.2.*, TWW Season 3
 ## Author: Jervaise
 ## OptionalDeps: Plater
 ## SavedVariables: DotMasterDB

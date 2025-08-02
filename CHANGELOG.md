@@ -1,5 +1,32 @@
 # DotMaster Changelog
 
+## [2.2.3] - 2025-01-27
+
+### Changed
+- **WoW Version Compatibility**: Updated addon to support WoW 11.2.* and The War Within Season 3
+- **Interface Version**: Updated to 110200 for compatibility with upcoming patches
+- **Compatibility Matrix**: Now supports WoW versions 11.1.7, 11.2.*, and TWW Season 3
+
+### Technical
+- Updated TOC file interface version to 110200
+- Updated compatibility declarations for future-proofing
+- Maintained backward compatibility with WoW 11.1.7
+
+## [2.2.2] - 2024-12-19
+
+### Added
+- **Automatic Castbar Border Integration**: Castbars now automatically receive borders when nameplate border options are enabled
+- **Castbar Width Synchronization**: Enemy castbars automatically resize to match healthbar width exactly
+- **Target Scale Awareness**: Castbar borders and positioning automatically adapt to Plater's target scale settings
+- **Shared Border Visual**: Castbars positioned to share nameplate bottom border as their "top border"
+
+### Technical
+- Lightweight implementation with zero performance overhead
+- Automatic activation with existing border settings (no new user options required)
+- Integrated into existing Plater nameplate update cycle
+- Dynamic scaling support for consistent appearance during targeting
+- Non-intrusive border system that doesn't interfere with castbar content
+
 ## [2.2.1] - 2024-12-19
 
 ### Added
