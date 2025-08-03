@@ -1,6 +1,27 @@
 # DotMaster Changelog
 
-## [2.2.3] - 2025-01-27
+## [2.2.5] - 2025-01-27
+
+### Fixed
+- **Force Threat Color for Tanks**: Improved threat detection logic to properly handle multiple tanks in raid environments
+  - Tanks no longer receive "no aggro" colors when another tank is legitimately tanking a mob
+  - Added proper raid environment detection using `Plater.ZoneInstanceType == "raid"`
+  - Enhanced logic to check if other tanks in the group are tanking before applying threat colors
+  - Fixed early return statements that were preventing DoT coloring from working when threat conditions weren't met
+  - DoT coloring now functions correctly regardless of threat detection state
+
+### Technical
+- Restructured threat detection logic to match Plater's best practices
+- Added proper combat state validation (player in combat, unit in combat, non-PVP)
+- Improved code flow to ensure DoT coloring always executes after threat checks
+- Enhanced raid tank coordination using `Plater.GetTanks()` and unit target detection
+
+## [2.2.4] - 2025-01-27
+
+### Removed
+- **Castbar Border Integration**: Completely removed the automatic castbar border system added in v2.2.2 due to compatibility issues
+- **Castbar Width Synchronization**: Removed automatic castbar width matching to prevent conflicts with other addons
+- **Castbar Positioning Logic**: Removed scale-aware positioning that was causing display problems
 
 ### Changed
 - **WoW Version Compatibility**: Updated addon to support WoW 11.2.* and The War Within Season 3
@@ -8,6 +29,7 @@
 - **Compatibility Matrix**: Now supports WoW versions 11.1.7, 11.2.*, and TWW Season 3
 
 ### Technical
+- Reverted plater_integration.lua to pre-2.2.2 state for castbar handling
 - Updated TOC file interface version to 110200
 - Updated compatibility declarations for future-proofing
 - Maintained backward compatibility with WoW 11.1.7

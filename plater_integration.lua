@@ -322,21 +322,45 @@ function(self, unitId, unitFrame, envTable, modTable)
     end
   end
 
-  -- Check for threat coloring (has priority if enabled)
+    -- Check for threat coloring (has priority if enabled)
   if envTable.DM_FORCE_THREAT_COLOR then
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
-    if isTank then
-      if unitFrame.InCombat and not isTanking then
-        local color = Plater.db.profile.tank.colors.noaggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
-        return
-      end
-    else
-      if unitFrame.InCombat and isTanking then
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
-        return
+    -- Only check threat if all conditions are met
+    if Plater.IsInCombat() and not UnitPlayerControlled(unitId) and unitFrame.InCombat then
+      local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
+      local isTank = Plater.PlayerIsTank
+
+      if isTank then
+        -- Player isn't tanking this unit?
+        if not isTanking then
+          -- Check if a second tank is tanking it
+          if (Plater.ZoneInstanceType == "raid") then
+            -- Return a list with the name of tanks in the raid
+            local tankPlayersInTheRaid = Plater.GetTanks()
+
+            -- Get the target name of this unit
+            local unitTargetName = UnitName(unitFrame.targetUnitID)
+
+            -- Check if the unit isn't targeting another tank in the raid and paint the color
+            if (not tankPlayersInTheRaid[unitTargetName]) then
+              local color = Plater.db.profile.tank.colors.noaggro
+              applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
+              return
+            else
+              -- Another tank is tanking this unit - do nothing
+            end
+          else
+            local color = Plater.db.profile.tank.colors.noaggro
+            applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
+            return
+          end
+        end
+      else
+        -- Player is a dps or healer
+        if isTanking then
+          local color = Plater.db.profile.dps.colors.aggro
+          applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
+          return
+        end
       end
     end
   end
@@ -455,159 +479,6 @@ function(self, unitId, unitFrame, envTable, modTable)
     end
   end
 
-                    -- Apply castbar width and border synchronization when borders are enabled
-  if (envTable.DM_BORDER_ONLY or envTable.DM_EXTEND_PLATER_COLORS) and unitFrame.castBar then
-    local healthBar = unitFrame.healthBar
-    local borderThickness = envTable.DM_BORDER_THICKNESS or 2
-
-    if healthBar and healthBar.GetWidth then
-      local healthBarWidth = healthBar:GetWidth()
-
-            -- healthbar width = castbar width (exact match)
-      if healthBarWidth and healthBarWidth > 0 then
-                -- Simple: castbar width exactly matches healthbar width
-        unitFrame.castBar:SetWidth(healthBarWidth)
-
-        -- Hide all possible castbar border elements
-        if unitFrame.castBar.border then
-          unitFrame.castBar.border:Hide()
-        end
-        if unitFrame.castBar.Border then
-          unitFrame.castBar.Border:Hide()
-        end
-        if unitFrame.castBar.borderTop then
-          unitFrame.castBar.borderTop:Hide()
-        end
-        if unitFrame.castBar.BorderTop then
-          unitFrame.castBar.BorderTop:Hide()
-        end
-        if unitFrame.castBar.topBorder then
-          unitFrame.castBar.topBorder:Hide()
-        end
-        if unitFrame.castBar.TopBorder then
-          unitFrame.castBar.TopBorder:Hide()
-        end
-
-        -- Try to remove background borders
-        if unitFrame.castBar:GetBackdrop() then
-          local backdrop = unitFrame.castBar:GetBackdrop()
-          if backdrop then
-            backdrop.edgeSize = 0
-            unitFrame.castBar:SetBackdrop(backdrop)
-          end
-        end
-
-        -- Aggressively hide any border-like textures
-        local children = {unitFrame.castBar:GetChildren()}
-        for _, child in pairs(children) do
-          if child and child.Hide and (
-            string.find(string.lower(child:GetName() or ""), "border") or
-            string.find(string.lower(child:GetName() or ""), "edge")
-          ) then
-            child:Hide()
-          end
-        end
-
-        -- Hide any textures that might be borders
-        local regions = {unitFrame.castBar:GetRegions()}
-        for _, region in pairs(regions) do
-          if region and region.Hide and region.GetTexture then
-            local texture = region:GetTexture()
-            if texture and (
-              string.find(string.lower(texture), "border") or
-              string.find(string.lower(texture), "edge") or
-              string.find(string.lower(texture), "frame")
-            ) then
-              region:Hide()
-            end
-          end
-        end
-
-        -- Get current nameplate scale for consistent positioning and border thickness
-        local nameplateScale = healthBar:GetEffectiveScale() or 1
-        local adjustedBorderThickness = borderThickness / nameplateScale
-
-                                                -- Position castbar with scale-aware offset to fix gap/overlap issues
-        local yOffset = -borderThickness
-        if nameplateScale > 1.0 then
-          -- When targeted (scaled), use adjusted offset to prevent gap
-          yOffset = -adjustedBorderThickness
-        end
-
-        unitFrame.castBar:ClearAllPoints()
-        unitFrame.castBar:SetPoint("TOP", healthBar, "BOTTOM", 0, yOffset)
-
-        -- Create left, right, and bottom borders only (no top border)
-        if not unitFrame.castBar.DM_leftBorder then
-          -- Left border
-          unitFrame.castBar.DM_leftBorder = unitFrame.castBar:CreateTexture(nil, "BACKGROUND", nil, -5)
-          unitFrame.castBar.DM_leftBorder:SetTexture("Interface\\Buttons\\WHITE8X8")
-
-          -- Right border
-          unitFrame.castBar.DM_rightBorder = unitFrame.castBar:CreateTexture(nil, "BACKGROUND", nil, -5)
-          unitFrame.castBar.DM_rightBorder:SetTexture("Interface\\Buttons\\WHITE8X8")
-
-          -- Bottom border
-          unitFrame.castBar.DM_bottomBorder = unitFrame.castBar:CreateTexture(nil, "BACKGROUND", nil, -5)
-          unitFrame.castBar.DM_bottomBorder:SetTexture("Interface\\Buttons\\WHITE8X8")
-        end
-
-                                        -- Update border dimensions only with significant changes (prevent jumpy rendering)
-        local thicknessRounded = math.floor(adjustedBorderThickness + 0.5) -- Round to nearest pixel
-        if not unitFrame.castBar.DM_lastBorderThickness or math.abs(unitFrame.castBar.DM_lastBorderThickness - thicknessRounded) >= 0.5 then
-          unitFrame.castBar.DM_lastBorderThickness = thicknessRounded
-
-          -- Use rounded thickness for stable rendering
-          unitFrame.castBar.DM_leftBorder:SetWidth(thicknessRounded)
-          unitFrame.castBar.DM_rightBorder:SetWidth(thicknessRounded)
-          unitFrame.castBar.DM_bottomBorder:SetHeight(thicknessRounded)
-
-          -- Only update positions if needed (avoid ClearAllPoints when possible)
-          if not unitFrame.castBar.DM_bordersPositioned then
-            unitFrame.castBar.DM_bordersPositioned = true
-
-            unitFrame.castBar.DM_leftBorder:ClearAllPoints()
-            unitFrame.castBar.DM_leftBorder:SetPoint("TOPRIGHT", unitFrame.castBar, "TOPLEFT", 0, 0)
-            unitFrame.castBar.DM_leftBorder:SetPoint("BOTTOMRIGHT", unitFrame.castBar, "BOTTOMLEFT", 0, -thicknessRounded)
-
-            unitFrame.castBar.DM_rightBorder:ClearAllPoints()
-            unitFrame.castBar.DM_rightBorder:SetPoint("TOPLEFT", unitFrame.castBar, "TOPRIGHT", 0, 0)
-            unitFrame.castBar.DM_rightBorder:SetPoint("BOTTOMLEFT", unitFrame.castBar, "BOTTOMRIGHT", 0, -thicknessRounded)
-
-            unitFrame.castBar.DM_bottomBorder:ClearAllPoints()
-            unitFrame.castBar.DM_bottomBorder:SetPoint("TOPLEFT", unitFrame.castBar, "BOTTOMLEFT", -thicknessRounded, 0)
-            unitFrame.castBar.DM_bottomBorder:SetPoint("TOPRIGHT", unitFrame.castBar, "BOTTOMRIGHT", thicknessRounded, 0)
-          end
-        end
-
-        -- Match nameplate border color
-        if healthBar.border then
-          local r, g, b, a = healthBar.border:GetVertexColor()
-          unitFrame.castBar.DM_leftBorder:SetVertexColor(r, g, b, a)
-          unitFrame.castBar.DM_rightBorder:SetVertexColor(r, g, b, a)
-          unitFrame.castBar.DM_bottomBorder:SetVertexColor(r, g, b, a)
-        end
-
-        -- Show borders
-        unitFrame.castBar.DM_leftBorder:Show()
-        unitFrame.castBar.DM_rightBorder:Show()
-        unitFrame.castBar.DM_bottomBorder:Show()
-      end
-    end
-
-  elseif unitFrame.castBar then
-    -- Hide borders when not needed (with nil checks)
-    if unitFrame.castBar.DM_leftBorder then
-      unitFrame.castBar.DM_leftBorder:Hide()
-    end
-    if unitFrame.castBar.DM_rightBorder then
-      unitFrame.castBar.DM_rightBorder:Hide()
-    end
-    if unitFrame.castBar.DM_bottomBorder then
-      unitFrame.castBar.DM_bottomBorder:Hide()
-    end
-  end
-
   -- OPTIMIZATION: Only refresh the color if something actually changed
   if shouldRefreshColor then
     Plater.RefreshNameplateColor(unitFrame)
@@ -626,7 +497,7 @@ function(self, unitId, unitFrame, envTable, modTable)
     return
   end
 
-  if envTable.DM_FORCE_THREAT_COLOR and unitFrame and unitId then
+    if envTable.DM_FORCE_THREAT_COLOR and unitFrame and unitId then
     local function applyColor(r, g, b, a, isThreatColor)
       a = a or 1
 
@@ -648,18 +519,40 @@ function(self, unitId, unitFrame, envTable, modTable)
       end
     end
 
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
+    -- Only check threat if all conditions are met
+    if Plater.IsInCombat() and not UnitPlayerControlled(unitId) and unitFrame.InCombat then
+      local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
+      local isTank = Plater.PlayerIsTank
 
-    if isTank then
-      if unitFrame.InCombat and not isTanking then
-        local color = Plater.db.profile.tank.colors.noaggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true)
-      end
-    else
-      if unitFrame.InCombat and isTanking then
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true)
+      if isTank then
+        -- Player isn't tanking this unit?
+        if not isTanking then
+          -- Check if a second tank is tanking it
+          if (Plater.ZoneInstanceType == "raid") then
+            -- Return a list with the name of tanks in the raid
+            local tankPlayersInTheRaid = Plater.GetTanks()
+
+            -- Get the target name of this unit
+            local unitTargetName = UnitName(unitFrame.targetUnitID)
+
+            -- Check if the unit isn't targeting another tank in the raid and paint the color
+            if (not tankPlayersInTheRaid[unitTargetName]) then
+              local color = Plater.db.profile.tank.colors.noaggro
+              applyColor(color[1], color[2], color[3], color[4] or 1, true)
+            else
+              -- Another tank is tanking this unit - do nothing
+            end
+          else
+            local color = Plater.db.profile.tank.colors.noaggro
+            applyColor(color[1], color[2], color[3], color[4] or 1, true)
+          end
+        end
+      else
+        -- Player is a dps or healer
+        if isTanking then
+          local color = Plater.db.profile.dps.colors.aggro
+          applyColor(color[1], color[2], color[3], color[4] or 1, true)
+        end
       end
     end
   end
