@@ -1,6 +1,6 @@
 # DotMaster Changelog
 
-## [2.2.1] - 2024-12-19
+## [2.2.7] - 2024-12-28
 
 ### Added
 - **Expressway Font Integration**: Complete font system overhaul with modern Expressway font
@@ -12,10 +12,19 @@
 - **Author Credit Styling**: Footer author/version text now displays in gold color for better visibility
 - **Font System**: Comprehensive font mapping system for easy maintenance and extensibility
 
+### Fixed
+- **Raid Tank Threat Colors**: Fixed incorrect "lost threat" colors when another tank has aggro in raids
+  - Now properly detects when another tank is tanking a mob in raid environments
+  - Prevents false "no aggro" colors when Force Threat Color option is enabled
+  - Maintains normal threat behavior in dungeons and solo content
+  - Added proper combat state and PVP checks for more accurate threat detection
+
 ### Technical
 - Added `fonts.lua` with complete font object definitions and helper functions
 - Updated all GUI files to use the new font system
 - Improved font initialization and error handling
+- **WoW Compatibility**: Updated interface version to 110200 for WoW 11.2.0 support
+- **Version Support**: Added compatibility for WoW 11.1.7 and 11.2.0
 
 ## [2.2.0] - 2024-12-19
 ### Added
@@ -125,7 +134,7 @@
 
 ### Changed
 - Updated documentation for a more comprehensive overview of features
-- Updated TOC file with compatibility information for WoW 11.1.5 and 11.1.7
+- Updated TOC file with compatibility information for WoW 11.1.7 and 11.2.0
 - Improved user-facing messages in Plater integration for better clarity
 
 ### Fixed

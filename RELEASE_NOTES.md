@@ -1,8 +1,8 @@
-# DotMaster 2.2.1 Release
+# DotMaster 2.2.7 Release
 
 ## Font System Overhaul & Visual Improvements
 
-DotMaster 2.2.1 introduces a comprehensive font system overhaul with the modern Expressway font, providing a consistent and professional appearance across all interface elements.
+DotMaster 2.2.7 introduces a comprehensive font system overhaul with the modern Expressway font, providing a consistent and professional appearance across all interface elements.
 
 ## 🎨 New Features
 
@@ -16,6 +16,14 @@ DotMaster 2.2.1 introduces a comprehensive font system overhaul with the modern 
 - **Gold Author Credits**: Footer author/version text now displays in elegant gold color
 - **Better Contrast**: Enhanced text visibility with proper outline effects
 - **Consistent Sizing**: Standardized font sizes across all interface elements
+
+## 🐛 Important Bug Fixes
+
+### **Raid Tank Threat Detection**
+- **Fixed Incorrect Threat Colors**: Resolved issue where tanks would see "lost threat" colors when another tank had aggro in raids
+- **Smart Raid Detection**: Added intelligent detection of other tanks in raid environments
+- **Improved Accuracy**: Enhanced combat state and PVP checks for more reliable threat coloring
+- **Preserved Functionality**: Maintains normal threat behavior in dungeons and solo content
 
 ## 🔧 Technical Improvements
 
@@ -60,19 +68,20 @@ DotMaster 2.2.1 introduces a comprehensive font system overhaul with the modern 
 
 ## 🔄 Compatibility
 
-- **WoW Version**: Compatible with 11.1.5 and 11.1.7
+- **WoW Version**: Compatible with 11.1.7 and 11.2.0
 - **Plater Integration**: Fully compatible with latest Plater versions
 - **Backward Compatibility**: All existing settings and configurations preserved
 
 ## 📥 Installation & Updates
 
-**Download DotMaster 2.2.1** from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster), [Wago](https://addons.wago.io/addons/dotmaster), or [GitHub](https://github.com/jervaise/DotMaster/releases)
+**Download DotMaster 2.2.7** from [CurseForge](https://www.curseforge.com/wow/addons/dotmaster), [Wago](https://addons.wago.io/addons/dotmaster), or [GitHub](https://github.com/jervaise/DotMaster/releases)
 
 ### **Update Notes**
 - No configuration changes required
 - Font improvements are automatically applied
+- Tank threat fix is automatically active when Force Threat Color is enabled
 - All existing settings and tracked spells are preserved
 
 ---
 
-*DotMaster 2.2.1 represents a significant visual upgrade while maintaining all the powerful DoT tracking features you rely on. The new Expressway font system provides a modern, professional appearance that enhances your gameplay experience.* 
+*DotMaster 2.2.7 represents a significant visual upgrade and important bug fix while maintaining all the powerful DoT tracking features you rely on. The new Expressway font system provides a modern, professional appearance, and the improved raid tank threat detection ensures accurate threat coloring in all environments.* 
