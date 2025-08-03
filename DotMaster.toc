@@ -1,7 +1,7 @@
 ## Interface: 110200
 ## Title: DotMaster
 ## Notes: Advanced DoT tracking and nameplate coloring for Plater. Enhanced threat detection, DoT combinations, and visual feedback for WoW 11.2 and The War Within.
-## Version: 2.2.5
+## Version: 2.2.6
 ## X-Min-Interface: 110105
 ## X-Compatible-With: 110200, 110105, 11.1.7, 11.2.0, TWW Season 3
 ## Author: Jervaise

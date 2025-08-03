@@ -1,5 +1,20 @@
 # DotMaster Changelog
 
+## [2.2.6] - 2025-01-27
+
+### Improved
+- **CurseForge Integration**: Enhanced metadata and packaging for better CurseForge compatibility
+  - Improved TOC description for better addon presentation on CurseForge
+  - Added explicit interface version compatibility declarations (110200, 110105)
+  - Enhanced .pkgmeta configuration with proper tools-used declarations
+  - Better ignore patterns for cleaner releases
+
+### Technical
+- Enhanced addon description to highlight key features: "Advanced DoT tracking and nameplate coloring for Plater. Enhanced threat detection, DoT combinations, and visual feedback"
+- Added Ace3 and LibDataBroker tools declarations for proper dependency recognition
+- Improved packaging configuration to ensure main branch is used for releases
+- Added comprehensive compatibility matrix for WoW versions 11.1.7, 11.2.0, and TWW Season 3
+
 ## [2.2.5] - 2025-01-27
 
 ### Fixed
