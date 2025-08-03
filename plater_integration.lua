@@ -324,55 +324,43 @@ function(self, unitId, unitFrame, envTable, modTable)
 
   -- Check for threat coloring (has priority if enabled)
   if envTable.DM_FORCE_THREAT_COLOR then
-    -- If the player isn't in combat, ignore this check
-    if (not Plater.IsInCombat()) then
-      return
-    end
+    -- Only check threat if all conditions are met
+    if Plater.IsInCombat() and not UnitPlayerControlled(unitId) and unitFrame.InCombat then
+      local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
+      local isTank = Plater.PlayerIsTank
 
-    -- Disable in PVP
-    if (UnitPlayerControlled(unitId)) then
-      return
-    end
+      if isTank then
+        -- Player isn't tanking this unit?
+        if not isTanking then
+          -- Check if a second tank is tanking it
+          if (Plater.ZoneInstanceType == "raid") then
+            -- Return a list with the name of tanks in the raid
+            local tankPlayersInTheRaid = Plater.GetTanks()
 
-    -- If this unit isn't in combat, ignore
-    if (not unitFrame.InCombat) then
-      return
-    end
+            -- Get the target name of this unit
+            local unitTargetName = UnitName(unitFrame.targetUnitID)
 
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
-
-            if isTank then
-      -- Player isn't tanking this unit?
-      if not isTanking then
-        -- Check if a second tank is tanking it
-        if (Plater.ZoneInstanceType == "raid") then
-          -- Return a list with the name of tanks in the raid
-          local tankPlayersInTheRaid = Plater.GetTanks()
-
-          -- Get the target name of this unit
-          local unitTargetName = UnitName(unitFrame.targetUnitID)
-
-          -- Check if the unit isn't targeting another tank in the raid and paint the color
-          if (not tankPlayersInTheRaid[unitTargetName]) then
+            -- Check if the unit isn't targeting another tank in the raid and paint the color
+            if (not tankPlayersInTheRaid[unitTargetName]) then
+              local color = Plater.db.profile.tank.colors.noaggro
+              applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
+              return
+            else
+              -- Another tank is tanking this unit - do nothing
+            end
+          else
             local color = Plater.db.profile.tank.colors.noaggro
             applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
             return
-          else
-            -- Another tank is tanking this unit - do nothing
           end
-        else
-          local color = Plater.db.profile.tank.colors.noaggro
+        end
+      else
+        -- Player is a dps or healer
+        if isTanking then
+          local color = Plater.db.profile.dps.colors.aggro
           applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
           return
         end
-      end
-    else
-      -- Player is a dps or healer
-      if isTanking then
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true, 999)
-        return
       end
     end
   end
@@ -531,52 +519,40 @@ function(self, unitId, unitFrame, envTable, modTable)
       end
     end
 
-    -- If the player isn't in combat, ignore this check
-    if (not Plater.IsInCombat()) then
-      return
-    end
+    -- Only check threat if all conditions are met
+    if Plater.IsInCombat() and not UnitPlayerControlled(unitId) and unitFrame.InCombat then
+      local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
+      local isTank = Plater.PlayerIsTank
 
-    -- Disable in PVP
-    if (UnitPlayerControlled(unitId)) then
-      return
-    end
+      if isTank then
+        -- Player isn't tanking this unit?
+        if not isTanking then
+          -- Check if a second tank is tanking it
+          if (Plater.ZoneInstanceType == "raid") then
+            -- Return a list with the name of tanks in the raid
+            local tankPlayersInTheRaid = Plater.GetTanks()
 
-    -- If this unit isn't in combat, ignore
-    if (not unitFrame.InCombat) then
-      return
-    end
+            -- Get the target name of this unit
+            local unitTargetName = UnitName(unitFrame.targetUnitID)
 
-    local isTanking, status, threatpct = UnitDetailedThreatSituation("player", unitId)
-    local isTank = Plater.PlayerIsTank
-
-            if isTank then
-      -- Player isn't tanking this unit?
-      if not isTanking then
-        -- Check if a second tank is tanking it
-        if (Plater.ZoneInstanceType == "raid") then
-          -- Return a list with the name of tanks in the raid
-          local tankPlayersInTheRaid = Plater.GetTanks()
-
-          -- Get the target name of this unit
-          local unitTargetName = UnitName(unitFrame.targetUnitID)
-
-          -- Check if the unit isn't targeting another tank in the raid and paint the color
-          if (not tankPlayersInTheRaid[unitTargetName]) then
+            -- Check if the unit isn't targeting another tank in the raid and paint the color
+            if (not tankPlayersInTheRaid[unitTargetName]) then
+              local color = Plater.db.profile.tank.colors.noaggro
+              applyColor(color[1], color[2], color[3], color[4] or 1, true)
+            else
+              -- Another tank is tanking this unit - do nothing
+            end
+          else
             local color = Plater.db.profile.tank.colors.noaggro
             applyColor(color[1], color[2], color[3], color[4] or 1, true)
-          else
-            -- Another tank is tanking this unit - do nothing
           end
-        else
-          local color = Plater.db.profile.tank.colors.noaggro
+        end
+      else
+        -- Player is a dps or healer
+        if isTanking then
+          local color = Plater.db.profile.dps.colors.aggro
           applyColor(color[1], color[2], color[3], color[4] or 1, true)
         end
-      end
-    else
-      -- Player is a dps or healer
-      if isTanking then
-        local color = Plater.db.profile.dps.colors.aggro
-        applyColor(color[1], color[2], color[3], color[4] or 1, true)
       end
     end
   end

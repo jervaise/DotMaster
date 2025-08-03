@@ -1,5 +1,21 @@
 # DotMaster Changelog
 
+## [2.2.5] - 2025-01-27
+
+### Fixed
+- **Force Threat Color for Tanks**: Improved threat detection logic to properly handle multiple tanks in raid environments
+  - Tanks no longer receive "no aggro" colors when another tank is legitimately tanking a mob
+  - Added proper raid environment detection using `Plater.ZoneInstanceType == "raid"`
+  - Enhanced logic to check if other tanks in the group are tanking before applying threat colors
+  - Fixed early return statements that were preventing DoT coloring from working when threat conditions weren't met
+  - DoT coloring now functions correctly regardless of threat detection state
+
+### Technical
+- Restructured threat detection logic to match Plater's best practices
+- Added proper combat state validation (player in combat, unit in combat, non-PVP)
+- Improved code flow to ensure DoT coloring always executes after threat checks
+- Enhanced raid tank coordination using `Plater.GetTanks()` and unit target detection
+
 ## [2.2.4] - 2025-01-27
 
 ### Fixed
