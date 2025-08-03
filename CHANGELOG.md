@@ -1,6 +1,21 @@
 # DotMaster Changelog
 
-## [2.2.3] - 2025-01-27
+## [2.2.4] - 2025-01-27
+
+### Fixed
+- **Force Threat Function**: Fixed tank threat detection to properly consider other tanks in raid environments
+- **Multi-Tank Support**: Threat coloring now correctly identifies when another tank is legitimately tanking a unit
+- **Raid Environment Detection**: Added proper raid vs dungeon logic for threat management
+
+### Improved
+- **Tank Threat Logic**: Enhanced threat detection to match proven Plater scripting patterns
+- **Combat State Validation**: Added proper combat and PVP checks for threat processing
+- **Group Composition Awareness**: Threat system now adapts behavior based on group type (raid vs dungeon)
+
+### Removed
+- **Castbar Border Integration**: Completely removed the automatic castbar border system added in v2.2.2 due to compatibility issues
+- **Castbar Width Synchronization**: Removed automatic castbar width matching to prevent conflicts with other addons
+- **Castbar Positioning Logic**: Removed scale-aware positioning that was causing display problems
 
 ### Changed
 - **WoW Version Compatibility**: Updated addon to support WoW 11.2.* and The War Within Season 3
@@ -8,9 +23,11 @@
 - **Compatibility Matrix**: Now supports WoW versions 11.1.7, 11.2.*, and TWW Season 3
 
 ### Technical
+- Reverted plater_integration.lua to pre-2.2.2 state for castbar handling
 - Updated TOC file interface version to 110200
 - Updated compatibility declarations for future-proofing
 - Maintained backward compatibility with WoW 11.1.7
+- Enhanced threat detection algorithms in both "Nameplate Updated" and "Nameplate Added" hooks
 
 ## [2.2.2] - 2024-12-19
 
