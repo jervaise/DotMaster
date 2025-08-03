@@ -2,11 +2,17 @@ package-as: DotMaster
 manual-changelog: CHANGELOG.md
 enable-nolib-creation: no
 
+# Ensure CurseForge uses main branch for releases
+tools-used:
+  - libdatabroker-1-1
+  - ace3
+
 ignore:
   - .git
   - .vscode
   - .gitignore
   - Docs
   - README.md
+  - GITHUB_RELEASE_CHANGELOG.md
 
 license-output: LICENSE.txt 
