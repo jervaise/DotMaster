@@ -1,45 +1,17 @@
-=== DotMaster v2.2.7 - Font System Overhaul & Critical Tank Fix ===
+=== DotMaster v2.2.8 - Minimap Icon Toggle Reliability ===
 
-Release Date: December 28, 2024
+Release Date: August 17, 2025
 WoW Compatibility: 11.1.7 and 11.2.0
-Interface Version: 110200
 
-WHAT'S NEW:
+What’s New:
+- Fixed minimap icon toggle so it reliably shows/hides from both the General tab and `/dm minimap`
+- Removed duplicate `/dm` registrations that caused repeated chat messages
+- Centralized initialization to prevent conflicts and delayed re-initialization
+- Preserved LibDBIcon’s internal reference by updating saved variables in-place
 
-🎨 COMPLETE EXPRESSWAY FONT INTEGRATION
-• Modern typography across all UI elements
-• Enhanced readability with professional styling
-• Consistent appearance throughout the addon
-• Gold author credits for better visibility
+Technical Notes:
+- Toggle now reads from `DotMasterDB.minimap.hide`
+- Settings save updates `DotMasterDB.minimap` fields without replacing the table
+- `DM.LDBIcon` reference is set during initialization for reuse
 
-🛡️ CRITICAL TANK THREAT FIX
-• Fixed false "lost aggro" colors in raids when other tanks have threat
-• Smart raid detection using Plater's tank roster
-• Accurate threat colors for multi-tank scenarios
-• Enhanced combat state and PVP validation
-
-TECHNICAL IMPROVEMENTS:
-• Updated for WoW 11.2.0 (interface 110200)
-• Restructured threat logic preserves DoT coloring
-• New fonts.lua system for centralized font management
-• Improved error handling and initialization
-
-WHO BENEFITS:
-• Tank players: No more false threat warnings in raids
-• All players: Modern, professional UI that's easier to read
-• DoT classes: Reliable visual tracking with enhanced logic
-
-DOWNLOAD:
-• CurseForge: https://www.curseforge.com/wow/addons/dotmaster
-• Wago: https://addons.wago.io/addons/dotmaster
-• GitHub: https://github.com/jervaise/DotMaster/releases
-
-UPDATE NOTES:
-✓ No configuration changes required
-✓ All improvements are automatic
-✓ Complete backward compatibility
-✓ All settings and tracked spells preserved
-
-This update fixes the major tank threat detection issue while modernizing the entire visual experience. Perfect for raiders, M+ players, and anyone who wants accurate DoT tracking with a professional appearance!
-
-Download v2.2.7 today and experience the difference! 
+Download v2.2.8 today and enjoy a more reliable minimap toggle! 

@@ -29,7 +29,7 @@ function DM.API:GetVersion()
   elseif GetAddOnMetadata then
     version = GetAddOnMetadata("DotMaster", "Version")
   else
-    version = "2.2.7" -- Hardcoded fallback version
+    version = "2.2.8" -- Hardcoded fallback version
   end
   return version or "Unknown"
 end
@@ -468,7 +468,7 @@ function DM.API:GetSettings()
 
   -- Use the right settings source to avoid nil errors
   local globalSettings = DotMasterDB and DotMasterDB.settings or {}
-  local minimapSettings = DotMasterDB and DotMasterDB.minimapIcon or { hide = false }
+  local minimapSettings = DotMasterDB and DotMasterDB.minimap or { hide = false }
 
   return {
     enabled = defaultEnabledValue,
@@ -487,9 +487,18 @@ end
 function DM.API:SaveSettings(settings)
   -- Store the settings in the saved variables
   if DotMasterDB then
-    -- Always save minimap settings globally
+    -- Always save minimap settings globally without replacing the table reference
     if settings.minimapIcon then
-      DotMasterDB.minimap = settings.minimapIcon
+      DotMasterDB.minimap = DotMasterDB.minimap or {}
+      if settings.minimapIcon.hide ~= nil then
+        DotMasterDB.minimap.hide = settings.minimapIcon.hide
+      end
+      if settings.minimapIcon.minimapPos ~= nil then
+        DotMasterDB.minimap.minimapPos = settings.minimapIcon.minimapPos
+      end
+      if settings.minimapIcon.radius ~= nil then
+        DotMasterDB.minimap.radius = settings.minimapIcon.radius
+      end
     end
 
     -- Save general settings
