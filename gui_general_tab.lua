@@ -304,23 +304,29 @@ function DM:CreateGeneralTab(parent)
   "Show or hide the DotMaster icon on the minimap. You can still access DotMaster through slash commands when hidden."
   minimapCheckbox:SetScript("OnClick", function(self)
     local showIcon = self:GetChecked()
+    DotMasterDB = DotMasterDB or {}
+    DotMasterDB.minimap = DotMasterDB.minimap or {}
+    DotMasterDB.minimap.hide = not showIcon
+
+    -- Keep API settings in sync
     if not settings.minimapIcon then settings.minimapIcon = {} end
-    settings.minimapIcon.hide = not showIcon
+    settings.minimapIcon.hide = DotMasterDB.minimap.hide
+
     DM:AutoSave()
-    local success = pcall(function()
-      if DM.ToggleMinimapIcon then
-        DM:ToggleMinimapIcon()
-      else
-        local LibDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
-        if LibDBIcon then
-          if settings.minimapIcon.hide then
-            LibDBIcon:Hide("DotMaster")
-          else
-            LibDBIcon:Show("DotMaster")
-          end
+
+    -- Apply immediately
+    if DM.ToggleMinimapIcon then
+      DM:ToggleMinimapIcon()
+    else
+      local LibDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
+      if LibDBIcon then
+        if DotMasterDB.minimap.hide then
+          LibDBIcon:Hide("DotMaster")
+        else
+          LibDBIcon:Show("DotMaster")
         end
       end
-    end)
+    end
   end)
 
   local forceColorCheckbox = CreateStyledCheckbox("DotMasterForceColorCheckbox",
