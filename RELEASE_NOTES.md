@@ -1,3 +1,29 @@
+# DotMaster 2.2.8 Release
+
+## Minimap Icon Toggle Reliability
+
+DotMaster 2.2.8 focuses on fixing the minimap icon visibility toggle to work consistently from both the General tab and the `/dm minimap` command.
+
+## 🐛 Fixes
+
+- Minimap icon now reliably shows/hides when using the General tab checkbox or `/dm minimap`
+- Removed duplicate `/dm` registrations that caused duplicate chat messages
+- Centralized minimap initialization to prevent conflicts and delayed re-initialization
+- Preserved LibDBIcon’s data reference by updating `DotMasterDB.minimap` in-place
+
+## 🔧 Technical
+
+- `DM:ToggleMinimapIcon()` applies visibility from `DotMasterDB.minimap.hide`
+- `DM.API:SaveSettings()` updates `DotMasterDB.minimap` fields without replacing the table
+- `DM.LDBIcon` is set during initialization for reuse where available
+
+## 📦 Compatibility
+
+- **WoW Version**: Compatible with 11.1.7 and 11.2.0
+- **Plater Integration**: Fully compatible with latest Plater versions
+
+---
+
 # DotMaster 2.2.7 Release
 
 ## Font System Overhaul & Visual Improvements

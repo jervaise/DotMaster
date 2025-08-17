@@ -22,7 +22,7 @@ function DM:OnInitialize()
   end
 
   -- Initialize LDB for minimap button
-  self:InitMinimapIcon()
+  -- Minimap icon is initialized during PLAYER_LOGIN in bootstrap.lua
 
   -- Initialize spell database
   self:InitSpellDatabase()

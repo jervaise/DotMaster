@@ -129,7 +129,7 @@ DM.pendingInitialization = true
 DM.initState = "bootstrap" -- Track initialization state
 DM.defaults = {
   enabled = true,          -- Default to enabled for new installations
-  version = "2.2.7",
+  version = "2.2.8",
   flashExpiring = false,
   flashThresholdSeconds = 3.0
 }

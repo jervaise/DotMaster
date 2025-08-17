@@ -17,7 +17,7 @@ function DM:SaveSettings()
     version = GetAddOnMetadata("DotMaster", "Version")
   else
     -- Fallback hardcoded version (updated to match TOC file)
-    version = "2.2.7" -- Hardcoded fallback
+    version = "2.2.8" -- Hardcoded fallback
   end
   DotMasterDB.version = version or "Unknown"
 
@@ -356,23 +356,32 @@ function DM:InitializeMainSlashCommands()
       DM:AutoSave()
       DM:PrintMessage("DotMaster disabled")
     elseif command == "minimap" then
-      -- Toggle minimap icon visibility
-      if DM.API and DM.API.GetSettings and DM.LDBIcon then
-        local settings = DM.API:GetSettings()
-        if settings.minimapIcon then
-          settings.minimapIcon.hide = not settings.minimapIcon.hide
-          if settings.minimapIcon.hide then
-            DM.LDBIcon:Hide("DotMaster")
-            DM:PrintMessage("Minimap icon hidden")
-          else
-            DM.LDBIcon:Show("DotMaster")
-            DM:PrintMessage("Minimap icon shown")
-          end
-          DM:AutoSave()
-        end
+      DotMasterDB = DotMasterDB or {}
+      DotMasterDB.minimap = DotMasterDB.minimap or {}
+      local newHide = not (DotMasterDB.minimap.hide and true or false)
+      DotMasterDB.minimap.hide = newHide
+
+      -- Keep API settings in sync
+      local settings = DM.API:GetSettings()
+      settings.minimapIcon = settings.minimapIcon or {}
+      settings.minimapIcon.hide = newHide
+
+      DM:AutoSave()
+
+      if DM.ToggleMinimapIcon then
+        DM:ToggleMinimapIcon()
       else
-        DM:PrintMessage("Error: Minimap icon functionality not available")
+        local LibDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
+        if LibDBIcon then
+          if newHide then
+            LibDBIcon:Hide("DotMaster")
+          else
+            LibDBIcon:Show("DotMaster")
+          end
+        end
       end
+
+      DM:PrintMessage(newHide and "Minimap icon hidden" or "Minimap icon shown")
     else
       -- Default: Show the config panel
       if DM.ToggleGUI then

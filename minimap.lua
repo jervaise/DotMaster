@@ -69,6 +69,7 @@ function DM:InitializeMinimapIcon()
     DM:PrintMessage("Error: LibDBIcon-1.0 not found. Minimap functionality disabled.")
     return
   end
+  DM.LDBIcon = LibDBIcon
 
   -- Use a simpler icon setup
   local iconPath = "Interface\\AddOns\\DotMaster\\Media\\dotmaster-icon.tga"
@@ -123,22 +124,18 @@ function DM:ToggleMinimapIcon()
     return
   end
 
-  -- Get latest settings
-  local settings = DM.API:GetSettings()
-
-  -- Update saved state
-  if not DotMasterDB then DotMasterDB = {} end
-  if not DotMasterDB.minimap then
-    DotMasterDB.minimap = { hide = false }
+  -- Determine desired visibility from saved variables (fallback to API settings)
+  local hide
+  if DotMasterDB and DotMasterDB.minimap and type(DotMasterDB.minimap.hide) == "boolean" then
+    hide = DotMasterDB.minimap.hide
+  elseif DM.API and DM.API.settings and DM.API.settings.minimapIcon then
+    hide = DM.API.settings.minimapIcon.hide and true or false
+  else
+    hide = false
   end
 
-  if not settings.minimapIcon then settings.minimapIcon = {} end
-
-  -- Set the hide value
-  DotMasterDB.minimap.hide = settings.minimapIcon.hide
-
   -- Apply to minimap icon
-  if DotMasterDB.minimap.hide then
+  if hide then
     LibDBIcon:Hide("DotMaster")
   else
     LibDBIcon:Show("DotMaster")
@@ -147,61 +144,13 @@ end
 
 -- Add minimap slash command
 function DM:AddMinimapSlashCommand()
-  -- Original slash command handler is in settings.lua, so we'll just add to it
-  local originalSlashHandler = SlashCmdList["DOTMASTER"]
-
-  SlashCmdList["DOTMASTER"] = function(msg)
-    local command, arg = strsplit(" ", msg, 2)
-    command = strtrim(command:lower())
-
-    if command == "minimap" then
-      -- Get settings
-      local settings = DM.API:GetSettings()
-
-      -- Toggle minimap visibility
-      if not settings.minimapIcon then settings.minimapIcon = {} end
-      settings.minimapIcon.hide = not settings.minimapIcon.hide
-
-      -- Use AutoSave instead of direct SaveSettings
-      DM:AutoSave()
-
-      -- Apply change
-      DM:ToggleMinimapIcon()
-
-      DM:PrintMessage(settings.minimapIcon.hide and "Minimap icon hidden" or "Minimap icon shown")
-      return
-    end
-
-    -- Call the original handler for other commands
-    originalSlashHandler(msg)
-  end
+  -- Slash command is handled in settings.lua via DM:InitializeMainSlashCommands()
 end
 
 -- Hook into the initialization process
 local function HookInitialization()
-  -- Check if bootstrap has finished
-  if DM.initState and DM.initState == "player_login" then
-    -- Use a larger delay to ensure all APIs are loaded
-    C_Timer.After(2.0, function()
-      -- Initialize the minimap icon
-      DM:InitializeMinimapIcon()
-      -- Add minimap slash command
-      DM:AddMinimapSlashCommand()
-    end)
-  else
-    -- Wait for player login event
-    local frame = CreateFrame("Frame")
-    frame:RegisterEvent("PLAYER_LOGIN")
-    frame:SetScript("OnEvent", function(self, event)
-      -- Use a larger delay to ensure all APIs are loaded
-      C_Timer.After(2.0, function()
-        DM:InitializeMinimapIcon()
-        DM:AddMinimapSlashCommand()
-      end)
-      self:UnregisterAllEvents()
-    end)
-  end
+  -- Initialization is handled in bootstrap.lua; no delayed hooks here.
 end
 
 -- Call the initialization hook
-HookInitialization()
+-- (No-op; bootstrap handles initialization)
